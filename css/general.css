@@ -19,6 +19,13 @@ body {
     margin: 0;
     font-size: 17px;
     overflow-x: hidden;
+     background-image: url('https://images.cnblogs.com/cnblogs_com/traditional/1252937/o_2007090539344o62k9.jpg');
+     background-size: cover;  /* 覆盖整个屏幕 */
+     background-position: center;
+     background-repeat: no-repeat;
+     background-attachment: fixed;  /* 固定背景 */
+     min-height: 100vh;
+    opacity: 90%;
 }
 
 code {
