@@ -64,7 +64,7 @@
 
 
 /* 设置文字大小 */
-body {
+body, .hljs {
     font-size: 17px;
 }
 
