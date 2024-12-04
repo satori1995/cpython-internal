@@ -342,7 +342,7 @@ print(object.__base__)  # None
 <pre><code class="language-python">print(type.__base__)  # &lt;class 'object'&gt;
 print(object.__class__)  # &lt;class 'type'&gt;
 </code></pre>
-<p>因为 type 是所有类的元类，而 object 是所有类的基类，这就说明 type 要继承自 object，而 object 的类型是 type。很多人都会对这一点感到奇怪，这难道不是一个先有鸡还是先有蛋的问题吗？其实不是的，这两个对象是共存的，它们之间的定义其实是互相依赖的。而具体是怎么一回事，我们后续分析。</p>
+<p>因为 type 是所有类的元类，而 object 是所有类的基类，这就说明 type 要继承自 object，而 object 的类型是 type。很多人都会对这一点感到奇怪，这难道不是一个先有鸡还是先有蛋的问题吗？答案不是的，这两个对象是共存的，它们之间的定义是互相依赖的。而具体是怎么一回事，我们后续分析。</p>
 <h2 id="变量其实是指针"><a class="header" href="#变量其实是指针">变量其实是指针</a></h2>
 <p>Python 的变量只是一个名字，如果站在 C 语言的角度来看，那么就是一个指针。所以 Python 的变量保存的其实是对象的内存地址，或者说指针，而<font color="blue">指针指向的内存</font>存储的才是对象。</p>
 <p>所以在 Python 中，我们都说变量指向了某个对象。在其它静态语言中，变量相当于是为某块内存起的别名，获取变量等于获取这块内存所存储的值。而 Python 中变量代表的内存所存储的不是对象，而是对象的指针（或者说引用）。</p>
