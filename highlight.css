@@ -62,8 +62,6 @@
   background: #f6f7f6;
   color: #000;
   padding: 0.5em;
-  font-size: 17px;
-  font-family: "consolas",sans-serif;
 }
 
 .hljs-emphasis {
@@ -82,64 +80,4 @@
 .hljs-deletion {
   color: #b31d28;
   background-color: #ffeef0;
-}
-
-/*代码高亮*/
-/*关键字*/
-.hljs-keyword{
-    color:#EC099C;
-    font-weight:bold;
-}
-
-/*引号*/
-.hljs-quote{
-    color:#017BCD;
-    /* font-weight:bold; */
-}
-
-/*数值*/
-.hljs-number{
-    color:#9808F1;
-    /* font-weight:bold; */
-}
-
-/*字符串*/
-.hljs-string{
-    color:#1812EF;
-    /*font-weight:bold;*/
-}
-
-/*内置函数*/
-.hljs-built_in{
-    color:#D74907;
-    /* font-weight:bold; */
-}
-
-/*注释*/
-.hljs-comment{
-    color:#008000;
-}
-
-/*参数*/
-.hljs-params {
-  color:#ae08c1;
-  /* font-weight:bold; */
-}
-
-/*类冒号*/
-.hljs-class{
-   color:#03654D;
-   /* font-weight:bold; */
-}
-
-/*类、方法函数*/
-.hljs-title{
-  color: #0783e8;
-  /* font-weight:bold; */
-}
-
-.hljs-literal
-{
-  color:#8B0324;
-  /* font-weight:bold; */
 }
