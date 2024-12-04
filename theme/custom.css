@@ -2,10 +2,11 @@
     position: fixed;
     right: 20px;
     top: 100px;
-    padding: 10px;
-    background: #ebebeb;
+    padding: 10px 20px;
+    background: #0366d6;
+    color: white;
     cursor: pointer;
-    border-left: 1px solid #eee;
+    border-radius: 4px;
     z-index: 1000;
 }
 
@@ -13,37 +14,40 @@
     display: none;
     position: fixed;
     right: 20px;
-    top: 100px;  /* 根据顶部导航调整 */
-    width: 300px;
+    top: 150px;
+    width: 200px;
     max-height: 80vh;
     overflow-y: auto;
-    padding: 10px;
-    background: #ebebeb;
-    border-left: 1px solid #eee;
-    font-weight: bold;
-}
-
-.right-toc ul {
-    list-style: none;
-    padding: 0;
+    padding: 15px;
+    background: white;
+    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    z-index: 999;
 }
 
 .right-toc:hover {
     display: block;
 }
 
-.toc-h2 {
+.right-toc ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.toc-h2, .toc-h3 {
     margin: 8px 0;
 }
 
 .toc-h3 {
     padding-left: 15px;
-    margin: 5px 0;
 }
 
 .right-toc a {
     color: #333;
     text-decoration: none;
+    display: block;
+    padding: 4px 0;
 }
 
 .right-toc a:hover {
