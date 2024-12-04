@@ -1,4 +1,16 @@
+.nav-button {
+    position: fixed;
+    right: 20px;
+    top: 100px;
+    padding: 10px;
+    background: #ebebeb;
+    cursor: pointer;
+    border-left: 1px solid #eee;
+    z-index: 1000;
+}
+
 .right-toc {
+    display: none;
     position: fixed;
     right: 20px;
     top: 100px;  /* 根据顶部导航调整 */
@@ -14,6 +26,10 @@
 .right-toc ul {
     list-style: none;
     padding: 0;
+}
+
+.right-toc:hover {
+    display: block;
 }
 
 .toc-h2 {
