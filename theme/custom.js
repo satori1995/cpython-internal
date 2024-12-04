@@ -4,11 +4,18 @@ document.addEventListener('DOMContentLoaded', function() {
     const headers = content.querySelectorAll('h2, h3');
     if (headers.length === 0) return;
 
+    // 创建导航按钮
+    const navButton = document.createElement('div');
+    navButton.className = 'nav-button';
+    navButton.textContent = '标题导航';
+
+    // 创建导航容器
     const toc = document.createElement('div');
-    toc.className = 'right-toc';  // 新类名
+    toc.className = 'right-toc';
     const tocList = document.createElement('ul');
     toc.appendChild(tocList);
 
+    // 添加导航内容
     headers.forEach(header => {
         const li = document.createElement('li');
         const a = document.createElement('a');
@@ -31,6 +38,16 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // 添加到右侧而不是 content 内
+    // 添加悬浮事件
+    navButton.addEventListener('mouseenter', () => {
+        toc.style.display = 'block';
+    });
+
+    toc.addEventListener('mouseleave', () => {
+        toc.style.display = 'none';
+    });
+
+    // 添加到页面
+    document.body.appendChild(navButton);
     document.body.appendChild(toc);
 });
