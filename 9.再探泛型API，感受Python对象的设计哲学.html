@@ -143,11 +143,11 @@
                         <p>之前我们提到了泛型 API，这类 API 的特点是可以处理任意类型的对象，举个例子。</p>
 <pre><code class="language-C">// 返回对象的长度
 PyObject_Size
-// 返回对象的某个属性
+// 返回对象的某个属性的值
 PyObject_GetAttr
 // 返回对象的哈希值
 PyObject_Hash
-// 将对象转成字符串返回
+// 将对象转成字符串后返回
 PyObject_Str
 </code></pre>
 <p>对应到 Python 代码中，就是下面这个样子。</p>
@@ -189,12 +189,12 @@ print(str(object()))
 </code></pre>
 <p>这些 API 能处理任意类型的对象，这究竟是怎么办到的？要想搞清楚这一点，还是要从 PyObject 入手。</p>
 <p>我们知道对象在 C 看来就是一个结构体实例，并且结构体嵌套了 PyObject。</p>
-<pre><code class="language-python"># 创建一个列表，让变量 var 指向它
-var = [1, 2, 3]
-# 创建一个浮点数，让变量 var 指向它
+<pre><code class="language-python"># 创建一个浮点数，让变量 var 指向它
 var = 2.71
+# 创建一个列表，让变量 var 指向它
+var = [1, 2, 3]
 </code></pre>
-<p>列表对应的结构体是 PyListObject，浮点数对应的结构体是 PyFloatObject，变量 var 是指向对象的指针。那么问题来了，凭啥一个变量可以指向不同类型的对象呢？或者说变量和容器里面为什么可以保存不同对象的指针呢？</p>
+<p>浮点数对应的结构体是 PyFloatObject，列表对应的结构体是 PyListObject，变量 var 是指向对象的指针。那么问题来了，凭啥一个变量可以指向不同类型的对象呢？或者说变量和容器里面为什么可以保存不同对象的指针呢？</p>
 <p>原因在前面的文章中解释的很详细了，因为对象的指针会统一转成 PyObject * 之后再交给变量保存，以创建列表为例。</p>
 <p><img src="./images/30.png" alt="" /></p>
 <p>当然创建浮点数也是同理，因此变量和容器里的元素本质上就是一个泛型指针 PyObject *。而对象的指针在交给变量保存的时候，也都会先转成 PyObject *，因为不管什么对象，它底层的结构体都嵌套了 PyObject。正是因为这个设计，变量才能指向任意的对象。</p>
@@ -202,7 +202,7 @@ var = 2.71
 <p>所以 Python 变量相当于一个便利贴，可以贴在任意对象上。</p>
 <p>不过问题来了，由于对象的指针会统一转成 PyObject * 之后再交给变量保存，那么变量怎么知道自己指向的是哪种类型的对象呢？相信你肯定知道答案：通过 ob_type 字段。</p>
 <p><img src="./images/32.png" alt="" /></p>
-<p>对象对应的结构体可以有很多个字段，比如 PyListObject，但变量能看到的只有前两个字段。至于之后的字段是什么，则取决于对象的类型，总之对变量来说是不可见的，因为它是 PyObject *。</p>
+<p>对象对应的结构体可以有很多个字段，比如 PyListObject，但变量能看到的只有前两个字段。至于之后的字段是什么，则取决于对象的类型。</p>
 <p>所以变量会先通过 ob_type 字段获取对象的类型，如果 ob_type 字段的值为 &amp;PyList_Type，那么变量指向的就是 PyListObject。如果 ob_type 字段的值为 &amp;PyFloat_Type，那么变量指向的就是 PyFloatObject，其它类型同理。当得到了对象的类型，那么再转成相应的指针即可，假设 ob_type 是 &amp;PyList_Type，那么变量会再转成 PyListObject *，这样就可以操作列表的其它字段了。</p>
 <p>所以我们再总结一下：</p>
 <p><img src="./images/33.png" alt="" /></p>
