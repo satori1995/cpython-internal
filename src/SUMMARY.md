@@ -7,3 +7,4 @@
 + [4. 万丈高楼平地起，一切从 PyObject 开始](4.万丈高楼平地起，一切从PyObject开始.md)
 + [5. 详解 PyTypeObject，Python 类型对象的载体](5.详解PyTypeObject，Python类型对象的载体.md)
 + [6. 通过 type 和 object 之间的关联，进一步分析类型对象](6.通过type和object之间的关联，进一步分析类型对象.md)
++ [7. 当创建一个 Python 对象时，背后都经历了哪些过程？](7.当创建一个Python对象时，背后都经历了哪些过程？.md)
