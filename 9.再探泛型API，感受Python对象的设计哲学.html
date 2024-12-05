@@ -209,7 +209,7 @@ var = [1, 2, 3]
 <p>变量和容器里的元素只能保存相同的指针类型，而不同类型的对象，其底层的结构体是不同的。但这些结构体无一例外都嵌套了 PyObject，因此它们的指针会统一转成 PyObject * 之后再交给变量保存。</p>
 <p>然后变量在操作对象时，会先通过 ob_type 判断对象的类型，假如是 &amp;PyList_Type，那么会再转成 PyListObject *，其它类型同理。我们以获取列表元素为例：</p>
 <p><img src="./images/34.png" alt="" /></p>
-<p>相信你已经知道为什么泛型 API 可以处理任意类型的对象了，再以 PyObject_GetAttr 为例，它内部会调用类型对象的 tp_getattro。</p>
+<p>相信你已经知道为什么泛型 API 可以处理任意类型的对象了，我们再以 PyObject_GetAttr 为例，它内部会调用类型对象的 tp_getattro。</p>
 <pre><code class="language-C">// Objects/object.c
 
 // 等价于 getattr(v, name)
@@ -244,7 +244,7 @@ PyObject_GetAttr(PyObject *v, PyObject *name)
     return NULL;
 }
 </code></pre>
-<p>函数先通过 ob_type 找到对象的类型，然后通过类型对象的 tp_getattro 调用对应的属性查找函数。所以 PyObject_GetAttr 会根据对象的类型，调用不同的属性查找函数，而这就是泛型 API 能处理任意对象的秘密。</p>
+<p>函数先通过 ob_type 找到对象的类型，然后通过类型对象的 tp_getattro 调用对应的属性查找函数。所以对象的类型不同，PyObject_GetAttr 调用的属性查找函数也不同，而这就是泛型 API 能处理任意对象的秘密。</p>
 <p>我们再以 Python 代码为例：</p>
 <pre><code class="language-Python">class A:
 
@@ -281,7 +281,7 @@ print(type(data).__iter__(data))
 &lt;list_iterator object at 0x7fb8200f29a0&gt;
 &quot;&quot;&quot;
 </code></pre>
-<p>如果一个对象支持迭代器操作，那么它的类型对象一定实现了 __iter__，通过 type(data) 可以获取到类型对象，然后将 data 作为参数调用 __iter__ 即可。</p>
+<p>如果一个对象支持创建迭代器，那么它的类型对象一定实现了 __iter__，通过 type(data) 可以获取到类型对象，然后再将 data 作为参数调用 __iter__ 即可。</p>
 <p>所以通过 ob_type 字段，这些泛型 API 实现了类似多态的效果，一个函数，多种实现。</p>
 <hr />
 <p> </p>
