@@ -78,7 +78,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded "><a href="0.序言.html">0. 序言</a></li><li class="chapter-item expanded "><a href="1.CPython源码长什么样子？.html">1. CPython 源码长什么样子？</a></li><li class="chapter-item expanded "><a href="2.变量和对象，它们之间有什么区别和联系呢？.html">2. 变量和对象，它们之间有什么区别和联系呢？</a></li><li class="chapter-item expanded "><a href="3.Python对象有哪几种，我们可以从哪些角度进行分类呢？.html">3. Python 对象有哪几种，我们可以从哪些角度进行分类呢？</a></li><li class="chapter-item expanded "><a href="4.万丈高楼平地起，一切从PyObject开始.html">4. 万丈高楼平地起，一切从 PyObject 开始</a></li><li class="chapter-item expanded "><a href="5.详解PyTypeObject，Python类型对象的载体.html" class="active">5. 详解 PyTypeObject，Python 类型对象的载体</a></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded "><a href="0.序言.html">0. 序言</a></li><li class="chapter-item expanded "><a href="1.CPython源码长什么样子？.html">1. CPython 源码长什么样子？</a></li><li class="chapter-item expanded "><a href="2.变量和对象，它们之间有什么区别和联系呢？.html">2. 变量和对象，它们之间有什么区别和联系呢？</a></li><li class="chapter-item expanded "><a href="3.Python对象有哪几种，我们可以从哪些角度进行分类呢？.html">3. Python 对象有哪几种，我们可以从哪些角度进行分类呢？</a></li><li class="chapter-item expanded "><a href="4.万丈高楼平地起，一切从PyObject开始.html">4. 万丈高楼平地起，一切从 PyObject 开始</a></li><li class="chapter-item expanded "><a href="5.详解PyTypeObject，Python类型对象的载体.html" class="active">5. 详解 PyTypeObject，Python 类型对象的载体</a></li><li class="chapter-item expanded "><a href="6.通过type和object之间的关联，进一步分析类型对象.html">6. 通过 type 和 object 之间的关联，进一步分析类型对象</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -603,6 +603,7 @@ print(
 <p>但所有的类型对象，在底层由同一个结构体实现，它们都是 PyTypeObject 实例。而 PyTypeObject 结构体在实例化时，内部字段接收的值不同，那么生成的类型对象也不同，可以是 PyLong_Type、PyFloat_Type、PyList_Type 等等。并且每个类型对象都是唯一的，比如在程序中可以创建很多个<font color="blue">列表（PyListObject 实例）</font>，但类型对象 <font color="blue">&lt;class 'list'&gt;（PyList_Type）</font>只会存在一个。</p>
 <p>因为类型对象都是静态定义在源码中的，并以全局变量的形式存在。而将实例对象和类型对象关联起来的，则是实例对象的 ob_type 字段，在 Python 里面可以通过调用 type 或者获取 __class__ 属性查看。</p>
 <p>关于类型对象的更多内容，后续会继续介绍。</p>
+<hr />
 <p> </p>
 <p><strong>欢迎大家关注我的公众号：古明地觉的编程教室。</strong></p>
 <p><img src="./images/qrcode_for_gh.jpg" alt="" /></p>
@@ -616,6 +617,9 @@ print(
                             <a rel="prev" href="4.万丈高楼平地起，一切从PyObject开始.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <i class="fa fa-angle-left"></i>
                             </a>
+                            <a rel="next" href="6.通过type和object之间的关联，进一步分析类型对象.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
                         <div style="clear: both"></div>
                     </nav>
                 </div>
@@ -624,6 +628,9 @@ print(
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
                     <a rel="prev" href="4.万丈高楼平地起，一切从PyObject开始.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <i class="fa fa-angle-left"></i>
+                    </a>
+                    <a rel="next" href="6.通过type和object之间的关联，进一步分析类型对象.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
                     </a>
             </nav>
 
