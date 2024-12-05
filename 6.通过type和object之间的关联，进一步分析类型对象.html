@@ -192,19 +192,19 @@ can't set attributes of built-in/extension type 'int'
 <pre><code class="language-C">// Include/object.h
 
 // _PyObject_EXTRA_INIT 可以忽略掉
-// 然后我们看到这个宏是用来初始化引用计数和类型的
+// 我们看到这个宏是用来初始化引用计数和类型的
 #define PyObject_HEAD_INIT(type)        \
     { _PyObject_EXTRA_INIT              \
     1, type },
 
-// 用于初始化引用计数、类型和 ob_size
+// 负责初始化引用计数、类型和 ob_size
 #define PyVarObject_HEAD_INIT(type, size)       \
     { PyObject_HEAD_INIT(type) size },
 </code></pre>
 <p>下面我们来看几个类型对象。 </p>
 <p><img src="./images/21.png" alt="" /></p>
 <p>我们看到所有类型对象的类型都被设置成了 &amp;PyType_Type，也就是 Python 里的 type。所以结论很清晰了，虽然内置的类型对象可以看做是 type 的实例对象，但它却不是由 type 实例化得到的，而是在底层预定义好，并以全局变量的形式静态出现。</p>
-<p>所以内置的类型对象之间不存在谁创建谁，它们都是预定义好的，只是在定义的时候，将自身的类型设置成了 type 而已，包括 type 本身（类型还是 type）。这样一来，每一个对象都会具有一个类型，从而将面向对象理念贯彻的更加彻底。</p>
+<p>所以内置的类型对象之间不存在谁创建谁，它们都是预定义好的，只是在定义的时候，将自身的类型设置成了 type 而已，包括 type 本身（类型还是 type）。这样一来，每一个对象都会有一个类型，从而将面向对象理念贯彻的更加彻底。</p>
 <pre><code class="language-Python">print(int.__class__)
 print(tuple.__class__)
 print(set.__class__)
@@ -257,14 +257,14 @@ True
 &gt;&gt;&gt; type(type(type(type(type(type))))) is type
 True
 </code></pre>
-<p>显然不管套娃多少次，最终的结果都是True，这也是符合预期的。</p>
+<p>显然不管套娃多少次，最终的结果都是 True，这也是符合预期的。</p>
 <h2 id="类型对象的基类pybaseobject_type"><a class="header" href="#类型对象的基类pybaseobject_type">类型对象的基类：PyBaseObject_Type</a></h2>
 <p>Python 中有两个类型对象比较特殊，一个是站在类型金字塔顶端的 type，另一个是站在继承金字塔顶端的 object。看完了 type，再来看看 object。</p>
 <p>由于 object 的类型是 type，那么在初始化 PyBaseObject_Type 的时候，它的 ob_type 一定也被设置成了 &amp;PyType_Type。</p>
-<p>我们看一下 PyBaseObject_Type 的实现，它同样定义在 Objects/typeobject.c 中。</p>
+<p>我们看一下 PyBaseObject_Type 的具体实现，它同样定义在 Objects/typeobject.c 中。</p>
 <p><img src="./images/22.png" alt="" /></p>
 <p>类型对象在创建的时候，ob_type 字段都会被初始化成 &amp;PyType_Type，而 object 也不例外，所以它的类型为 type，这个非常简单。但 type 的基类是 object，又是怎么一回事呢？</p>
-<p>之前介绍类型对象的时候，我们说类型对象内部的 tp_base 表示继承的基类，那么对于 PyType_Type 来讲，它内部的 tp_base 肯定是 &amp;PyBaseObject_Type，即 object。</p>
+<p>之前介绍类型对象的时候，我们说类型对象内部的 tp_base 指向继承的基类，那么对于 PyType_Type 来讲，它内部的 tp_base 肯定是 &amp;PyBaseObject_Type，即 object。</p>
 <p><img src="./images/23.png" alt="" /></p>
 <p>但令我们吃鲸的是，它的 tp_base 居然是个 0，也就是说基类为空。</p>
 <blockquote>
