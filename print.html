@@ -1096,20 +1096,9 @@ print(A.__subclasses__())
 <p>以上就是 PyTypeObject 的各个字段的含义。</p>
 <h2 id="一些常见的类型对象"><a class="header" href="#一些常见的类型对象">一些常见的类型对象</a></h2>
 <p>下面来介绍一些常见的类型在底层的定义。</p>
-<ul>
-<li>&lt;class 'int'&gt;  -&gt;  PyLong_Type</li>
-<li>&lt;class 'str'&gt;  -&gt;  PyUnicode_Type</li>
-<li>&lt;class 'float'&gt;  -&gt;  PyFloat_Type</li>
-<li>&lt;class 'complex'&gt;  -&gt;  PyComplex_Type</li>
-<li>&lt;class 'tuple'&gt;  -&gt;  PyTuple_Type</li>
-<li>&lt;class 'list'&gt;  -&gt;  PyList_Type</li>
-<li>&lt;class 'dict'&gt;  -&gt;  PyDict_Type</li>
-<li>&lt;class 'set'&gt;  -&gt;  PySet_Type</li>
-<li>&lt;class 'frozenset'&gt;  -&gt;  PyFrozenSet_Type</li>
-<li>&lt;class 'type'&gt;  -&gt;  PyType_Type</li>
-</ul>
-<p>Python 底层的 C API 和对象的命名都遵循统一的标准，比如类型对象均以 <font color="blue">Py***_Type</font> 的形式命名，当然啦，它们都是 PyTypeObject 结构体实例。所以我们发现，Python 里的类在底层是以全局变量的形式静态定义好的。</p>
 <p><img src="./images/18.png" alt="" /></p>
+<p>Python 底层的 C API 和对象的命名都遵循统一的标准，比如类型对象均以 <font color="blue">Py***_Type</font> 的形式命名，当然啦，它们都是 PyTypeObject 结构体实例。所以我们发现，Python 里的类在底层是以全局变量的形式静态定义好的。</p>
+<p><img src="./images/19.png" alt="" /></p>
 <p>所以实例对象可以有很多个，但对应的类型对象则是唯一的，在底层直接以全局变量的形式静态定义好了。比如列表的类型是 list，列表可以有很多个，但 list 类型对象则全局唯一。</p>
 <pre><code class="language-python">data1 = [1, 2, 3]
 data2 = [4, 5, 6]
@@ -1118,7 +1107,7 @@ print(
 )  # True
 </code></pre>
 <p>如果站在 C 的角度来理解的话：</p>
-<p><img src="./images/19.png" alt="" /></p>
+<p><img src="./images/20.png" alt="" /></p>
 <p>data1 和 data2 变量均指向了列表，列表在底层对应 PyListObject 结构体实例，里面字段的含义之前说过。但需要注意的是，指针数组里面保存的是对象的指针，而不是对象。不过为了方便，图中就用对象代替了。</p>
 <p>然后列表的类型是 list，在底层对应 PyList_Type，它是 PyTypeObject 结构体实例，保存了列表的元信息（比如内存分配信息、支持的相关操作等）。</p>
 <p>而将这两者关联起来的便是 ob_type，它位于 PyObject 中，是所有对象都具有的。因为变量只是一个 PyObject * 指针，那么解释器要如何得知变量指向的对象的类型呢？答案便是通过 ob_type 字段。</p>
