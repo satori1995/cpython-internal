@@ -205,7 +205,7 @@ tatic inline void _Py_DECREF(const char *filename, int lineno,
     }
     // 否则说明引用计数为 0，意味着对象已经不被任何变量引用了，那么应该被销毁
     else {
-        // 调用 _Py_Dealloc 将对象销毁，这个函数内部的逻辑很简单
+        // 调用 _Py_Dealloc 将对象销毁，这个 _Py_Dealloc 函数内部的逻辑很简单
         // 虽然里面存在宏判断，但如果只看编译后的最终结果，那么代码就只有下面两行
         /* destructor dealloc = Py_TYPE(op)-&gt;tp_dealloc;
          * (*dealloc)(op);
