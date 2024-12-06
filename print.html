@@ -2159,8 +2159,8 @@ tatic inline void _Py_DECREF(const char *filename, int lineno,
     (void)lineno; /* may be unused, shut up -Wunused-parameter */
     _Py_DEC_REFTOTAL;
     // 将引用计数减 1 之后进行判断，如果结果不等于 0，则什么也不做
-    // 正常情况下，Py_REF_DEBUG 宏不会被定义，因为引用计数不可能小于 0
     if (--op-&gt;ob_refcnt != 0) {
+        // 正常情况下，Py_REF_DEBUG 宏不会被定义，因为引用计数不可能小于 0
 #ifdef Py_REF_DEBUG
         if (op-&gt;ob_refcnt &lt; 0) {
             _Py_NegativeRefcount(filename, lineno, op);
