@@ -1,0 +1,292 @@
+<!DOCTYPE HTML>
+<html lang="zh-cn" class="sidebar-visible no-js light">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>11. 一个 Python 对象会在何时被销毁？ - CPython3.8 源码探秘</title>
+        <!-- Custom HTML head -->
+        <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff" />
+
+        <link rel="icon" href="favicon.svg">
+        <link rel="shortcut icon" href="favicon.png">
+        <link rel="stylesheet" href="css/variables.css">
+        <link rel="stylesheet" href="css/general.css">
+        <link rel="stylesheet" href="css/chrome.css">
+        <link rel="stylesheet" href="css/print.css" media="print">
+        <!-- Fonts -->
+        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="fonts/fonts.css">
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="highlight.css">
+        <link rel="stylesheet" href="tomorrow-night.css">
+        <link rel="stylesheet" href="ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+        <link rel="stylesheet" href="theme/custom.css">
+        <!-- MathJax -->
+        <script async type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    </head>
+    <body>
+        <!-- Provide site root to javascript -->
+        <script type="text/javascript">
+            var path_to_root = "";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script type="text/javascript">
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script type="text/javascript">
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            var html = document.querySelector('html');
+            html.classList.remove('no-js')
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add('js');
+        </script>
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script type="text/javascript">
+            var html = document.querySelector('html');
+            var sidebar = 'hidden';
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            }
+            html.classList.remove('sidebar-visible');
+            html.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li class="chapter-item expanded "><a href="0.序言.html">0. 序言</a></li><li class="chapter-item expanded "><a href="1.CPython源码长什么样子？.html">1. CPython 源码长什么样子？</a></li><li class="chapter-item expanded "><a href="2.变量和对象，它们之间有什么区别和联系呢？.html">2. 变量和对象，它们之间有什么区别和联系呢？</a></li><li class="chapter-item expanded "><a href="3.Python对象有哪几种，我们可以从哪些角度进行分类呢？.html">3. Python 对象有哪几种，我们可以从哪些角度进行分类呢？</a></li><li class="chapter-item expanded "><a href="4.万丈高楼平地起，一切从PyObject开始.html">4. 万丈高楼平地起，一切从 PyObject 开始</a></li><li class="chapter-item expanded "><a href="5.详解PyTypeObject，Python类型对象的载体.html">5. 详解 PyTypeObject，Python 类型对象的载体</a></li><li class="chapter-item expanded "><a href="6.通过type和object之间的关联，进一步分析类型对象.html">6. 通过 type 和 object 之间的关联，进一步分析类型对象</a></li><li class="chapter-item expanded "><a href="7.当创建一个Python对象时，背后都经历了哪些过程？.html">7. 当创建一个 Python 对象时，背后都经历了哪些过程？</a></li><li class="chapter-item expanded "><a href="8.当调用一个Python对象时，背后都经历了哪些过程？.html">8. 当调用一个 Python 对象时，背后都经历了哪些过程？</a></li><li class="chapter-item expanded "><a href="9.再探泛型API，感受Python对象的设计哲学.html">9. 再探泛型 API，感受 Python 对象的设计哲学</a></li><li class="chapter-item expanded "><a href="10.Python对象的行为是怎么区分的？.html">10. Python 对象的行为是怎么区分的？</a></li><li class="chapter-item expanded "><a href="11.一个Python对象会在何时被销毁？.html" class="active">11. 一个 Python 对象会在何时被销毁？</a></li><li class="chapter-item expanded "><a href="12.深度解密Python的浮点数是怎么实现的？.html">12. 深度解密 Python 的浮点数是怎么实现的？</a></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky bordered">
+                    <div class="left-buttons">
+                        <button id="sidebar-toggle" class="icon-button" type="button" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </button>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light (default)</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">CPython3.8 源码探秘</h1>
+
+                    <div class="right-buttons">
+                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+                        <a href="https://github.com/satori1995/cpython-internal" title="Git repository" aria-label="Git repository">
+                            <i id="git-repository-button" class="fa fa-github"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script type="text/javascript">
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h2 id="楔子"><a class="header" href="#楔子">楔子</a></h2>
+<p>如果对编程语言进行分类的话，一般可以分为静态语言和动态语言，也可以分为编译型语言和解释型语言。但个人觉得还有一种划分标准，就是<font color="blue">是否自带垃圾回收</font>。关于有没有垃圾回收，陈儒老师在《Python 2.5源码剖析》中，总结得非常好。</p>
+<p>对于像 C 和 C++ 这类语言，程序员被赋予了极大的自由，可以任意地申请内存。但权力的另一面对应着责任，程序员最后不使用的时候，必须负责将申请的内存释放掉，并把无效指针设置为空。可以说，这一点是万恶之源，大量内存泄漏、悬空指针、越界访问的 bug 由此产生。</p>
+<p>而现代的开发语言（比如 C#、Java）都带有垃圾回收机制，将开发人员从维护内存分配和清理的繁重工作中解放出来，开发者不用再担心内存泄漏的问题，但同时也被剥夺了和内存亲密接触的机会，并牺牲了一定的程序运行效率。不过好处就是提高了开发效率，并降低了 bug 发生的概率。</p>
+<p>由于现在的垃圾回收机制已经非常成熟了，把对性能的影响降到了最低，因此大部分场景选择的都是带垃圾回收的语言。</p>
+<p>而 Python 里面同样具有垃圾回收，只不过它是为引用计数机制服务的。所以解释器通过引用计数和垃圾回收，代替程序员进行繁重的内存管理工作，关于垃圾回收我们后面会详细说，先来看一下引用计数。</p>
+<h2 id="引用计数"><a class="header" href="#引用计数">引用计数</a></h2>
+<p>Python 一切皆对象，所有对象都有一个 ob_refcnt 字段，该字段维护着对象的引用计数，从而也决定对象的存在与消亡。下面来探讨一下引用计数，当然引用计数在介绍 PyObject 的时候说的很详细了，这里再回顾一下。</p>
+<p>但需要说明的是，<font color="blue">比起类型对象，我们更关注实例对象的行为</font>。引用计数也是如此，只有实例对象，我们探讨引用计数才是有意义的。因为内置的类型对象超越了引用计数规则，永远都不会被析构，或者销毁，因为它们在底层是被静态定义好的。同理，自定义的类虽然可以被回收，但是探讨它的引用计数也是没有价值的。我们举个栗子：</p>
+<pre><code class="language-Python">class A:
+    pass
+
+del A
+</code></pre>
+<p>首先 del 关键字只能作用于变量，不可以作用于对象。比如 e = 2.71，可以 <font color="blue">del e</font>，但是不可以 <font color="blue">del 2.71</font>，这是不符合语法规则的。因为 del 的作用是删除变量，并将其指向的对象的引用计数减 1，所以我们只能 <font color="blue">del 变量</font>，不可以 <font color="blue">del 对象</font>。</p>
+<p>至于 def、class 语句执行完之后拿到的也是变量，前面说了，Python 虽然一切皆对象，但我们拿到的都是对象的泛型指针。比如上面代码中的 <font color="red">class A</font>，它会先创建一个类对象，然后再让变量 A 指向这个类对象。所以我们拿到的 A 也是一个变量，只要是变量，就可以被 del。但是 <font color="red">del 变量</font>只是删除了该变量，换言之就是让该变量无法再被使用，至于变量指向的对象是否会被回收，就看是否还有其它的变量也指向它。</p>
+<p><font color="darkblue"><strong>总结：对象是否会被回收，完全由解释器判断它的引用计数是否为 0 所决定。</strong></font></p>
+<h2 id="引用计数的相关操作"><a class="header" href="#引用计数的相关操作">引用计数的相关操作</a></h2>
+<p>操作引用计数无非就是将其加一或减一，至于什么时候加一、什么时候减一，在介绍 PyObject 的时候已经说的很详细了。这里我们通过源码，看看引用计数具体是怎么操作的。</p>
+<p>在底层，解释器会通过 Py_INCREF 和 Py_DECREF 两个宏来增加和减少对象的引用计数，而当对象的引用计数为 0 时，会调用对应的析构函数来销毁该对象，这个析构函数由对象的类型对象内部的 tp_dealloc 字段决定。</p>
+<p>下面我们来看看底层实现，不过在介绍 Py_INCREF 和 Py_DECREF 之前，先来看几个其它的宏，这些宏非常常见，有必要单独说一下。</p>
+<pre><code class="language-C">// Include/object.h
+
+// 将对象的指针转成 PyObject *
+#define _PyObject_CAST(op) ((PyObject*)(op))
+// 将对象的指针转成 PyVarObject *
+#define _PyVarObject_CAST(op) ((PyVarObject*)(op))
+
+// 返回对象的引用计数，即对象的 ob_refcnt 字段
+#define Py_REFCNT(ob)           (_PyObject_CAST(ob)-&gt;ob_refcnt)
+// 返回对象的类型，即对象的 ob_type 字段
+#define Py_TYPE(ob)             (_PyObject_CAST(ob)-&gt;ob_type)
+// 返回对象的长度，即对象的 ob_size 字段
+#define Py_SIZE(ob)             (_PyVarObject_CAST(ob)-&gt;ob_size)
+</code></pre>
+<p>然后再来看看 Py_INCREF 和 Py_DECREF，它们负责对引用计数执行加一和减一操作。</p>
+<pre><code class="language-C">// Include/object.h
+
+// 将对象的 ob_refcnt 加 1
+#define Py_INCREF(op) _Py_INCREF(_PyObject_CAST(op))
+static inline void _Py_INCREF(PyObject *op)
+{
+    _Py_INC_REFTOTAL;
+    op-&gt;ob_refcnt++;
+}
+
+// 将对象的 ob_refcnt 减 1
+#define Py_DECREF(op) _Py_DECREF(__FILE__, __LINE__, _PyObject_CAST(op))
+tatic inline void _Py_DECREF(const char *filename, int lineno,
+                              PyObject *op)
+{
+    (void)filename; /* may be unused, shut up -Wunused-parameter */
+    (void)lineno; /* may be unused, shut up -Wunused-parameter */
+    _Py_DEC_REFTOTAL;
+    // 将引用计数减 1 之后进行判断，如果结果不等于 0，则什么也不做
+    if (--op-&gt;ob_refcnt != 0) {
+        // 正常情况下，Py_REF_DEBUG 宏不会被定义，因为引用计数不可能小于 0
+#ifdef Py_REF_DEBUG
+        if (op-&gt;ob_refcnt &lt; 0) {
+            _Py_NegativeRefcount(filename, lineno, op);
+        }
+#endif
+    }
+    // 否则说明引用计数为 0，意味着对象已经不被任何变量引用了，那么应该被销毁
+    else {
+        // 调用 _Py_Dealloc 将对象销毁，这个 _Py_Dealloc 函数内部的逻辑很简单
+        // 虽然里面存在宏判断，但如果只看编译后的最终结果，那么代码就只有下面两行
+        /* destructor dealloc = Py_TYPE(op)-&gt;tp_dealloc;
+         * (*dealloc)(op);
+         */
+        // 会获取类型对象的 tp_dealloc，然后调用，销毁实例对象
+        _Py_Dealloc(op);
+    }
+}
+</code></pre>
+<p>以上就是 Py_INCREF 和 Py_DECREF 两个宏的具体实现，但是它们不能接收空指针，如果希望能接收空指针，那么可以使用另外两个宏。</p>
+<pre><code class="language-c">// Include/object.h
+
+#define Py_XINCREF(op) _Py_XINCREF(_PyObject_CAST(op))
+static inline void _Py_XINCREF(PyObject *op)
+{
+    if (op != NULL) {
+        Py_INCREF(op);
+    }
+}
+
+#define Py_XDECREF(op) _Py_XDECREF(_PyObject_CAST(op))
+static inline void _Py_XDECREF(PyObject *op)
+{
+    if (op != NULL) {
+        Py_DECREF(op);
+    }
+}
+</code></pre>
+<p>所以 Py_XINCREF 和 Py_XDECREF 会额外对指针做一次判断，如果为空则什么也不做，不为空再调用 Py_INCREF 和 Py_DECREF。而当一个对象的引用计数为 0 时，与该对象对应的析构函数就会被调用。</p>
+<p>但要特别注意的是，我们上面说调用析构函数之后会回收对象，或者说销毁对象，意思是将这个对象从内存中抹去，但并不意味着要释放空间，也就是对象没了，但对象占用的内存却还在。</p>
+<p>如果对象没了，占用的内存也要释放的话，那么频繁申请、释放内存空间会使 Python 的执行效率大打折扣，更何况 Python 已经背负了人们对其执行效率的不满这么多年。</p>
+<p>所以 Python 底层大量采用了缓存池的技术，使用这种技术可以避免频繁地申请和释放内存空间。因此在析构的时候，只是将对象占用的空间放到缓存池中，并没有真的释放。</p>
+<p>这一点，在后面剖析内置实例对象的实现中，将会看得一清二楚，因为大部分内置的实例对象都会有自己的缓存池。</p>
+<h2 id="小结"><a class="header" href="#小结">小结</a></h2>
+<p>到此我们就把这些基础概念说完了，后续你会发现目前花费的这些笔墨都是值得的，总之先对 Python 有一个宏观的认识，然后再学习具体的数据结构就简单多了。</p>
+<p>所以从下一篇文章开始就要详细剖析内置对象的底层实现了，比如浮点数、复数、整数、布尔值、None、bytes 对象、bytearray 对象、字符串、元组、列表、字典、集合等等，所有的内置对象都会详细地剖析一遍，看看它是如何实现的。</p>
+<p>有了目前为止的这些基础，我们后面就会轻松很多。先把对象、变量等概念梳理清楚，然后再来搞这些数据结构的底层实现。</p>
+<hr />
+<p> </p>
+<p><strong>欢迎大家关注我的公众号：古明地觉的编程教室。</strong></p>
+<p><img src="./images/qrcode_for_gh.jpg" alt="" /></p>
+<p><strong>如果觉得文章对你有所帮助，也可以请作者吃个馒头，Thanks♪(･ω･)ﾉ。</strong></p>
+<p><img src="./images/supports.png" alt="" /></p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="10.Python对象的行为是怎么区分的？.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+                            <a rel="next" href="12.深度解密Python的浮点数是怎么实现的？.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="10.Python对象的行为是怎么区分的？.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+                    <a rel="next" href="12.深度解密Python的浮点数是怎么实现的？.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+            </nav>
+
+        </div>
+
+        <script type="text/javascript">
+            window.playground_copyable = true;
+        </script>
+        <script src="elasticlunr.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="mark.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="searcher.js" type="text/javascript" charset="utf-8"></script>
+        <script src="clipboard.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="highlight.js" type="text/javascript" charset="utf-8"></script>
+        <script src="book.js" type="text/javascript" charset="utf-8"></script>
+
+        <!-- Custom JS scripts -->
+        <script type="text/javascript" src="theme/custom.js"></script>
+    </body>
+</html>
