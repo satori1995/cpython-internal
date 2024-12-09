@@ -79,7 +79,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded "><a href="0.序言.html">0. 序言</a></li><li class="chapter-item expanded "><a href="1.CPython源码长什么样子？.html">1. CPython 源码长什么样子？</a></li><li class="chapter-item expanded "><a href="2.变量和对象，它们之间有什么区别和联系呢？.html">2. 变量和对象，它们之间有什么区别和联系呢？</a></li><li class="chapter-item expanded "><a href="3.Python对象有哪几种，我们可以从哪些角度进行分类呢？.html">3. Python 对象有哪几种，我们可以从哪些角度进行分类呢？</a></li><li class="chapter-item expanded "><a href="4.万丈高楼平地起，一切从PyObject开始.html">4. 万丈高楼平地起，一切从 PyObject 开始</a></li><li class="chapter-item expanded "><a href="5.详解PyTypeObject，Python类型对象的载体.html">5. 详解 PyTypeObject，Python 类型对象的载体</a></li><li class="chapter-item expanded "><a href="6.通过type和object之间的关联，进一步分析类型对象.html">6. 通过 type 和 object 之间的关联，进一步分析类型对象</a></li><li class="chapter-item expanded "><a href="7.当创建一个Python对象时，背后都经历了哪些过程？.html">7. 当创建一个 Python 对象时，背后都经历了哪些过程？</a></li><li class="chapter-item expanded "><a href="8.当调用一个Python对象时，背后都经历了哪些过程？.html">8. 当调用一个 Python 对象时，背后都经历了哪些过程？</a></li><li class="chapter-item expanded "><a href="9.再探泛型API，感受Python对象的设计哲学.html">9. 再探泛型 API，感受 Python 对象的设计哲学</a></li><li class="chapter-item expanded "><a href="10.Python对象的行为是怎么区分的？.html">10. Python 对象的行为是怎么区分的？</a></li><li class="chapter-item expanded "><a href="11.一个Python对象会在何时被销毁？.html">11. 一个 Python 对象会在何时被销毁？</a></li><li class="chapter-item expanded "><a href="12.深度解密Python的浮点数是怎么实现的？.html">12. 深度解密 Python 的浮点数是怎么实现的？</a></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded "><a href="0.序言.html">0. 序言</a></li><li class="chapter-item expanded "><a href="1.CPython源码长什么样子？.html">1. CPython 源码长什么样子？</a></li><li class="chapter-item expanded "><a href="2.变量和对象，它们之间有什么区别和联系呢？.html">2. 变量和对象，它们之间有什么区别和联系呢？</a></li><li class="chapter-item expanded "><a href="3.Python对象有哪几种，我们可以从哪些角度进行分类呢？.html">3. Python 对象有哪几种，我们可以从哪些角度进行分类呢？</a></li><li class="chapter-item expanded "><a href="4.万丈高楼平地起，一切从PyObject开始.html">4. 万丈高楼平地起，一切从 PyObject 开始</a></li><li class="chapter-item expanded "><a href="5.详解PyTypeObject，Python类型对象的载体.html">5. 详解 PyTypeObject，Python 类型对象的载体</a></li><li class="chapter-item expanded "><a href="6.通过type和object之间的关联，进一步分析类型对象.html">6. 通过 type 和 object 之间的关联，进一步分析类型对象</a></li><li class="chapter-item expanded "><a href="7.当创建一个Python对象时，背后都经历了哪些过程？.html">7. 当创建一个 Python 对象时，背后都经历了哪些过程？</a></li><li class="chapter-item expanded "><a href="8.当调用一个Python对象时，背后都经历了哪些过程？.html">8. 当调用一个 Python 对象时，背后都经历了哪些过程？</a></li><li class="chapter-item expanded "><a href="9.再探泛型API，感受Python对象的设计哲学.html">9. 再探泛型 API，感受 Python 对象的设计哲学</a></li><li class="chapter-item expanded "><a href="10.Python对象的行为是怎么区分的？.html">10. Python 对象的行为是怎么区分的？</a></li><li class="chapter-item expanded "><a href="11.一个Python对象会在何时被销毁？.html">11. 一个 Python 对象会在何时被销毁？</a></li><li class="chapter-item expanded "><a href="12.深度解密Python的浮点数是怎么实现的？.html">12. 深度解密 Python 的浮点数是怎么实现的？</a></li><li class="chapter-item expanded "><a href="13.对象被销毁之后所占的内存一定会释放吗？解密浮点数的缓存池机制.html">13. 对象被销毁之后所占的内存一定会释放吗？解密浮点数的缓存池机制</a></li><li class="chapter-item expanded "><a href="14.浮点数支持的操作是怎么实现的？.html">14. 浮点数支持的操作是怎么实现的？</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -2594,6 +2594,451 @@ _Py_Dealloc(PyObject *op)
 <p>所以整个流程理解起来没有任何难度，里面唯一没有说的就是 float_dealloc，即浮点数的具体销毁过程，这个等介绍缓存池的时候再一起说。</p>
 <h2 id="小结-9"><a class="header" href="#小结-9">小结</a></h2>
 <p>以上就是浮点数在底层的创建和销毁过程，下一篇文章来聊一聊浮点数的缓存池。当一些占用内存较小的对象在被销毁时，不会释放所占的内存，而是缓存起来。等下一次再使用的时候，直接从缓存池中获取，从而避免了频繁申请内存。</p>
+<hr />
+<p> </p>
+<p><strong>欢迎大家关注我的公众号：古明地觉的编程教室。</strong></p>
+<p><img src="./images/qrcode_for_gh.jpg" alt="" /></p>
+<p><strong>如果觉得文章对你有所帮助，也可以请作者吃个馒头，Thanks♪(･ω･)ﾉ。</strong></p>
+<p><img src="./images/supports.png" alt="" /></p>
+<div style="break-before: page; page-break-before: always;"></div><h2 id="楔子-8"><a class="header" href="#楔子-8">楔子</a></h2>
+<p>浮点数这种对象经常容易被创建和销毁，因为它很简单，使用频率高。如果每次创建都借助操作系统分配内存、每次销毁都借助操作系统回收内存的话，那效率会低到什么程度，可想而知。</p>
+<p>因此 Python 解释器在操作系统之上封装了一个内存池，在内存管理的时候会详细介绍，目前可以认为内存池就是解释器预先向操作系统申请的一部分内存，专门用于小对象的快速创建和销毁，从而避免了频繁和操作系统打交道，这便是 Python 的内存池机制。</p>
+<p>但浮点数的使用频率很高，并且使用时还会创建和销毁大量的临时对象，举个例子:</p>
+<pre><code class="language-Python">a = 95.5
+b = 117.3
+c = 108.9
+
+avg = (a + b + c) / 3
+</code></pre>
+<p>计算平均值的时候，会先计算 a + b，创建一个临时对象。接着让临时对象和 c 相加再创建一个临时对象，然后除以 3得到结果。最后销毁临时对象，并将结果交给变量 avg。</p>
+<p>尽管我们平常很少注意到这些，但运算背后所产生的对象的创建和销毁的次数，比我们想象的要多。特别是在循环的时候，会伴随大量的对象创建和销毁操作，
+如果每次创建和销毁对象都要伴随着内存操作，这个时候即便有内存池机制，效率也是不高的，因为使用内存池虽然可以不经过操作系统，但它也会增加解释器系统的开销。</p>
+<p>因此解释器在浮点数对象被销毁后，并不急着回收对象所占用的内存，换句话说其实对象还在，只是将该对象放入一个空闲的链表中。之前我们说对象可以理解为一片内存空间，对象如果被销毁，那么理论上内存空间要归还给操作系统，或者回到内存池中。但 Python 考虑到效率，并没有真正地释放内存，而是将对象放入到链表中，占用的内存还在。</p>
+<p>后续如果需要创建新的浮点数对象时，那么从链表中直接取出之前放入的对象（我们认为被回收的对象），然后根据新的浮点数对象重新初始化对应的字段即可，这样就避免了内存分配造成的开销。而这个链表就是我们说的<font color="blue">缓存池</font>，当然不光浮点数对象有缓存池，Python 的很多其它对象也有对应的缓存池，比如列表。</p>
+<h2 id="缓存池的实现细节"><a class="header" href="#缓存池的实现细节">缓存池的实现细节</a></h2>
+<p>下面看一下浮点数的缓存池的具体细节。</p>
+<pre><code class="language-C">// Objects/floatobject.c
+
+// 缓存池（链表）的最大长度
+// 因此池子里面最多容纳 100 个 PyFloatobject
+#define PyFloat_MAXFREELIST    100
+
+// 缓存池已经容纳了多少个 PyFloatobject
+static int numfree = 0;
+// 指向缓存池（链表）的头节点
+static PyFloatObject *free_list = NULL;
+</code></pre>
+<p>我们观察一下 free_list，发现它是一个 PyFloatObect *，这就说明缓存池（链表）中的每一个节点都是 PyFloatObject 实例。但以我们刷 Leetcode 的经验，链表里的每个节点应该有一个 next 字段指向下一个节点，可 PyFloatObject 里面似乎并没有这样的字段啊。</p>
+<p>相信你已经猜到原因了，因为解释器是使用 ob_type 字段来指向下一个对象。本来 ob_type 指向的应该是 PyFloat_Type，但在缓存池中指向的是下一个 PyFloatObject。</p>
+<p><img src="./images/44.png" alt="" /></p>
+<p>以上就是浮点数的缓存池，说白了就是一个链表，free_list 指向链表的头节点，节点之间通过 ob_type 字段充当 next 指针。</p>
+<h2 id="再探浮点数的创建与销毁"><a class="header" href="#再探浮点数的创建与销毁">再探浮点数的创建与销毁</a></h2>
+<p>我们以 PyFloat_FromDouble 这个 API 为例，再回顾一下浮点数的创建,</p>
+<pre><code class="language-C">// Objects/floatobject.c
+
+PyObject *
+PyFloat_FromDouble(double fval)
+{   
+    // 获取缓存池的头结点指针
+    PyFloatObject *op = free_list;
+    // 如果 op 不为 NULL，说明它指向了 PyFloatObject
+    // 换句话说就是，缓存池里面有可用节点
+    if (op != NULL) {
+        // 维护 free_list，让它指向链表的下一个节点
+        free_list = (PyFloatObject *) Py_TYPE(op);
+        // 缓存池的节点个数减 1
+        numfree--;
+    } else {
+        op = (PyFloatObject*) PyObject_MALLOC(sizeof(PyFloatObject));
+        if (!op)
+            return PyErr_NoMemory();
+    }
+    (void)PyObject_INIT(op, &amp;PyFloat_Type);
+    op-&gt;ob_fval = fval;
+    return (PyObject *) op;
+}
+</code></pre>
+<p>在链表中，ob_type 被用于指向下一个节点，换言之 ob_type 保存的是下一个 <font color="blue">PyFloatObject 的地址</font>。不过话虽如此，可 ob_type 的类型仍是 PyTypeObject *。因此在存储的时候，PyFloatObject * 一定是先转成了 PyTypeObject *，之后再交给 ob_type 保存。因为对于指针来说，是可以任意转化的，我们一会儿看 float_dealloc 的时候就知道了。</p>
+<p>那么同理，这里的 Py_TYPE(op) 在获取下一个节点的指针之后，还要再转成 PyFloatObject *，然后才能交给 free_list 保存。如果没有下一个对象了，那么 free_list 就是 NULL，在下一次分配的时候，上面的 <font color="blue">if (op!=NULL)</font> 就会不成立，从而走下面的 else，使用 PyObject_MALLOC 重新分配内存。</p>
+<p>既然对象创建时可以从缓存池获取，那么销毁的时候，肯定要放入到缓存池中。而销毁对象时，会调用类型对象的 tp_dealloc（析构函数），对于浮点数而言就是 float_dealloc，我们看一下源代码。</p>
+<pre><code class="language-C">static void
+float_dealloc(PyFloatObject *op)
+{   
+    // 如果要放入浮点数的缓存池，那么它必须是浮点数
+    if (PyFloat_CheckExact(op)) {
+        // 如果缓存池中的节点个数已经达到了 PyFloat_MAXFREELIST，那么直接释放掉
+        if (numfree &gt;= PyFloat_MAXFREELIST)  {
+            PyObject_FREE(op);
+            return;
+        }
+        // 否则放入到缓存池中
+        // 缓存池的节点个数加 1
+        numfree++;
+        // 因为对象要成为链表的新头结点，那么它的 ob_type（充当 next）要指向当前头结点
+        // 所以将 ob_type 的值设置为 state-&gt;free_list 即可
+        // 但 ob_type 字段的类型为 PyTypeObject *，而 free_list 是 PyFloatobject *
+        // 因此赋值之后，要将类型转换一下
+        Py_TYPE(op) = (struct _typeobject *)free_list;
+        // 然后将 op 赋值为 state-&gt;free_list，也就是让 free_list 指向新的头结点
+        free_list = op;
+    }
+    // 如果销毁的对象不是浮点数，而是 float 子类的实例，那么直接释放内存
+    else
+        Py_TYPE(op)-&gt;tp_free((PyObject *)op);
+}
+
+</code></pre>
+<p>以上便是浮点数缓存池的具体实现，说白了缓存池的作用只有一个，就是在对象被销毁的时候不释放所占的内存，下次创建新的对象时能够直接拿来用。因为内存没有被释放，因此创建起来就会快很多。</p>
+<h2 id="侵入-pyfloatobject"><a class="header" href="#侵入-pyfloatobject">侵入 PyFloatObject</a></h2>
+<p>下面我们修改解释器源代码，当创建和销毁浮点数的时候，打印一些日志信息。</p>
+<p><img src="./images/45.png" alt="" /></p>
+<p>日志信息以字典的形式打印，里面有三个 key，含义如下：</p>
+<ul>
+<li>action：如果值为 &quot;from_freelist&quot;，表示从缓存池获取对象；如果值为 &quot;to_freelist&quot; 表示对象放入缓存池。</li>
+<li>numfree：从缓存池获取对象、或将对象放入缓存池之后的元素个数。</li>
+<li>address of object：创建或销毁的对象的地址。</li>
+</ul>
+<p>当创建 f1 的时候，指向的浮点数会从缓存池中获取，日志信息中的对象地址显然和 Python 里打印的地址是一样的。然后 <font color="blue">del f1</font>，会将对象放入缓存池中。最后新建一个变量 f2，显然它指向的浮点数会复用 f1 指向的浮点数的内存。</p>
+<p>再举个例子：</p>
+<p><img src="./images/46.png" alt="" /></p>
+<p>我们重新创建变量 f1、f2，并打印对象地址，然后删除 f1、f2 变量，之后再重新创建 f1、f2 变量并打印对象地址，结果发现地址在删除前后正好是相反的。至于原因，如果思考一下将对象放入缓存池、以及从缓存池获取对象时所采取的策略，那么很容易就明白了。</p>
+<p>因为 <font color="blue">del f1,f2</font> 的时候会先删除 f1，再删除 f2。删除 f1 的时候，会将 f1 指向的对象作为链表中的头结点，然后删除 f2 的时候，会将 f2 指向的对象作为链表中新的头结点，所以之前 f1 指向的对象就变成了链表中的第二个节点。</p>
+<blockquote>
+<p>浮点数缓存池在添加节点的时候，采用的是头插法。</p>
+</blockquote>
+<p>而获取的时候，也会从链表的头部开始获取，所以当重新创建变量 f1 的时候，其指向的对象使用的是之前变量 f2 指向的对象所占的内存，而一旦获取，那么 free_list 指针会指向下一个节点。然后创建变量 f2 的时候，其指向的对象使用的就是之前变量 f1 指向的对象所占的内存。</p>
+<p>因此前后打印的地址是相反的，所以我们算是通过实践从另一个角度印证了之前分析的结论。</p>
+<h2 id="通过-ctypes-模拟底层数据结构"><a class="header" href="#通过-ctypes-模拟底层数据结构">通过 ctypes 模拟底层数据结构</a></h2>
+<p>有时我们想观察底层数据结构的表现行为时，不一定非要修改解释器，因为那样太麻烦，还要重新编译。Python 在上层提供了一种方式，可以让我们通过 Python 的类轻松地模拟 C 的结构体。</p>
+<pre><code class="language-python">from ctypes import *
+
+
+class PyObject(Structure):
+    &quot;&quot;&quot;
+    继承 ctypes.structure，便可以得到c的结构体
+    然后通过 fields 指定结构体字段
+    &quot;&quot;&quot;
+    # _fields_ 是一个列表，内部的元组对应结构体的字段
+    _fields_ = [
+        (&quot;ob_refcnt&quot;, c_ssize_t),
+        (&quot;ob_type&quot;, c_void_p),
+    ]
+    # ob_refcnt 是 Py_ssize_t 类型，等价于 c_ssize_t
+    # 至于 ob_type，我们就指定 void *，因为暂时不用这个字段
+
+
+class PyFloatObject(PyObject):
+    &quot;&quot;&quot;
+    继承 Pyobject，相当于结构体的嵌套
+    &quot;&quot;&quot;
+    _fields_ = [
+        (&quot;ob_fval&quot;, c_double)
+    ]
+
+
+e = 2.71
+# 创建 PyFloatObject 实例，返回它的指针
+# from_address 表示根据对象的地址创建
+f = PyFloatObject.from_address(id(e))
+# 此时 e 和 f 都指向了 2.71 这个浮点数
+
+# 注意接下来会发生神奇的一幕
+print(e)  # 2.71
+print(hex(id(e)))  # 0x1f94d2382f0
+
+# f 等价于底层的 PyFloatObject *，修改 ob_fval 字段
+f.ob_fval = 3.14
+print(e)  # 3.14
+print(hex(id(e)))  # 0x1f94d2382f0
+</code></pre>
+<p>我们看到 id(e) 在前后并没有发生改变，证明 e 指向的始终是同一个对象，但是它的值却变了。咦，不是说浮点数是不可变对象吗？<font color="blue">如果想变的话只能创建一个新的浮点数</font>，这样一来前后打印的地址应该会变才对啊。</p>
+<p>首先说明结论是没错的，可这是从 Python 的角度而言。如果是从解释器的角度来看的话，没有什么可变不可变，只要我们想让它可变，那么它就是可变的。</p>
+<p>另外为了更好地观察底层数据结构的表现，我们后面会经常使用这种方式，而且会介绍更多的骚操作，但是切记这种动态修改解释器的做法不可用于生产环境。</p>
+<h2 id="小结-10"><a class="header" href="#小结-10">小结</a></h2>
+<p>以上就是浮点数的缓存池机制，简单来说是一种<font color="blue">空间换时间</font>的做法。</p>
+<p>为了避免频繁地和内核打交道，CPython 引入了内存池机制，事先会向操作系统申请一部分内存，然后根据大小划分成不同的单元，按需分配。这样就无需频繁和操作系统的内核打交道了，因为系统调用是代价昂贵的操作。</p>
+<p>但有了内存池还不够，我们知道 Python 对象是分配在堆上的，而在堆上分配内存效率要比栈差很多。所以又引入了缓存池，对象在被销毁后不释放所占内存，而是通过一个链表串起来，留着下次备用。</p>
+<hr />
+<p> </p>
+<p><strong>欢迎大家关注我的公众号：古明地觉的编程教室。</strong></p>
+<p><img src="./images/qrcode_for_gh.jpg" alt="" /></p>
+<p><strong>如果觉得文章对你有所帮助，也可以请作者吃个馒头，Thanks♪(･ω･)ﾉ。</strong></p>
+<p><img src="./images/supports.png" alt="" /></p>
+<div style="break-before: page; page-break-before: always;"></div><h2 id="楔子-9"><a class="header" href="#楔子-9">楔子</a></h2>
+<p>本篇文章来聊一聊浮点数支持的操作，之前说过实例对象的相关操作都定义在类型对象里面，所以我们需要查看 PyFloat_Type。</p>
+<pre><code class="language-C">// Objects/floatobject.c
+PyTypeObject PyFloat_Type = {
+    PyVarObject_HEAD_INIT(&amp;PyType_Type, 0)
+    &quot;float&quot;,
+    sizeof(PyFloatObject),
+    // 浮点数的 __repr__ 方法
+    (reprfunc)float_repr,                       /* tp_repr */
+    // 浮点数作为数值对象拥有的算数操作
+    &amp;float_as_number,                           /* tp_as_number */
+    // ...
+    // 浮点数的哈希操作
+    (hashfunc)float_hash,                       /* tp_hash */
+    // ...
+    // 浮点数支持的比较操作
+    float_richcompare,                          /* tp_richcompare */
+    // ...
+};
+
+</code></pre>
+<p>还是之前说的，Python 底层的函数命名以及 API 都是很有规律的，举个例子：</p>
+<ul>
+<li>tp_repr 字段表示实例对象的字符串格式化，在 PyFloat_Type 里面它被赋值为 float_repr。</li>
+<li>tp_hash 字段表示实例对象的哈希操作，在 PyFloat_Type 里面它被赋值为 float_hash。</li>
+<li>tp_richcompare 字段表示实例对象的比较操作，所有的比较运算均由该字段负责实现，在 PyFloat_Type 里面它被赋值为 float_richcompare。</li>
+</ul>
+<p>下面我们来通过源码看一下底层实现。</p>
+<h2 id="浮点数的字符串打印"><a class="header" href="#浮点数的字符串打印">浮点数的字符串打印</a></h2>
+<p>由于 PyFloat_Type 没有实现 tp_str（字段的值为 0 ），所以打印一个浮点数会执行 tp_repr，它对应的具体实现为 float_repr 函数。</p>
+<pre><code class="language-C">// Objects/floatobject.c
+
+static PyObject *
+float_repr(PyFloatObject *v)
+{
+    PyObject *result;  // 返回值
+    char *buf;
+    // 将 Python 浮点数转成 C 的浮点数，然后再转成字符串
+    buf = PyOS_double_to_string(PyFloat_AS_DOUBLE(v),
+                                'r', 0,
+                                Py_DTSF_ADD_DOT_0,
+                                NULL);
+    if (!buf)
+        return PyErr_NoMemory();
+    // 基于 C 字符串创建 Python 字符串
+    result = _PyUnicode_FromASCII(buf, strlen(buf));
+    // 释放 buf，然后返回
+    PyMem_Free(buf);
+    return result;
+}
+</code></pre>
+<p>比较简单，当然具体的转换逻辑由 PyOS_double_to_string 函数负责，内部最终会调用 C 的库函数，感兴趣可以看一下。</p>
+<h2 id="浮点数的哈希值"><a class="header" href="#浮点数的哈希值">浮点数的哈希值</a></h2>
+<p>获取浮点数的哈希值会执行 tp_hash，它对应的具体实现为 float_hash。</p>
+<pre><code class="language-C">// Objects/floatobject.c
+static Py_hash_t
+float_hash(PyFloatObject *v)
+{
+    return _Py_HashDouble(v-&gt;ob_fval);
+}
+</code></pre>
+<p>具体的哈希计算逻辑由 _Py_HashDouble 负责，通过 v-&gt;ob_fval 拿到 C 浮点数，然后传进去计算哈希值。</p>
+<p><img src="./images/47.png" alt="" /></p>
+<p>感兴趣可以看一下具体的哈希值计算逻辑，该函数位于 Python/pyhash.c 中。</p>
+<h2 id="浮点数的比较操作"><a class="header" href="#浮点数的比较操作">浮点数的比较操作</a></h2>
+<p>浮点数之间的比较操作由 tp_richcompare 字段负责实现，该字段的值为 float_richcompare。</p>
+<pre><code class="language-C">// Include/object.h
+#define Py_LT 0  // 小于
+#define Py_LE 1  // 小于等于
+#define Py_EQ 2  // 等于
+#define Py_NE 3  // 不等于
+#define Py_GT 4  // 大于
+#define Py_GE 5  // 大于等于
+
+// Objects/floatobject.c
+static PyObject*
+float_richcompare(PyObject *v, PyObject *w, int op)
+{   
+   // 假设在 Python 里面执行了 3.14 == 2.71
+   // 那么这里的 v 和 w 就会指向 3.14 和 2.71，而 op 就是 Py_EQ
+    double i, j;
+    int r = 0;
+
+    assert(PyFloat_Check(v));
+    // 通过 ((PyFloatObject *) v)-&gt;ob_fval 拿到具体的 C 浮点数
+    i = PyFloat_AS_DOUBLE(v);
+
+    // 变量只是泛型指针 PyObject *，它究竟指向什么类型的对象是需要判断的
+    // 对于 v == w 来讲，如果能执行该函数，我们只能确保 v 一定指向浮点数，但 w 则不一定
+    // 所以需要判断，如果 w 的类型是 float 或者 float 的子类，那么转成 C double 并赋值给 j
+    if (PyFloat_Check(w))
+        // 绝大部分情况都会触发此分支
+        j = PyFloat_AS_DOUBLE(w);
+
+    else if (!Py_IS_FINITE(i)) {
+        // ...
+    }
+
+    else if (PyLong_Check(w)) {
+        // ...
+    } 
+
+    else        /* w isn't float or int */
+        goto Unimplemented;
+
+ Compare:
+    PyFPE_START_PROTECT(&quot;richcompare&quot;, return NULL)
+    // 拿到 i 和 j 之后，判断 op 是哪一种操作符，然后执行相应的比较逻辑      
+    switch (op) {
+    case Py_EQ:
+        r = i == j;
+        break;
+    case Py_NE:
+        r = i != j;
+        break;
+    case Py_LE:
+        r = i &lt;= j;
+        break;
+    case Py_GE:
+        r = i &gt;= j;
+        break;
+    case Py_LT:
+        r = i &lt; j;
+        break;
+    case Py_GT:
+        r = i &gt; j;
+        break;
+    }
+    PyFPE_END_PROTECT(r)
+    return PyBool_FromLong(r);
+
+ Unimplemented:
+    Py_RETURN_NOTIMPLEMENTED;
+}
+</code></pre>
+<p>该函数的代码量还是有一些大的，但逻辑很好理解，主要是会对 w 做一些类型上的检测。因为 w 不一定是浮点数，比如 <font color="blue">3.14 != []</font> 同样会触发该函数，但函数里的 w 指向的就不是浮点数，而是列表。</p>
+<p>不过大部分情况下，两个对象比较的时候，如果符号左侧是浮点数，那么右侧基本也是浮点数。所以基本上都会走开始的 if 分支，然后进入比较逻辑。但如果符号右侧不是浮点数，那么会执行剩下的分支，逻辑会更复杂一些。</p>
+<h2 id="浮点数的算数操作"><a class="header" href="#浮点数的算数操作">浮点数的算数操作</a></h2>
+<p>最后是重头戏，来看看浮点数是如何运算的。由于加减乘除等算术操作很常见，所以解释器将其抽象成 PyNumberMethods 方法簇。对于数值型对象来说，它的类型对象会实现此方法簇，并由 tp_as_number 字段指向。</p>
+<pre><code class="language-C">// Include/cpython/object.h
+typedef struct {
+    binaryfunc nb_add;
+    binaryfunc nb_subtract;
+    binaryfunc nb_multiply;
+    binaryfunc nb_remainder;
+    binaryfunc nb_divmod;
+    ternaryfunc nb_power;
+    unaryfunc nb_negative;
+    unaryfunc nb_positive;
+    unaryfunc nb_absolute;
+    inquiry nb_bool;
+    unaryfunc nb_invert;
+    binaryfunc nb_lshift;
+    binaryfunc nb_rshift;
+    binaryfunc nb_and;
+    binaryfunc nb_xor;
+    binaryfunc nb_or;
+    // ...
+} PyNumberMethods;
+</code></pre>
+<p>PyNumberMethods 这个结构体在前面已经介绍过，每个字段都是一个函数指针，对应一个算术操作。而根据参数个数的不同，这些函数可以分为多种。</p>
+<p><img src="./images/48.png" alt="" /></p>
+<ul>
+<li>unaryfunc： 一元函数，只接收一个参数，返回 PyObject *；</li>
+<li>binaryfunc： 二元函数，接收两个参数，返回 PyObject *；</li>
+<li>ternaryfunc： 三元函数，接收三个参数，返回 PyObject *；</li>
+<li>inquiry：一元函数，接收一个参数，但返回的是 int。</li>
+</ul>
+<p>它们本质上就是解释器基于参数的类型和个数而起的别名，除了以上这些，还有很多其它的别名，具体可以查看 Include/object.h。</p>
+<p>由于浮点数是数值型对象，所以 PyFloat_Type 实现了该方法簇，值为 float_as_number，来看一下，它位于 Objects/floatobject.c 中。</p>
+<p><img src="./images/49.png" alt="" /></p>
+<p>像 float_add 负责浮点数的加法运算，float_sub 负责浮点数的减法运算，都比较简单。但我们看到有的函数指针被赋值成了 0，如果为 0 则表示不支持相应操作，比如浮点数不支持位运算。</p>
+<blockquote>
+<p>在 C 语言中，给指针类型的字段赋值为 0 和赋值为 NULL 是等价的。</p>
+</blockquote>
+<p>好，下面我们以加法运算为例，看一下具体实现。</p>
+<pre><code class="language-C">// Objects/floatobject.c
+static PyObject *
+float_add(PyObject *v, PyObject *w)
+{
+    // 显然两个 Python 浮点数相加，一定是先转成 C 的浮点数，然后再相加
+    // 加完之后再根据结果创建新的 Python 浮点数
+    double a,b;  // 声明两个 double 变量
+    // CONVERT_TO_DOUBLE 是一个宏，从名字上也能看出来它的作用
+    // 将 PyFloatObject 里面的 ob_fval 抽出来，赋值给 double 变量
+    CONVERT_TO_DOUBLE(v, a);
+    CONVERT_TO_DOUBLE(w, b);
+    PyFPE_START_PROTECT(&quot;add&quot;, return 0)
+    // 将 a 和 b 相加，然后再重新赋值给 a      
+    a = a + b;
+    PyFPE_END_PROTECT(a)
+    // 根据相加后的结果创建新的 PyFloatObject 对象
+    // 并将其指针转成 PyObject * 之后返回
+    return PyFloat_FromDouble(a);
+}
+</code></pre>
+<p>以上就是浮点数的加法运算，核心如下：</p>
+<ul>
+<li>定义两个 double 变量 a 和 b。</li>
+<li>将相加的两个 Python 浮点数维护的值（ob_fval）抽出来，交给 a 和 b。</li>
+<li>让 a 和 b 相加，将相加的结果传入 PyFloat_FromDouble 函数中创建新的 PyFloatObject，然后返回其 PyObject *。</li>
+</ul>
+<blockquote>
+<p>另外 float_add 里面还有两个宏我们没有说，分别是：PyFPE_START_PROTECT 和 PyFPE_END_PROTECT，它们是做什么的呢？首先浮点数计算一般都遵循 IEEE-754 标准，如果计算时出现了错误，那么需要将 IEEE-754 异常转换成 Python 异常，而这两个宏就是用来干这件事情的。</p>
+<p>所以我们不需要管它，这两个宏定义在 Include/pyfpe.h 中，并且已经在 Python3.9 的时候被移除了。</p>
+</blockquote>
+<p>以上便是浮点数的加法运算，所谓的浮点数在底层就是一个 PyFloatObject 结构体实例。而结构体实例无法直接相加，所以必须先将结构体中维护的值抽出来，对于浮点数而言就是 ob_fval，然后转成 C 的 double 再进行相加。最后根据相加的结果创建新的结构体实例，于是新的 Python 对象便诞生了。</p>
+<p>假设 <font color="blue">a, b = 1.1, 2.2</font>，那么 c = a + b 的流程如下所示：</p>
+<p><img src="./images/50.png" alt="" /></p>
+<p>但如果是 C 的两个浮点数相加，那么编译之后就是一条简单的机器指令，然而 Python 则需要额外做很多其它工作。并且后续在介绍整数的时候，你会发现 Python 的整数相加更麻烦，但对于 C 而言同样是一条简单的机器码就可以搞定。</p>
+<blockquote>
+<p>所以为什么 Python 会比 C 慢很多倍，从一个简单的加法上面就可以看出来。</p>
+</blockquote>
+<p>以上是浮点数的加法操作，至于减法、乘法、除法等操作也是类似的。</p>
+<pre><code class="language-C">// Objects/floatobject.c
+static PyObject *
+float_add(PyObject *v, PyObject *w)
+{
+    double a,b;
+    CONVERT_TO_DOUBLE(v, a);
+    CONVERT_TO_DOUBLE(w, b);
+    PyFPE_START_PROTECT(&quot;add&quot;, return 0)
+    a = a + b;
+    PyFPE_END_PROTECT(a)
+    return PyFloat_FromDouble(a);
+}
+
+static PyObject *
+float_sub(PyObject *v, PyObject *w)
+{
+    double a,b;
+    CONVERT_TO_DOUBLE(v, a);
+    CONVERT_TO_DOUBLE(w, b);
+    PyFPE_START_PROTECT(&quot;subtract&quot;, return 0)
+    a = a - b;
+    PyFPE_END_PROTECT(a)
+    return PyFloat_FromDouble(a);
+}
+
+static PyObject *
+float_mul(PyObject *v, PyObject *w)
+{
+    double a,b;
+    CONVERT_TO_DOUBLE(v, a);
+    CONVERT_TO_DOUBLE(w, b);
+    PyFPE_START_PROTECT(&quot;multiply&quot;, return 0)
+    a = a * b;
+    PyFPE_END_PROTECT(a)
+    return PyFloat_FromDouble(a);
+}
+
+static PyObject *
+float_div(PyObject *v, PyObject *w)
+{
+    double a,b;
+    CONVERT_TO_DOUBLE(v, a);
+    CONVERT_TO_DOUBLE(w, b);
+    if (b == 0.0) {
+        PyErr_SetString(PyExc_ZeroDivisionError,
+                        &quot;float division by zero&quot;);
+        return NULL;
+    }
+    PyFPE_START_PROTECT(&quot;divide&quot;, return 0)
+    a = a / b;
+    PyFPE_END_PROTECT(a)
+    return PyFloat_FromDouble(a);
+}
+</code></pre>
+<p>代码逻辑是类似的，整个过程就是将 Python 浮点数里面的值抽出来，得到 C 浮点数，然后进行运算，再基于运算的结果创建 Python 浮点数，并返回它的泛型指针。</p>
+<h2 id="小结-11"><a class="header" href="#小结-11">小结</a></h2>
+<p>到此浮点数就介绍完了，之所以先介绍浮点数，是因为浮点数最简单。至于整数，其实并没有那么简单，因为它的值在底层是通过数组存储的。而浮点数的值则是用一个 double 类型的字段来维护，会更简单一些，所以我们就先拿浮点数<font color="blue">开刀</font>了。</p>
+<p>首先我们介绍了浮点数的创建和销毁，创建有两种方式，分别是使用对象的<font color="blue">特定类型API</font> 和调用类型对象。前者速度更快，但只适用于内置数据结构，而后者更加通用。</p>
+<p>销毁的时候则调用类型对象内部的 tp_dealloc 字段指向的 float_dealloc 函数。当然为了保证效率，避免内存的频繁创建和回收，解释器为浮点数引入了缓存池机制，我们也分析了背后的原理。</p>
+<p>最后浮点数还支持数值运算，PyFloat_Type 的 tp_as_number 字段指向了 PyNumberMethods 结构体实例 float_as_number，里面有大量的函数指针，每个指针指向了具体的函数，专门用于浮点数的运算。至于运算的具体逻辑，我们也以加法为例详细介绍了 float_add 函数的实现。核心就是将 Python 对象内部的值抽出来，转成 C 的类型，然后运算，最后再根据运算的结果创建 Python 对象，并返回泛型指针。</p>
+<p>关于浮点数，如果你还想知道它的更多内容，可以进入源码中，大肆探索一番。</p>
 <hr />
 <p> </p>
 <p><strong>欢迎大家关注我的公众号：古明地觉的编程教室。</strong></p>

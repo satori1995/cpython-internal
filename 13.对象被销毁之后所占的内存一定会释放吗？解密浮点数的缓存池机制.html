@@ -1,0 +1,347 @@
+<!DOCTYPE HTML>
+<html lang="zh-cn" class="sidebar-visible no-js light">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>13. 对象被销毁之后所占的内存一定会释放吗？解密浮点数的缓存池机制 - CPython3.8 源码探秘</title>
+        <!-- Custom HTML head -->
+        <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff" />
+
+        <link rel="icon" href="favicon.svg">
+        <link rel="shortcut icon" href="favicon.png">
+        <link rel="stylesheet" href="css/variables.css">
+        <link rel="stylesheet" href="css/general.css">
+        <link rel="stylesheet" href="css/chrome.css">
+        <link rel="stylesheet" href="css/print.css" media="print">
+        <!-- Fonts -->
+        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="fonts/fonts.css">
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="highlight.css">
+        <link rel="stylesheet" href="tomorrow-night.css">
+        <link rel="stylesheet" href="ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+        <link rel="stylesheet" href="theme/custom.css">
+        <!-- MathJax -->
+        <script async type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    </head>
+    <body>
+        <!-- Provide site root to javascript -->
+        <script type="text/javascript">
+            var path_to_root = "";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script type="text/javascript">
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script type="text/javascript">
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            var html = document.querySelector('html');
+            html.classList.remove('no-js')
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add('js');
+        </script>
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script type="text/javascript">
+            var html = document.querySelector('html');
+            var sidebar = 'hidden';
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            }
+            html.classList.remove('sidebar-visible');
+            html.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li class="chapter-item expanded "><a href="0.序言.html">0. 序言</a></li><li class="chapter-item expanded "><a href="1.CPython源码长什么样子？.html">1. CPython 源码长什么样子？</a></li><li class="chapter-item expanded "><a href="2.变量和对象，它们之间有什么区别和联系呢？.html">2. 变量和对象，它们之间有什么区别和联系呢？</a></li><li class="chapter-item expanded "><a href="3.Python对象有哪几种，我们可以从哪些角度进行分类呢？.html">3. Python 对象有哪几种，我们可以从哪些角度进行分类呢？</a></li><li class="chapter-item expanded "><a href="4.万丈高楼平地起，一切从PyObject开始.html">4. 万丈高楼平地起，一切从 PyObject 开始</a></li><li class="chapter-item expanded "><a href="5.详解PyTypeObject，Python类型对象的载体.html">5. 详解 PyTypeObject，Python 类型对象的载体</a></li><li class="chapter-item expanded "><a href="6.通过type和object之间的关联，进一步分析类型对象.html">6. 通过 type 和 object 之间的关联，进一步分析类型对象</a></li><li class="chapter-item expanded "><a href="7.当创建一个Python对象时，背后都经历了哪些过程？.html">7. 当创建一个 Python 对象时，背后都经历了哪些过程？</a></li><li class="chapter-item expanded "><a href="8.当调用一个Python对象时，背后都经历了哪些过程？.html">8. 当调用一个 Python 对象时，背后都经历了哪些过程？</a></li><li class="chapter-item expanded "><a href="9.再探泛型API，感受Python对象的设计哲学.html">9. 再探泛型 API，感受 Python 对象的设计哲学</a></li><li class="chapter-item expanded "><a href="10.Python对象的行为是怎么区分的？.html">10. Python 对象的行为是怎么区分的？</a></li><li class="chapter-item expanded "><a href="11.一个Python对象会在何时被销毁？.html">11. 一个 Python 对象会在何时被销毁？</a></li><li class="chapter-item expanded "><a href="12.深度解密Python的浮点数是怎么实现的？.html">12. 深度解密 Python 的浮点数是怎么实现的？</a></li><li class="chapter-item expanded "><a href="13.对象被销毁之后所占的内存一定会释放吗？解密浮点数的缓存池机制.html" class="active">13. 对象被销毁之后所占的内存一定会释放吗？解密浮点数的缓存池机制</a></li><li class="chapter-item expanded "><a href="14.浮点数支持的操作是怎么实现的？.html">14. 浮点数支持的操作是怎么实现的？</a></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky bordered">
+                    <div class="left-buttons">
+                        <button id="sidebar-toggle" class="icon-button" type="button" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </button>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light (default)</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">CPython3.8 源码探秘</h1>
+
+                    <div class="right-buttons">
+                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+                        <a href="https://github.com/satori1995/cpython-internal" title="Git repository" aria-label="Git repository">
+                            <i id="git-repository-button" class="fa fa-github"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script type="text/javascript">
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h2 id="楔子"><a class="header" href="#楔子">楔子</a></h2>
+<p>浮点数这种对象经常容易被创建和销毁，因为它很简单，使用频率高。如果每次创建都借助操作系统分配内存、每次销毁都借助操作系统回收内存的话，那效率会低到什么程度，可想而知。</p>
+<p>因此 Python 解释器在操作系统之上封装了一个内存池，在内存管理的时候会详细介绍，目前可以认为内存池就是解释器预先向操作系统申请的一部分内存，专门用于小对象的快速创建和销毁，从而避免了频繁和操作系统打交道，这便是 Python 的内存池机制。</p>
+<p>但浮点数的使用频率很高，并且使用时还会创建和销毁大量的临时对象，举个例子:</p>
+<pre><code class="language-Python">a = 95.5
+b = 117.3
+c = 108.9
+
+avg = (a + b + c) / 3
+</code></pre>
+<p>计算平均值的时候，会先计算 a + b，创建一个临时对象。接着让临时对象和 c 相加再创建一个临时对象，然后除以 3得到结果。最后销毁临时对象，并将结果交给变量 avg。</p>
+<p>尽管我们平常很少注意到这些，但运算背后所产生的对象的创建和销毁的次数，比我们想象的要多。特别是在循环的时候，会伴随大量的对象创建和销毁操作，
+如果每次创建和销毁对象都要伴随着内存操作，这个时候即便有内存池机制，效率也是不高的，因为使用内存池虽然可以不经过操作系统，但它也会增加解释器系统的开销。</p>
+<p>因此解释器在浮点数对象被销毁后，并不急着回收对象所占用的内存，换句话说其实对象还在，只是将该对象放入一个空闲的链表中。之前我们说对象可以理解为一片内存空间，对象如果被销毁，那么理论上内存空间要归还给操作系统，或者回到内存池中。但 Python 考虑到效率，并没有真正地释放内存，而是将对象放入到链表中，占用的内存还在。</p>
+<p>后续如果需要创建新的浮点数对象时，那么从链表中直接取出之前放入的对象（我们认为被回收的对象），然后根据新的浮点数对象重新初始化对应的字段即可，这样就避免了内存分配造成的开销。而这个链表就是我们说的<font color="blue">缓存池</font>，当然不光浮点数对象有缓存池，Python 的很多其它对象也有对应的缓存池，比如列表。</p>
+<h2 id="缓存池的实现细节"><a class="header" href="#缓存池的实现细节">缓存池的实现细节</a></h2>
+<p>下面看一下浮点数的缓存池的具体细节。</p>
+<pre><code class="language-C">// Objects/floatobject.c
+
+// 缓存池（链表）的最大长度
+// 因此池子里面最多容纳 100 个 PyFloatobject
+#define PyFloat_MAXFREELIST    100
+
+// 缓存池已经容纳了多少个 PyFloatobject
+static int numfree = 0;
+// 指向缓存池（链表）的头节点
+static PyFloatObject *free_list = NULL;
+</code></pre>
+<p>我们观察一下 free_list，发现它是一个 PyFloatObect *，这就说明缓存池（链表）中的每一个节点都是 PyFloatObject 实例。但以我们刷 Leetcode 的经验，链表里的每个节点应该有一个 next 字段指向下一个节点，可 PyFloatObject 里面似乎并没有这样的字段啊。</p>
+<p>相信你已经猜到原因了，因为解释器是使用 ob_type 字段来指向下一个对象。本来 ob_type 指向的应该是 PyFloat_Type，但在缓存池中指向的是下一个 PyFloatObject。</p>
+<p><img src="./images/44.png" alt="" /></p>
+<p>以上就是浮点数的缓存池，说白了就是一个链表，free_list 指向链表的头节点，节点之间通过 ob_type 字段充当 next 指针。</p>
+<h2 id="再探浮点数的创建与销毁"><a class="header" href="#再探浮点数的创建与销毁">再探浮点数的创建与销毁</a></h2>
+<p>我们以 PyFloat_FromDouble 这个 API 为例，再回顾一下浮点数的创建,</p>
+<pre><code class="language-C">// Objects/floatobject.c
+
+PyObject *
+PyFloat_FromDouble(double fval)
+{   
+    // 获取缓存池的头结点指针
+    PyFloatObject *op = free_list;
+    // 如果 op 不为 NULL，说明它指向了 PyFloatObject
+    // 换句话说就是，缓存池里面有可用节点
+    if (op != NULL) {
+        // 维护 free_list，让它指向链表的下一个节点
+        free_list = (PyFloatObject *) Py_TYPE(op);
+        // 缓存池的节点个数减 1
+        numfree--;
+    } else {
+        op = (PyFloatObject*) PyObject_MALLOC(sizeof(PyFloatObject));
+        if (!op)
+            return PyErr_NoMemory();
+    }
+    (void)PyObject_INIT(op, &amp;PyFloat_Type);
+    op-&gt;ob_fval = fval;
+    return (PyObject *) op;
+}
+</code></pre>
+<p>在链表中，ob_type 被用于指向下一个节点，换言之 ob_type 保存的是下一个 <font color="blue">PyFloatObject 的地址</font>。不过话虽如此，可 ob_type 的类型仍是 PyTypeObject *。因此在存储的时候，PyFloatObject * 一定是先转成了 PyTypeObject *，之后再交给 ob_type 保存。因为对于指针来说，是可以任意转化的，我们一会儿看 float_dealloc 的时候就知道了。</p>
+<p>那么同理，这里的 Py_TYPE(op) 在获取下一个节点的指针之后，还要再转成 PyFloatObject *，然后才能交给 free_list 保存。如果没有下一个对象了，那么 free_list 就是 NULL，在下一次分配的时候，上面的 <font color="blue">if (op!=NULL)</font> 就会不成立，从而走下面的 else，使用 PyObject_MALLOC 重新分配内存。</p>
+<p>既然对象创建时可以从缓存池获取，那么销毁的时候，肯定要放入到缓存池中。而销毁对象时，会调用类型对象的 tp_dealloc（析构函数），对于浮点数而言就是 float_dealloc，我们看一下源代码。</p>
+<pre><code class="language-C">static void
+float_dealloc(PyFloatObject *op)
+{   
+    // 如果要放入浮点数的缓存池，那么它必须是浮点数
+    if (PyFloat_CheckExact(op)) {
+        // 如果缓存池中的节点个数已经达到了 PyFloat_MAXFREELIST，那么直接释放掉
+        if (numfree &gt;= PyFloat_MAXFREELIST)  {
+            PyObject_FREE(op);
+            return;
+        }
+        // 否则放入到缓存池中
+        // 缓存池的节点个数加 1
+        numfree++;
+        // 因为对象要成为链表的新头结点，那么它的 ob_type（充当 next）要指向当前头结点
+        // 所以将 ob_type 的值设置为 state-&gt;free_list 即可
+        // 但 ob_type 字段的类型为 PyTypeObject *，而 free_list 是 PyFloatobject *
+        // 因此赋值之后，要将类型转换一下
+        Py_TYPE(op) = (struct _typeobject *)free_list;
+        // 然后将 op 赋值为 state-&gt;free_list，也就是让 free_list 指向新的头结点
+        free_list = op;
+    }
+    // 如果销毁的对象不是浮点数，而是 float 子类的实例，那么直接释放内存
+    else
+        Py_TYPE(op)-&gt;tp_free((PyObject *)op);
+}
+
+</code></pre>
+<p>以上便是浮点数缓存池的具体实现，说白了缓存池的作用只有一个，就是在对象被销毁的时候不释放所占的内存，下次创建新的对象时能够直接拿来用。因为内存没有被释放，因此创建起来就会快很多。</p>
+<h2 id="侵入-pyfloatobject"><a class="header" href="#侵入-pyfloatobject">侵入 PyFloatObject</a></h2>
+<p>下面我们修改解释器源代码，当创建和销毁浮点数的时候，打印一些日志信息。</p>
+<p><img src="./images/45.png" alt="" /></p>
+<p>日志信息以字典的形式打印，里面有三个 key，含义如下：</p>
+<ul>
+<li>action：如果值为 &quot;from_freelist&quot;，表示从缓存池获取对象；如果值为 &quot;to_freelist&quot; 表示对象放入缓存池。</li>
+<li>numfree：从缓存池获取对象、或将对象放入缓存池之后的元素个数。</li>
+<li>address of object：创建或销毁的对象的地址。</li>
+</ul>
+<p>当创建 f1 的时候，指向的浮点数会从缓存池中获取，日志信息中的对象地址显然和 Python 里打印的地址是一样的。然后 <font color="blue">del f1</font>，会将对象放入缓存池中。最后新建一个变量 f2，显然它指向的浮点数会复用 f1 指向的浮点数的内存。</p>
+<p>再举个例子：</p>
+<p><img src="./images/46.png" alt="" /></p>
+<p>我们重新创建变量 f1、f2，并打印对象地址，然后删除 f1、f2 变量，之后再重新创建 f1、f2 变量并打印对象地址，结果发现地址在删除前后正好是相反的。至于原因，如果思考一下将对象放入缓存池、以及从缓存池获取对象时所采取的策略，那么很容易就明白了。</p>
+<p>因为 <font color="blue">del f1,f2</font> 的时候会先删除 f1，再删除 f2。删除 f1 的时候，会将 f1 指向的对象作为链表中的头结点，然后删除 f2 的时候，会将 f2 指向的对象作为链表中新的头结点，所以之前 f1 指向的对象就变成了链表中的第二个节点。</p>
+<blockquote>
+<p>浮点数缓存池在添加节点的时候，采用的是头插法。</p>
+</blockquote>
+<p>而获取的时候，也会从链表的头部开始获取，所以当重新创建变量 f1 的时候，其指向的对象使用的是之前变量 f2 指向的对象所占的内存，而一旦获取，那么 free_list 指针会指向下一个节点。然后创建变量 f2 的时候，其指向的对象使用的就是之前变量 f1 指向的对象所占的内存。</p>
+<p>因此前后打印的地址是相反的，所以我们算是通过实践从另一个角度印证了之前分析的结论。</p>
+<h2 id="通过-ctypes-模拟底层数据结构"><a class="header" href="#通过-ctypes-模拟底层数据结构">通过 ctypes 模拟底层数据结构</a></h2>
+<p>有时我们想观察底层数据结构的表现行为时，不一定非要修改解释器，因为那样太麻烦，还要重新编译。Python 在上层提供了一种方式，可以让我们通过 Python 的类轻松地模拟 C 的结构体。</p>
+<pre><code class="language-python">from ctypes import *
+
+
+class PyObject(Structure):
+    &quot;&quot;&quot;
+    继承 ctypes.structure，便可以得到c的结构体
+    然后通过 fields 指定结构体字段
+    &quot;&quot;&quot;
+    # _fields_ 是一个列表，内部的元组对应结构体的字段
+    _fields_ = [
+        (&quot;ob_refcnt&quot;, c_ssize_t),
+        (&quot;ob_type&quot;, c_void_p),
+    ]
+    # ob_refcnt 是 Py_ssize_t 类型，等价于 c_ssize_t
+    # 至于 ob_type，我们就指定 void *，因为暂时不用这个字段
+
+
+class PyFloatObject(PyObject):
+    &quot;&quot;&quot;
+    继承 Pyobject，相当于结构体的嵌套
+    &quot;&quot;&quot;
+    _fields_ = [
+        (&quot;ob_fval&quot;, c_double)
+    ]
+
+
+e = 2.71
+# 创建 PyFloatObject 实例，返回它的指针
+# from_address 表示根据对象的地址创建
+f = PyFloatObject.from_address(id(e))
+# 此时 e 和 f 都指向了 2.71 这个浮点数
+
+# 注意接下来会发生神奇的一幕
+print(e)  # 2.71
+print(hex(id(e)))  # 0x1f94d2382f0
+
+# f 等价于底层的 PyFloatObject *，修改 ob_fval 字段
+f.ob_fval = 3.14
+print(e)  # 3.14
+print(hex(id(e)))  # 0x1f94d2382f0
+</code></pre>
+<p>我们看到 id(e) 在前后并没有发生改变，证明 e 指向的始终是同一个对象，但是它的值却变了。咦，不是说浮点数是不可变对象吗？<font color="blue">如果想变的话只能创建一个新的浮点数</font>，这样一来前后打印的地址应该会变才对啊。</p>
+<p>首先说明结论是没错的，可这是从 Python 的角度而言。如果是从解释器的角度来看的话，没有什么可变不可变，只要我们想让它可变，那么它就是可变的。</p>
+<p>另外为了更好地观察底层数据结构的表现，我们后面会经常使用这种方式，而且会介绍更多的骚操作，但是切记这种动态修改解释器的做法不可用于生产环境。</p>
+<h2 id="小结"><a class="header" href="#小结">小结</a></h2>
+<p>以上就是浮点数的缓存池机制，简单来说是一种<font color="blue">空间换时间</font>的做法。</p>
+<p>为了避免频繁地和内核打交道，CPython 引入了内存池机制，事先会向操作系统申请一部分内存，然后根据大小划分成不同的单元，按需分配。这样就无需频繁和操作系统的内核打交道了，因为系统调用是代价昂贵的操作。</p>
+<p>但有了内存池还不够，我们知道 Python 对象是分配在堆上的，而在堆上分配内存效率要比栈差很多。所以又引入了缓存池，对象在被销毁后不释放所占内存，而是通过一个链表串起来，留着下次备用。</p>
+<hr />
+<p> </p>
+<p><strong>欢迎大家关注我的公众号：古明地觉的编程教室。</strong></p>
+<p><img src="./images/qrcode_for_gh.jpg" alt="" /></p>
+<p><strong>如果觉得文章对你有所帮助，也可以请作者吃个馒头，Thanks♪(･ω･)ﾉ。</strong></p>
+<p><img src="./images/supports.png" alt="" /></p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="12.深度解密Python的浮点数是怎么实现的？.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+                            <a rel="next" href="14.浮点数支持的操作是怎么实现的？.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="12.深度解密Python的浮点数是怎么实现的？.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+                    <a rel="next" href="14.浮点数支持的操作是怎么实现的？.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+            </nav>
+
+        </div>
+
+        <script type="text/javascript">
+            window.playground_copyable = true;
+        </script>
+        <script src="elasticlunr.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="mark.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="searcher.js" type="text/javascript" charset="utf-8"></script>
+        <script src="clipboard.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="highlight.js" type="text/javascript" charset="utf-8"></script>
+        <script src="book.js" type="text/javascript" charset="utf-8"></script>
+
+        <!-- Custom JS scripts -->
+        <script type="text/javascript" src="theme/custom.js"></script>
+    </body>
+</html>
