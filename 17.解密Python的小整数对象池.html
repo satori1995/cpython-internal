@@ -1,0 +1,279 @@
+<!DOCTYPE HTML>
+<html lang="zh-cn" class="sidebar-visible no-js light">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>17. 解密 Python 的小整数对象池 - CPython3.8 源码探秘</title>
+        <!-- Custom HTML head -->
+        <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff" />
+
+        <link rel="icon" href="favicon.svg">
+        <link rel="shortcut icon" href="favicon.png">
+        <link rel="stylesheet" href="css/variables.css">
+        <link rel="stylesheet" href="css/general.css">
+        <link rel="stylesheet" href="css/chrome.css">
+        <link rel="stylesheet" href="css/print.css" media="print">
+        <!-- Fonts -->
+        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="fonts/fonts.css">
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="highlight.css">
+        <link rel="stylesheet" href="tomorrow-night.css">
+        <link rel="stylesheet" href="ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+        <link rel="stylesheet" href="theme/custom.css">
+        <!-- MathJax -->
+        <script async type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    </head>
+    <body>
+        <!-- Provide site root to javascript -->
+        <script type="text/javascript">
+            var path_to_root = "";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script type="text/javascript">
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script type="text/javascript">
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            var html = document.querySelector('html');
+            html.classList.remove('no-js')
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add('js');
+        </script>
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script type="text/javascript">
+            var html = document.querySelector('html');
+            var sidebar = 'hidden';
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            }
+            html.classList.remove('sidebar-visible');
+            html.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li class="chapter-item expanded "><a href="0.序言.html">0. 序言</a></li><li class="chapter-item expanded "><a href="1.CPython源码长什么样子？.html">1. CPython 源码长什么样子？</a></li><li class="chapter-item expanded "><a href="2.变量和对象，它们之间有什么区别和联系呢？.html">2. 变量和对象，它们之间有什么区别和联系呢？</a></li><li class="chapter-item expanded "><a href="3.Python对象有哪几种，我们可以从哪些角度进行分类呢？.html">3. Python 对象有哪几种，我们可以从哪些角度进行分类呢？</a></li><li class="chapter-item expanded "><a href="4.万丈高楼平地起，一切从PyObject开始.html">4. 万丈高楼平地起，一切从 PyObject 开始</a></li><li class="chapter-item expanded "><a href="5.详解PyTypeObject，Python类型对象的载体.html">5. 详解 PyTypeObject，Python 类型对象的载体</a></li><li class="chapter-item expanded "><a href="6.通过type和object之间的关联，进一步分析类型对象.html">6. 通过 type 和 object 之间的关联，进一步分析类型对象</a></li><li class="chapter-item expanded "><a href="7.当创建一个Python对象时，背后都经历了哪些过程？.html">7. 当创建一个 Python 对象时，背后都经历了哪些过程？</a></li><li class="chapter-item expanded "><a href="8.当调用一个Python对象时，背后都经历了哪些过程？.html">8. 当调用一个 Python 对象时，背后都经历了哪些过程？</a></li><li class="chapter-item expanded "><a href="9.再探泛型API，感受Python对象的设计哲学.html">9. 再探泛型 API，感受 Python 对象的设计哲学</a></li><li class="chapter-item expanded "><a href="10.Python对象的行为是怎么区分的？.html">10. Python 对象的行为是怎么区分的？</a></li><li class="chapter-item expanded "><a href="11.一个Python对象会在何时被销毁？.html">11. 一个 Python 对象会在何时被销毁？</a></li><li class="chapter-item expanded "><a href="12.深度解密Python的浮点数是怎么实现的？.html">12. 深度解密 Python 的浮点数是怎么实现的？</a></li><li class="chapter-item expanded "><a href="13.对象被销毁之后所占的内存一定会释放吗？解密浮点数的缓存池机制.html">13. 对象被销毁之后所占的内存一定会释放吗？解密浮点数的缓存池机制</a></li><li class="chapter-item expanded "><a href="14.浮点数支持的操作是怎么实现的？.html">14. 浮点数支持的操作是怎么实现的？</a></li><li class="chapter-item expanded "><a href="15.解密Python的复数是怎么实现的？它有什么用途呢？.html">15. 解密 Python 的复数是怎么实现的？它有什么用途呢？</a></li><li class="chapter-item expanded "><a href="16.Python的整数是怎么设计的，为什么它不会溢出？.html">16. Python 的整数是怎么设计的，为什么它不会溢出？</a></li><li class="chapter-item expanded "><a href="17.解密Python的小整数对象池.html" class="active">17. 解密 Python 的小整数对象池</a></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky bordered">
+                    <div class="left-buttons">
+                        <button id="sidebar-toggle" class="icon-button" type="button" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </button>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light (default)</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">CPython3.8 源码探秘</h1>
+
+                    <div class="right-buttons">
+                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+                        <a href="https://github.com/satori1995/cpython-internal" title="Git repository" aria-label="Git repository">
+                            <i id="git-repository-button" class="fa fa-github"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script type="text/javascript">
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <p>之前分析过浮点数的创建，而整数的创建与之是类似的，都是基于字面量形式的 C 数据创建 Python 数据。</p>
+<ul>
+<li>创建浮点数可以使用 PyFloat_FromDouble、PyFloat_FromString 等；</li>
+<li>创建整数可以使用 PyLong_FromLong、PyLong_FromDouble、PyLong_FromString 等；</li>
+</ul>
+<p>创建整数的这些函数直接去 Objects/longobject.c 里面查看即可，这里就不多说了，我们重点来看一下小整数对象池。</p>
+<p>我们知道整数属于不可变对象，运算之后会创建新的对象。</p>
+<pre><code class="language-Python">&gt;&gt;&gt; a = 666
+&gt;&gt;&gt; id(a)
+140078521506224
+&gt;&gt;&gt; a += 1
+&gt;&gt;&gt; id(a)
+140078521506096
+&gt;&gt;&gt;
+</code></pre>
+<p>显然这种做法一定存在性能缺陷，因为程序运行时会有大量的对象创建和销毁。根据浮点数的经验，我们猜测 Python 应该也对整数使用了缓存池吧。答案是差不多，只不过不是缓存池，而是小整数对象池。</p>
+<p><strong>一些使用频率高的整数在创建之后，会被保存在一个静态数组里面，我们称之为小整数对象池。</strong></p>
+<p>看一下小整数对象池的实现。</p>
+<pre><code class="language-C">// Objects/longobject.c
+
+#define NSMALLPOSINTS           257
+#define NSMALLNEGINTS           5
+
+static PyLongObject small_ints[NSMALLNEGINTS + NSMALLPOSINTS];
+</code></pre>
+<p>数组 small_ints 便是小整数对象池，它是一个类型为 PyLongObject、长度为 262 的数组，里面缓存了 -5 到 256 之间的整数。当然这只是解释器的默认行为，因为 -5 到 256 之间的整数使用频率最高，但你也可以根据自身情况修改源码，让它缓存更多的整数，以提升效率，当然这也会额外占用一些内存。</p>
+<p>小整数对象池是预先创建好的，里面的整数全局唯一，我们来验证一下。</p>
+<pre><code class="language-python">&gt;&gt;&gt; n1 = 256
+&gt;&gt;&gt; n2 = 256
+&gt;&gt;&gt; id(n1), id(n2)
+(140078528922016, 140078528922016)
+&gt;&gt;&gt; 
+&gt;&gt;&gt; n1 = 257
+&gt;&gt;&gt; n2 = 257
+&gt;&gt;&gt; id(n1), id(n2)
+(140078521507472, 140078521506704)
+&gt;&gt;&gt;
+</code></pre>
+<p>256 位于小整数对象池内，所以全局唯一，需要使用的话直接去取即可，因此它们的地址是一样的。但 257 不在小整数对象池内，所以它们的地址不一样。</p>
+<p>另外上面的代码是交互式执行的，但如果有小伙伴不是通过交互式，那么打印地址的时候会得到出乎意料的结果。</p>
+<pre><code class="language-Python">a = 257
+b = 257
+print(id(a) == id(b))  # True
+</code></pre>
+<p>可能有人会好奇，为什么地址又是一样的了，257 明明不在小整数对象池中啊。虽然涉及到了后面的内容，但提前解释一下也是可以的。主要区别就在于一个是交互式执行的，另一个是通过 <font color="blue">python3 xxx.py</font> 的方式执行的。</p>
+<p>首先 Python 的编译单元是函数，每个函数都有自己的作用域，在这个作用域中出现的所有常量都是唯一的，并且都位于常量池中，由 co_consts 指向。虽然上面的对象不在函数中，而是在全局作用域中，但全局也可以看成是一个函数，它也是一个独立的编译单元。同一个编译单元中，相同的常量只会出现一次。</p>
+<p>当执行 a = 257 的时候，会创建 257 这个整数，并放入常量池中。所以 b = 257 的时候就不会再创建了，因为常量池中已经有了，所以会直接从常量池中获取，因此它们的地址是一样的，因为是同一个 PyLongObject。</p>
+<p>而对于交互式环境来说，因为输入一行代码就会立即执行一行，所以任何一行可独立执行的代码都是一个独立的编译单元。注意：是可独立执行的代码，比如变量赋值、函数、方法调用等等。但如果是 if、for、while、def 等需要多行表示的逻辑，比如 <font color="blue">if 2 &gt; 1:</font>，显然就不是一行可独立执行的代码，它还依赖你输入的下面的内容。</p>
+<pre><code class="language-python"># 此时按下回车，我们看到不再是 &gt;&gt;&gt;，而是 ...
+# 这代表还没有结束，还需要你输入下面的内容
+&gt;&gt;&gt; if 2 &gt; 1:
+...     print(&quot;2 &gt; 1&quot;)
+... # 此时这个 if 语句整体才是一个独立的编译单元
+2 &gt; 1
+&gt;&gt;&gt; 
+</code></pre>
+<p>但是像 a = 1、foo()、lst.appned(123) 这些显然是一行可独立执行的代码，因此在交互式中它们是独立的编译单元。</p>
+<pre><code class="language-python"># 此时这行代码已经执行了，它是一个独立的编译单元
+&gt;&gt;&gt; a = 257
+# 这行代码也是独立的编译单元，所以它里面的常量池为空，因此要重新创建 257
+&gt;&gt;&gt; b = 257
+# 由于它们是不同常量池内的整数，所以 id 是不一样的
+&gt;&gt;&gt; id(a), id(b)
+(140078521506768, 140078521506096)
+</code></pre>
+<p>再来看个例子。</p>
+<pre><code class="language-python">&gt;&gt;&gt; a = 666; b = 666
+&gt;&gt;&gt; id(a), id(b)
+(140078521506512, 140078521506512)
+&gt;&gt;&gt;
+&gt;&gt;&gt; a, b = 777, 777
+&gt;&gt;&gt; id(a), id(b)
+(140078521506224, 140078521506224)
+</code></pre>
+<p>666 和 777 明显不在常量池中，为啥 a 和 b 指向对象的地址是一样的呢？相信你能猜到原因，因为上面两种方式无论哪一种，都是在同一行，因此整体会作为一个编译单元。既然是同一个编译单元，那么常量池里面的每个常量只会创建一次，所以地址是一样的。</p>
+<p>注意：常量池里面的常量一定在编译期间就可以确定，比如整数、浮点数、字符串等等，解释器在编译期间会静态收集起来，保存在常量池中。但如果编译期间无法确定，就不会静态收集了，举个例子。</p>
+<pre><code class="language-python">&gt;&gt;&gt; a, b = int(&quot;257&quot;), int(&quot;257&quot;)
+&gt;&gt;&gt; id(a), id(b)
+(140078521506768, 140078521506512)
+&gt;&gt;&gt; 
+&gt;&gt;&gt; a, b = int(&quot;123&quot;), int(&quot;123&quot;)
+&gt;&gt;&gt; id(a), id(b)
+(140078528917760, 140078528917760)
+&gt;&gt;&gt; 
+&gt;&gt;&gt; a, b = 258, 258
+&gt;&gt;&gt; id(a), id(b)
+(140078521507632, 140078521507632)
+</code></pre>
+<p>int(&quot;257&quot;) 需要在运行时执行，因此会创建两个 257，然后赋值给 a 和 b，所以地址不一样。</p>
+<p>int(&quot;123&quot;) 虽然也在运行时执行，但解释器创建完之后发现 123 位于小整数对象池中，于是会直接从池子里面取，所以打印的地址一样。注意：int(&quot;123&quot;) 肯定是会执行的，只是执行之后发现结果存在于小整数对象池中，会再将创建的对象销毁。</p>
+<p>258 属于编译期间可以静态收集的常量，会被保存在常量池中，而常量池里的常量只会出现一次，所以打印的地址一样。</p>
+<blockquote>
+<p>⭐️：常量不仅仅是 123、&quot;hello&quot; 这种，像 <font color="blue">2 ** 10</font>、<font color="blue">&quot;AAA&quot; + &quot;BBB&quot;</font> 这种也属于常量，它们在编译之后会被替换为 <font color="blue">1024</font>、<font color="blue">&quot;AAABBB&quot;</font>，这个过程被称为<font color="blue">常量折叠</font>。</p>
+</blockquote>
+<p>以上就是小整数对象池相关的内容，比较简单，因为小整数对象池就是一个数组，里面缓存了 -5 到 256 之间的 Python 整数，而这些整数可以直接拿来用。</p>
+<p>下一篇文章我们来分析整数的运算，这也是最关键的地方。</p>
+<hr />
+<p> </p>
+<p><strong>欢迎大家关注我的公众号：古明地觉的编程教室。</strong></p>
+<p><img src="./images/qrcode_for_gh.jpg" alt="" /></p>
+<p><strong>如果觉得文章对你有所帮助，也可以请作者吃个馒头，Thanks♪(･ω･)ﾉ。</strong></p>
+<p><img src="./images/supports.png" alt="" /></p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="16.Python的整数是怎么设计的，为什么它不会溢出？.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="16.Python的整数是怎么设计的，为什么它不会溢出？.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+            </nav>
+
+        </div>
+
+        <script type="text/javascript">
+            window.playground_copyable = true;
+        </script>
+        <script src="elasticlunr.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="mark.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="searcher.js" type="text/javascript" charset="utf-8"></script>
+        <script src="clipboard.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="highlight.js" type="text/javascript" charset="utf-8"></script>
+        <script src="book.js" type="text/javascript" charset="utf-8"></script>
+
+        <!-- Custom JS scripts -->
+        <script type="text/javascript" src="theme/custom.js"></script>
+    </body>
+</html>
