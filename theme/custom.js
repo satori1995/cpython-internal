@@ -51,3 +51,13 @@ document.addEventListener('DOMContentLoaded', function() {
     document.body.appendChild(navButton);
     document.body.appendChild(toc);
 });
+
+
+window.MathJax = {
+  tex: {
+    inlineMath: [['$', '$'], ['\\(', '\\)']],
+    displayMath: [['$$', '$$'], ['\\[', '\\]']],
+    processEscapes: true,
+    processEnvironments: true
+  }
+};
