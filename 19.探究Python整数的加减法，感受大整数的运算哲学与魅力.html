@@ -1,0 +1,380 @@
+<!DOCTYPE HTML>
+<html lang="zh-cn" class="sidebar-visible no-js light">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>19. 探究 Python 整数的加减法，感受大整数的运算哲学与魅力 - CPython3.8 源码探秘</title>
+        <!-- Custom HTML head -->
+        <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff" />
+
+        <link rel="icon" href="favicon.svg">
+        <link rel="shortcut icon" href="favicon.png">
+        <link rel="stylesheet" href="css/variables.css">
+        <link rel="stylesheet" href="css/general.css">
+        <link rel="stylesheet" href="css/chrome.css">
+        <link rel="stylesheet" href="css/print.css" media="print">
+        <!-- Fonts -->
+        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="fonts/fonts.css">
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="highlight.css">
+        <link rel="stylesheet" href="tomorrow-night.css">
+        <link rel="stylesheet" href="ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+        <link rel="stylesheet" href="theme/custom.css">
+        <!-- MathJax -->
+        <script async type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    </head>
+    <body>
+        <!-- Provide site root to javascript -->
+        <script type="text/javascript">
+            var path_to_root = "";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script type="text/javascript">
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script type="text/javascript">
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            var html = document.querySelector('html');
+            html.classList.remove('no-js')
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add('js');
+        </script>
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script type="text/javascript">
+            var html = document.querySelector('html');
+            var sidebar = 'hidden';
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            }
+            html.classList.remove('sidebar-visible');
+            html.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li class="chapter-item expanded "><a href="0.序言.html">0. 序言</a></li><li class="chapter-item expanded "><a href="1.CPython源码长什么样子？.html">1. CPython 源码长什么样子？</a></li><li class="chapter-item expanded "><a href="2.变量和对象，它们之间有什么区别和联系呢？.html">2. 变量和对象，它们之间有什么区别和联系呢？</a></li><li class="chapter-item expanded "><a href="3.Python对象有哪几种，我们可以从哪些角度进行分类呢？.html">3. Python 对象有哪几种，我们可以从哪些角度进行分类呢？</a></li><li class="chapter-item expanded "><a href="4.万丈高楼平地起，一切从PyObject开始.html">4. 万丈高楼平地起，一切从 PyObject 开始</a></li><li class="chapter-item expanded "><a href="5.详解PyTypeObject，Python类型对象的载体.html">5. 详解 PyTypeObject，Python 类型对象的载体</a></li><li class="chapter-item expanded "><a href="6.通过type和object之间的关联，进一步分析类型对象.html">6. 通过 type 和 object 之间的关联，进一步分析类型对象</a></li><li class="chapter-item expanded "><a href="7.当创建一个Python对象时，背后都经历了哪些过程？.html">7. 当创建一个 Python 对象时，背后都经历了哪些过程？</a></li><li class="chapter-item expanded "><a href="8.当调用一个Python对象时，背后都经历了哪些过程？.html">8. 当调用一个 Python 对象时，背后都经历了哪些过程？</a></li><li class="chapter-item expanded "><a href="9.再探泛型API，感受Python对象的设计哲学.html">9. 再探泛型 API，感受 Python 对象的设计哲学</a></li><li class="chapter-item expanded "><a href="10.Python对象的行为是怎么区分的？.html">10. Python 对象的行为是怎么区分的？</a></li><li class="chapter-item expanded "><a href="11.一个Python对象会在何时被销毁？.html">11. 一个 Python 对象会在何时被销毁？</a></li><li class="chapter-item expanded "><a href="12.深度解密Python的浮点数是怎么实现的？.html">12. 深度解密 Python 的浮点数是怎么实现的？</a></li><li class="chapter-item expanded "><a href="13.对象被销毁之后所占的内存一定会释放吗？解密浮点数的缓存池机制.html">13. 对象被销毁之后所占的内存一定会释放吗？解密浮点数的缓存池机制</a></li><li class="chapter-item expanded "><a href="14.浮点数支持的操作是怎么实现的？.html">14. 浮点数支持的操作是怎么实现的？</a></li><li class="chapter-item expanded "><a href="15.解密Python的复数是怎么实现的？它有什么用途呢？.html">15. 解密 Python 的复数是怎么实现的？它有什么用途呢？</a></li><li class="chapter-item expanded "><a href="16.Python的整数是怎么设计的，为什么它不会溢出？.html">16. Python 的整数是怎么设计的，为什么它不会溢出？</a></li><li class="chapter-item expanded "><a href="17.解密Python的小整数对象池.html">17. 解密 Python 的小整数对象池</a></li><li class="chapter-item expanded "><a href="18.两个Python整数之间是如何进行大小比较的？过程并不像我们想的那样简单.html">18. 两个 Python 整数之间是如何进行大小比较的？过程并不像我们想的那样简单</a></li><li class="chapter-item expanded "><a href="19.探究Python整数的加减法，感受大整数的运算哲学与魅力.html" class="active">19. 探究 Python 整数的加减法，感受大整数的运算哲学与魅力</a></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky bordered">
+                    <div class="left-buttons">
+                        <button id="sidebar-toggle" class="icon-button" type="button" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </button>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light (default)</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">CPython3.8 源码探秘</h1>
+
+                    <div class="right-buttons">
+                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+                        <a href="https://github.com/satori1995/cpython-internal" title="Git repository" aria-label="Git repository">
+                            <i id="git-repository-button" class="fa fa-github"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script type="text/javascript">
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h2 id="楔子"><a class="header" href="#楔子">楔子</a></h2>
+<p>本篇文章来探讨一下整数的加减法是怎么做的，因为整数在底层采用数组进行存储，所以它的加减法就不像浮点数那么简单。</p>
+<p>在介绍浮点数的时候说过，对于数值型对象，它的类型一定实现了 tp_as_number 字段，该字段指向了 PyNumberMethods 结构体实例。结构体里面的每个字段都是一个函数指针，对应数值型对象的一个操作。</p>
+<p><img src="./images/70.png" alt="" /></p>
+<p>比如 nb_add 负责加法操作，nb_substract 负责减法操作等等，本篇文章就来探讨一下。首先整数支持的操作非常多，这里我们只探讨加减法。</p>
+<h2 id="整数加减法的运算原理"><a class="header" href="#整数加减法的运算原理">整数加减法的运算原理</a></h2>
+<p>整数的加法和减法分别由 long_add 和 long_sub 实现，但运算的核心却不在这两个函数上，它们内部会调用另外两个函数。因为数组保存了整数的绝对值，所以 Python 将整数的运算转成了绝对值运算，而底层有两个函数专门用来做这件事情，分别是 x_add 和 x_sub。</p>
+<ul>
+<li>x_add(a, b)：计算 a 和 b 的绝对值之和；</li>
+<li>x_sub(a, b)：计算 a 和 b 的绝对值之差；</li>
+</ul>
+<p>所以整数相加就可以这么做，假设两个整数 a 和 b 相加：</p>
+<ul>
+<li>如果 a 和 b 均为正数，那么通过 x_add 计算 a 和 b 的绝对值之和即可；</li>
+<li>如果 a 和 b 均为负数，那么通过 x_add 计算两者的绝对值之和，然后再取相反数；</li>
+<li>如果 a 为负数，b 为正数，那么通过 x_sub 计算 b 和 a 的绝对值之差即可；</li>
+<li>如果 a 为正数，b 为负数，那么通过 x_sub 计算 a 和 b 的绝对值之差即可；</li>
+</ul>
+<p>而整数相减也是同理，还是整数 a 和 b，两者相减：</p>
+<ul>
+<li>如果 a 为正数，b 为负数，那么通过 x_add 计算两者的绝对值之和即可；</li>
+<li>如果 a 为负数，b 为正数，那么通过 x_add 计算两者的绝对值之和，然后再取相反数；</li>
+<li>如果 a 和 b 均为正数，那么通过 x_sub 计算 a 和 b 的绝对值之差即可；</li>
+<li>如果 a 和 b 均为负数，那么通过 x_sub 计算 b 和 a 的绝对值之差即可；</li>
+</ul>
+<blockquote>
+<p>相加时，符号相同会调用 x_add、符号不同会调用 x_sub。相减时，符号相同会调用 x_sub、符号不同会调用 x_add。</p>
+</blockquote>
+<p>所以这就是 Python 的设计，因为绝对值的加减法不用考虑符号的影响，实现更为简单，所以 Python 将整数运算转化成整数的绝对值运算。那么下面我们的重心就在 x_add 和 x_sub 上面了，看看它们是如何对大整数绝对值进行运算的。到这里你可能会有疑问，大整数运算这么复杂，效率会差吧。显然这是啃腚的，整数数值越大，整数对象的底层数组就越长，运算开销也就越大。</p>
+<p>但 Python 底层有一个机制叫做快分支，因为通用逻辑能处理所有情况，那么它的效率必然不高。而快分支则是对那些可以简单运算的情况提前进行处理，比如在对 a 和 b 计算加减法的时候，底层会先判断数组的长度是否均小于等于 1，如果是则说明数组中最多只有一个元素。这样的话，可以直接拿出来转成 C 的整数进行运算，这样性能损耗就可以忽略不计。</p>
+<blockquote>
+<p>关于快分支，需要再单独解释一下。我们举个生活中的例子：好比你去见女朋友，正常情况下，你需要买花，并且精心打扮。但如果女朋友不在生理期，那么这一切都不需要做，买杯奶茶就好了。所以先判断女朋友是否在生理期，如果不在，那么只需买杯奶茶就能牵手便属于快分支。快分支具有命中率高等特点，绝大部分都是这个情况，而一旦命中快分支，那么程序便可快速处理。</p>
+</blockquote>
+<p>回到上面的例子，只要整数不超过 2 ** 30 - 1，都可以走快分支，显然这可以满足绝大部分场景，因为这个数字已经很大了。至于 x_add 和 x_sub 则属于通用逻辑，而通用也意味着平庸，但如果快分支没有命中，那么就只能走通用逻辑了。</p>
+<p>而我们的重点就是要研究 x_add 和 x_sub 的实现，感受大整数运算的魅力。不过在介绍之前，不妨想象一下我们平时将两个整数相加的时候是怎么做的。</p>
+<p><img src="./images/71.png" alt="" /></p>
+<p>从最低位开始进行相加，逢十进一，ob_digit 也是同理。我们可以把数组中的每一个元素看成是一个整体，只不过它不再是逢十进一，而是逢 <font color="blue">2 ** 30</font> 进一。</p>
+<pre><code class="language-python"># 数组的每个元素最大能表示 2**30-1
+# 把元素整体想象成我们生活中加法的个位、十位、百位...
+# 然后对应的位相加，逢 2**30 进一
+a = [1024, 22]
+b = [342, 18]
+c = [1024 + 342, 22 + 18]  # [1366, 40]
+
+print(
+    a[0] + a[1] * 2 ** 30
+    +
+    b[0] + b[1] * 2 ** 30
+    ==
+    c[0] + c[1] * 2 ** 30
+)  # True
+</code></pre>
+<p>所以仍旧是对应的位进行相加，和我们生活中的加法并无本质上的区别。只不过生活中的加法，每一位能表示 <font color="blue">0~9</font>，逢十进一。而 Python 底层的加法，因为整数使用数组存储，那么每一个位能表示 <font color="blue">0 ~ 2 ** 30 - 1</font>，逢 <font color="blue">2 ** 30</font> 进一。</p>
+<p><img src="./images/72.png" alt="" /></p>
+<p>把 1024、342 想象成个位，把 22、18 想象成十位，并且此时不再是逢十进一，而是逢 2 ** 30 进一。</p>
+<pre><code class="language-python">a = [2 ** 30 - 1, 16]
+b = [2 ** 30 - 1, 21]
+# a[0] + b[0] 超过了 2 ** 30，要进个 1
+# 而逢十进一之后，该位要减去十
+# 那么逢 2**30 进一之后，显然要减去 2 ** 30
+c = [
+    a[0] + b[0] - 2 ** 30,
+    a[1] + b[1] + 1
+]
+
+print(
+    a[0] + a[1] * 2 ** 30
+    +
+    b[0] + b[1] * 2 ** 30
+    ==
+    c[0] + c[1] * 2 ** 30
+)  # True
+</code></pre>
+<p>然后是绝对值减法，和绝对值加法一样，也可以类比生活中的减法，从低位到高位分别相减。如果某一位相减的时候发现不够了，那么要向高位借一位。比如 <font color="blue">27 - 9</font>，7 比 9 小，因此向 <font color="blue">2</font> 借一位变成 <font color="blue">17</font>，减去 9，得 8。但 2 被借了一位，所以剩下 1，因此结果为 <font color="blue">18</font>。</p>
+<pre><code class="language-python">a = [5, 3]
+b = [6, 1]
+result = []
+
+# 如果计算 a - b，整个过程是怎样的呢？
+# 首先是 a[0] - b[0]，由于 a[0] &lt; b[0]
+# 所以要借一位，而一个位是 2 ** 30
+result.append(a[0] + 2 ** 30 - b[0])
+# 然后是 a[1] - b[1]
+# 由于 a[1] 被借走了一个位，因此要减 1
+result.append(a[1] - 1 - b[1])
+print(result)  # [1073741823, 1]
+
+# 验证一下
+print(
+    (a[0] + a[1] * 2 ** 30)
+    -
+    (b[0] + b[1] * 2 ** 30)
+)  # 2147483647
+print(
+    result[0] + result[1] * 2 ** 30
+)  # 2147483647
+</code></pre>
+<p>结果没有问题，以上我们就从原理上介绍了大整数的加减法，下面再看一下源码实现。</p>
+<h2 id="整数加减法源码实现"><a class="header" href="#整数加减法源码实现">整数加减法源码实现</a></h2>
+<p>当整数相加时会执行 long_add 函数，看一下它的具体实现。</p>
+<pre><code class="language-c">// Objects/longobject.c
+static PyObject *
+long_add(PyLongObject *a, PyLongObject *b)
+{
+    PyLongObject *z;  // 指向运算后的整数
+    CHECK_BINOP(a, b);  // 确保 a 和 b 都指向整数
+    
+    // 如果两个整数的 ob_digit 数组只有一个元素
+    // 那么取出来判断正负之后，直接进行运算即可
+    // 由于 2 ** 30 - 1 已经很大了，所以绝大部分场景，都会执行此分支
+    if (Py_ABS(Py_SIZE(a)) &lt;= 1 &amp;&amp; Py_ABS(Py_SIZE(b)) &lt;= 1) {
+        return PyLong_FromLong(MEDIUM_VALUE(a) + MEDIUM_VALUE(b));
+    }
+    if (Py_SIZE(a) &lt; 0) {
+        // 如果 a 是负数、b 是负数，那么计算 |a| + |b|
+        if (Py_SIZE(b) &lt; 0) {
+            z = x_add(a, b);
+            if (z != NULL) {
+                // 然后对 z 取相反数
+                assert(Py_REFCNT(z) == 1);
+                Py_SIZE(z) = -(Py_SIZE(z));
+            }
+        }
+        // 如果 a 是负数、b 是正数，那么计算 |b| - |a|      
+        else
+            z = x_sub(b, a);
+    }
+    else {
+        // 如果 a 是正数、b 是负数，那么计算 |a| - |b|
+        if (Py_SIZE(b) &lt; 0)
+            z = x_sub(a, b);
+        // 如果 a 是正数、b 是正数，那么计算 |a| + |b|      
+        else
+            z = x_add(a, b);
+    }
+    return (PyObject *)z;
+}
+</code></pre>
+<p>因此 long_add 函数并不长，但是调用了 x_add 和 x_sub，显然核心逻辑是在这两个函数里面。至于 long_add 函数，它的逻辑如下：</p>
+<ul>
+<li>判断两个整数底层对应的数组的长度是否均为 1，如果是的话那么通过宏 MEDIUM_VALUE 直接将其转成 C 的一个 digit，当然符号也会考虑在内。然后直接相加、返回即可。显然这里走的是快分支，或者说快速通道。</li>
+<li>但如果其中一方的数组长度（ob_size）大于 1，那么判断两者的符号。如果都为负数，那么通过 x_add 计算两者的绝对值之和，然后取相反数。</li>
+<li>如果 a 为负数，b 为正数，那么通过 x_sub 计算 b 和 a 的绝对值之差即可；</li>
+<li>如果 a 为正数，b 为负数，那么通过 x_sub 计算 a 和 b 的绝对值之差即可；</li>
+<li>如果都为正数，那么通过 x_add 计算 a 和 b 的绝对值之和即可；</li>
+</ul>
+<p>所以 Python 整数设计的非常巧妙，ob_digit 虽然用来维护具体数值，但它并没有考虑正负，整数的正负是通过 ob_size 来表示的。通过将运算变成绝对值运算，实现起来会方便很多。</p>
+<p>说完了 long_add，再来看看 long_sub，这两者是类似的。</p>
+<pre><code class="language-C">// Objects/longobject.c
+static PyObject *
+long_sub(PyLongObject *a, PyLongObject *b)
+{
+    PyLongObject *z;  // 指向运算后的整数
+    CHECK_BINOP(a, b);  // 确保 a 和 b 都指向整数
+    
+    // 如果两个整数的 ob_digit 数组只有一个元素
+    // 那么取出来判断正负之后，直接进行运算即可
+    if (Py_ABS(Py_SIZE(a)) &lt;= 1 &amp;&amp; Py_ABS(Py_SIZE(b)) &lt;= 1) {
+        return PyLong_FromLong(MEDIUM_VALUE(a) - MEDIUM_VALUE(b));
+    }
+    if (Py_SIZE(a) &lt; 0) {
+        // 如果 a 是负数、b 是负数，那么先计算 |b| - |a|
+        if (Py_SIZE(b) &lt; 0)
+            z = x_sub(a, b);
+        // 如果 a 是负数、b 是正数，那么先计算 |a| + |b|
+        else
+            z = x_add(a, b);
+        // 然后对 z 取相反数
+        if (z != NULL) {
+            assert(Py_SIZE(z) == 0 || Py_REFCNT(z) == 1);
+            Py_SIZE(z) = -(Py_SIZE(z));
+        }
+    }
+    else {
+        // 如果 a 是正数、b 是负数，那么计算 |a| + |b|
+        if (Py_SIZE(b) &lt; 0)
+            z = x_add(a, b);
+        // 如果 a 是负数、b 是正数，那么计算 |a| - |b|
+        else
+            z = x_sub(a, b);
+    }
+    return (PyObject *)z;
+}
+</code></pre>
+<p>所以 long_add 和 long_sub 的代码是类似的，它们将整数的运算转成了整数的绝对值运算，所以关键要理解什么时候用 x_add，什么时候用 x_sub。</p>
+<p><font color="#ac39ff"><strong>a + b</strong></font></p>
+<ul>
+<li>如果 a 是正数，b 是正数，调用 <font color="blue">x_add(a, b)</font>，计算 <font color="blue">|a| + |b|</font>；</li>
+<li>如果 a 是负数、b 是负数，调用 <font color="blue">x_add(a, b)</font>，计算 <font color="blue">|a| + |b|</font>，然后再取反；</li>
+<li>如果 a 是正数、b 是负数，调用 <font color="blue">x_sub(a, b)</font>，计算 <font color="blue">|a| - |b|</font>；</li>
+<li>如果 a 是负数、b 是正数，调用 <font color="blue">x_sub(b, a)</font>，计算 <font color="blue">|b| - |a|</font>；</li>
+</ul>
+<p>所以相加时，符号相同会调用 x_add、符号不同会调用 x_sub。</p>
+<p><font color="#ac39ff"><strong>a - b</strong></font></p>
+<ul>
+<li>如果 a 是正数、b 是负数，调用 <font color="blue">x_add(a, b)</font>，计算 <font color="blue">|a| + |b|</font>；</li>
+<li>如果 a 是负数、b 是正数，调用 <font color="blue">x_add(a, b)</font>，计算 <font color="blue">|a| + |b|</font>，然后再取反；</li>
+<li>如果 a 是正数，b 是正数，调用 <font color="blue">x_sub(a, b)</font>，计算 <font color="blue">|a| - |b|</font>；</li>
+<li>如果 a 是负数，b 是负数，调用 <font color="blue">x_sub(b, a)</font>，计算 <font color="blue">|b| - |a|</font>；</li>
+</ul>
+<p>所以相减时，符号相同会调用 x_sub、符号不同会调用 x_add。</p>
+<p>接下来我们的重点就是绝对值加法和绝对值减法的具体实现细节。</p>
+<h2 id="绝对值加法"><a class="header" href="#绝对值加法">绝对值加法</a></h2>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="18.两个Python整数之间是如何进行大小比较的？过程并不像我们想的那样简单.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="18.两个Python整数之间是如何进行大小比较的？过程并不像我们想的那样简单.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+            </nav>
+
+        </div>
+
+        <script type="text/javascript">
+            window.playground_copyable = true;
+        </script>
+        <script src="elasticlunr.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="mark.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="searcher.js" type="text/javascript" charset="utf-8"></script>
+        <script src="clipboard.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="highlight.js" type="text/javascript" charset="utf-8"></script>
+        <script src="book.js" type="text/javascript" charset="utf-8"></script>
+
+        <!-- Custom JS scripts -->
+        <script type="text/javascript" src="theme/custom.js"></script>
+    </body>
+</html>
