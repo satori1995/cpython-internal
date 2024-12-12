@@ -3894,14 +3894,14 @@ long_sub(PyLongObject *a, PyLongObject *b)
 </ul>
 <p>所以相减时，符号相同会调用 x_sub、符号不同会调用 x_add。</p>
 <p>接下来我们的重点就是绝对值加法和绝对值减法的具体实现细节。</p>
-<h2 id="绝对值加法"><a class="header" href="#绝对值加法">绝对值加法</a></h2>
+<h2 id="绝对值加法x_add"><a class="header" href="#绝对值加法x_add">绝对值加法：x_add</a></h2>
 <p>函数 x_add 负责绝对值加法，但是介绍之前，需要先了解几个宏，它们在 x_add 中会有体现。</p>
 <pre><code class="language-C">// Include/longintrepr.h
 #define PyLong_SHIFT    30
 #define PyLong_BASE     ((digit)1 &lt;&lt; PyLong_SHIFT)
 #define PyLong_MASK     ((digit)(PyLong_BASE - 1))
 </code></pre>
-<p>显然 PyLong_BASE 等于 2 ** 30，PyLong_MASK等于 2 ** 30 - 1（说明 32 个位，前两个位是 0，后三十个位都是 1）。</p>
+<p>显然 PyLong_BASE 等于 2 ** 30，PyLong_MASK 等于 2 ** 30 - 1（说明 32 个位，前两个位是 0，后三十个位都是 1）。</p>
 <p>然后我们可以看 x_add 的具体实现了。</p>
 <pre><code class="language-C">// Objects/longobject.c
 
@@ -3921,7 +3921,7 @@ x_add(PyLongObject *a, PyLongObject *b)
     // 如果 size_a 小于 size_b，说明 |a| &lt; |b|
     // 那么将两个整数交换位置，确保操作符左边的数大于右边的数
     // 这么做也符合人类习惯，可以想象一下小学时候的加法计算
-    // 如果一个位数多，一个位数少，也会习惯的将位数多的放在左边
+    // 如果一个位数多，一个位数少，也会习惯将位数多的放在左边
     if (size_a &lt; size_b) {
         { PyLongObject *temp = a; a = b; b = temp; }
         { Py_ssize_t size_temp = size_a;
@@ -3942,28 +3942,27 @@ x_add(PyLongObject *a, PyLongObject *b)
         return NULL;
     
     // 重点来了，因为 size_a &gt; size_b，所以会以 size_b 为准，两者从低位向高位依次对应相加
-    // 当 b 到头了，再单独算 a 的剩余部分;
+    // 当 b 到头了，再单独算 a 的剩余部分
     // 因此以 i &lt; size_b 作为条件
     for (i = 0; i &lt; size_b; ++i) {
-        // 将 a-&gt;ob_digit[i] + b-&gt;ob_digit[i] 作为 carry
-        // 显然 carry 如果没有超过 2 ** 30 - 1 的话
-        // 那么它就是 z -&gt; ob_digit[i] 的值
+        // 将 a-&gt;ob_digit[i] + b-&gt;ob_digit[i] + carry（初始为 0）作为 carry
+        // 如果 carry 没有超过 2 ** 30 - 1，那么它就是 z -&gt; ob_digit[i] 的值
         carry += a-&gt;ob_digit[i] + b-&gt;ob_digit[i];
         // 但 carry 是可能溢出的，当溢出时，应该要减去 2 ** 30，所以还要判断是否产生了进位
-        // 但解释器没有使用常规的判断，而是选择了效率更高的位运算（carry &amp; PyLong_MASK
+        // 但解释器没有使用常规的判断，而是选择了效率更高的位运算（carry &amp; PyLong_MASK）
         // 由于 PyLong_MASK 等于 (1 &lt;&lt; 30) - 1，所以它的前两个位是 0，后面三十个位全是 1
         // 因此当 carry 不超过 2 ** 30 - 1 时，carry &amp; PyLong_MASK 就等于 carry
         // 当 carry 超过 2 ** 30 - 1 时，carry &amp; PyLong_MASK 就等于 carry - 2 ** 30
         z-&gt;ob_digit[i] = carry &amp; PyLong_MASK;
         // 然后当 carry 产生进位时，显然不可以丢，它们要作用在数组中下一个元素相加的结果上
-        // 所以这里将 carry 右移 30 位，也就是产生的进位，然后重新赋值给 carry，并作用在下一轮循环中
+        // 所以这里将 carry 右移 30 位，得到进位，然后重新赋值给 carry，并作用在下一轮循环中
         // 如果没有产生进位，那么 carry 为 0，如果产生了进位，那么 carry 为 1
         carry &gt;&gt;= PyLong_SHIFT;
     }
     
     // 如果 b 到头了, 那么继续从当前的 i 开始遍历，直到 i == size_a, 逻辑还是和上面一样
     for (; i &lt; size_a; ++i) {
-        // 此时只需要加上 a-&gt;ob_digit[i] 即可，因为 b 到头了
+        // 此时只需要加上 a-&gt;ob_digit[i] 和 carry 即可，因为 b 到头了
         carry += a-&gt;ob_digit[i];
         // 这里也要按位与 PyLong_MASK, 因为也可能存在进位的情况
         // 拿生活中的 99999 + 1 为例，此时 a = 99999, b = 1，显然第一次循环 b 就到头了
@@ -3974,44 +3973,45 @@ x_add(PyLongObject *a, PyLongObject *b)
     }
     // 两个循环结束之后, 其实还差一步，还拿 99999 + 1 举例子
     // 按照顺序相加得到的是 00000，因为最后还进了一个 1，这里的 carry 也是同理
-    // 因此 z 的 ob_size 要比 size_a 多 1, 目的就在于此
+    // 因此 z 的 ob_size 要比 size_a 多 1，目的就在于此
     // 所以要将 z-&gt;ob_digit 的最后一个元素设置成 carry
     z-&gt;ob_digit[i] = carry;
-    // 但如果最后的 carry 没有进位的话, 显然其结果就是 0
-    // 所以最后没有直接返回 z, 而是返回了 long_normalize(z)
+    // 但如果最后的 carry 没有进位的话，显然其结果就是 0
+    // 所以最后没有直接返回 z，而是返回了 long_normalize(z)
     // 这个 long_normalize 函数的作用是从后往前依次检查 ob_digit 的元素
-    // 如果为 0, 那么就将其 ob_size 减去 1, 直到出现一个不为 0 的元素
-    // 比如 ob_digit 为 [0, 3, 1, 0, 0, 0]，长度为 6，但规范化之后的数组长度显然是 3
-    // 当然对于我们当前来说, 显然最多只会检查一次，因为它的 ob_size 只比 size_a 多 1
-    // 所以判断数组最后一个元素是否为 0 即可，如果为 0 则说明没有产生进位
+    // 如果为 0，那么就将其 ob_size 减去 1, 直到出现一个不为 0 的元素
+    // 比如 ob_digit 为 [0, 3, 1, 0, 0, 0]，长度为 6，但规范化之后的 ob_size 显然是 3
+    // 不过对于当前来说，显然最多只会检查一次，因为它的 ob_size 只比 size_a 多 1
+    // 所以判断数组最后一个元素是否为 0 也可以，如果为 0 则说明没有产生进位
     return long_normalize(z);
 }
 </code></pre>
-<p>整数在底层实现的很巧妙，不理解的话可以多看几遍，然后我们在 Python 的层面上再反推一下，进一步感受底层的运算过程。</p>
+<p>整数在底层实现的很巧妙，不理解的话可以多看几遍，然后我们在 Python 的层面上再反推一下绝对值加法，进一步感受底层的运算过程。</p>
 <pre><code class="language-Python"># 假设有 a 和 b 两个整数
-# 当然这里是使用列表直接模拟的底层数组 ob_digit
+# 当然这里是使用列表直接模拟底层数组 ob_digit
 a = [1073741744, 999, 765, 123341]
 b = [841, 1073741633, 2332]
-# 然后创建 z, 表示 a 和 b 的相加结果
+# 然后创建 z，表示 a 和 b 的相加结果
 z = []
 
-# 为了更直观, 我们一步步手动相加
-# 首先是将 a[0] + b[0], 得到 carry
+# 为了更直观，我们一步步手动相加
+# 首先是 a[0] + b[0]，得到 carry
 carry = a[0] + b[0]
 # 但 carry 可能大于 2 ** 30 - 1，所以要进行判断
 # 如果大于，那么要减去 2 ** 30，否则保持不变
-# 而我们说这一步可以使用位运算来实现，将 carry 与上 (2 ** 30 - 1) 即可
+# 而这一步可以使用位运算来实现，将 carry 和 (2 ** 30 - 1) 按位与即可
 print(carry &amp; (2 ** 30 - 1))  # 761
-# 结果是 761，说明 carry 比 2 ** 30 -1 大
+# 结果是 761，说明 carry 比 2 ** 30 - 1 大
 # 然后 z 的第一个元素就是 761
 z.append(761)
 
-# 然后计算 a[1] + b[1] 得到新的 carry
+# 接着计算 a[1] + b[1] 得到新的 carry
 # 但是之前的 carry 大于 2 ** 30 - 1，所以还要再加上 carry &gt;&gt; 30，即进位
+# 当然，如果没有产生进位，那么 carry &gt;&gt; 30 就是 0
 carry = (carry &gt;&gt; 30) + a[1] + b[1]
 # 然后 carry &amp; (2 ** 30 - 1) 得到 809，说明 carry 依旧大于 2 ** 30 - 1
 print(carry &amp; (2 ** 30 - 1))  # 809
-# 然后 z 的第二个元素就是 809
+# 所以 z 的第二个元素就是 809
 z.append(809)
 
 # 计算 a[2] + b[2] 的时候也是同理
@@ -4029,12 +4029,15 @@ print(carry &amp; (2 ** 30 - 1))  # 123341
 z.append(123341)
 
 # 此时 a 也遍历完毕，但是不要忘记再对 carry 进行判断
-# 如果大于  2** 30 - 1，那么会产生进位，所以 z 还要再 append 一个 1
+# 如果大于 2 ** 30 - 1，那么会产生进位，所以 z 还要再 append 一个 1
 # 当然这里 carry 没有超过 2 ** 30 - 1
 
 # 此时 z 为 [761, 809, 3098, 123341]
 print(z)  # [761, 809, 3098, 123341]
 
+# a = [1073741744, 999, 765, 123341]
+# b = [841, 1073741633, 2332]
+# z = [761, 809, 3098, 123341]
 # 因此 ob_digit 为 [1073741744, 999, 765, 123341]
 # 和 ob_digit 为 [841, 1073741633, 2332] 的两个 PyLongObject 相加
 # 得到的新的 PyLongObject 的 ob_digit 为 [761, 809, 3098, 123341]
@@ -4046,7 +4049,7 @@ print(
     z[0] + z[1] * 2 ** 30 + z[2] * 2 ** 60 + z[3] * 2 ** 90
 )  # True
 </code></pre>
-<p>以上就是绝对值加法，我们从源码的角度和Python代码的角度分别解释了一遍。看完了绝对值加法，再来看看绝对值减法。</p>
+<p>以上就是绝对值加法，我们从源码的角度和 Python 代码的角度分别解释了一遍。看完了绝对值加法，再来看看绝对值减法。</p>
 <h2 id="绝对值减法x_sub"><a class="header" href="#绝对值减法x_sub">绝对值减法：x_sub</a></h2>
 <p>和绝对值加法一样，绝对值减法也可以类比生活中的减法，从低位到高位分别相减。如果某一位相减的时候发现不够了，那么要向高位借一位。比如 27 减去 9，7 比 9 小，因此向 2 借一位变成 17，减去 9，得 8。但 2 被借了一位，所以剩下 1，因此结果为 17。</p>
 <pre><code class="language-C">// Objects/longobject.c
@@ -4060,10 +4063,10 @@ x_sub(PyLongObject *a, PyLongObject *b)
     PyLongObject *z;
     // 循环变量
     Py_ssize_t i;
-    // 如果 size_a 小于 size_b, 那么 sign 就是 -1, 否则就是 1
+    // 如果 size_a 小于 size_b，那么 sign 就是 -1，否则就是 1
     int sign = 1;
     // 之前 carry 保存相加的结果，这里的 borrow 保存相减的结果
-    // 名字很形象, 相加要进位叫 carry、相减要借位叫 borrow
+    // 名字很形象，相加要进位叫 carry，相减要借位叫 borrow
     digit borrow = 0;
 
     // 接下来依旧要判断两个整数的大小，确保相减的时候，绝对值大的一方在左边
@@ -4080,13 +4083,13 @@ x_sub(PyLongObject *a, PyLongObject *b)
             size_a = size_b;
             size_b = size_temp; }
     }
-    // 如果 size_a == size b，那么需要依次比较 ob_digit 里的元素，才能判断出大小
+    // 如果 size_a == size_b，那么需要依次比较 ob_digit 里的元素，才能判断出大小
     else if (size_a == size_b) {
         // 所以从 ob_digit 的尾部开始遍历
         i = size_a;
         while (--i &gt;= 0 &amp;&amp; a-&gt;ob_digit[i] == b-&gt;ob_digit[i])
             ;
-        // 如果都相等，那么 i 会等于 -1，相减的结果为 0，此时直接返回 0 即可
+        // 如果所有元素都相等，那么 i 会等于 -1，相减的结果为 0，此时直接返回 0 即可
         // 所以这一步也是为了能够快速返回结果，而额外做的一层判断
         if (i &lt; 0)
             return (PyLongObject *)PyLong_FromLong(0);
@@ -4095,11 +4098,11 @@ x_sub(PyLongObject *a, PyLongObject *b)
         // 那么上面的 while 循环结束之后，i 会等于 1，显然只需要判断索引为 1 时，对应的值谁大谁小即可
         if (a-&gt;ob_digit[i] &lt; b-&gt;ob_digit[i]) {
             // 如果 a-&gt;ob_digit[i] &lt; b-&gt;ob_digit[i]，同样说明 a 小于 b
-            // 因此将 sign 设置为 -1, 然后交换 a 和 b 的位置
+            // 那么将 sign 设置为 -1，并交换 a 和 b 的位置
             sign = -1;
             { PyLongObject *temp = a; a = b; b = temp; }
         }
-        // 因为高位在减法的时候会被抵消掉，所以 size_a 和 size_b 直接设置成 i + 1 即可
+        // 因为高位在减法的时候会被抵消掉，所以将 size_a 和 size_b 设置成 i + 1 即可
         // 假设两个整数的 ob_digit 分别是 [2, 3, 4, 5] 和 [1, 2, 4, 5]
         // 因为后两个元素是一样的，所以后续只需要对索引为 [0: i+1] 的部分做差即可
         size_a = size_b = i+1;
@@ -4110,26 +4113,98 @@ x_sub(PyLongObject *a, PyLongObject *b)
         return NULL;
     // 然后下面的逻辑和 x_add 是类似的
     for (i = 0; i &lt; size_b; ++i) {
-        /* The following assumes unsigned arithmetic
-           works module 2**N for some N&gt;PyLong_SHIFT. */
+        // 让 a 的 ob_digit[i] 减去 b 的 ob_digit[i] 
+        // 当然，由于上一个元素在相减的时候，可能会向当前元素借位，因此还要再减去 borrow
+        // 如果没借位，那么 borrow 是 0，如果借位了，那么 borrow 是 1
+        // 然后如果当前元素相减的结果也小于 0，那么继续向下一个元素借位
+        // 但我们似乎没有看到借位的逻辑，这是因为 digit 是无符号 32 位整型，负数会发生环绕
+        // 假设这里相减得到的是 -100，那么结果就是 2 ** 32 - 100
+        // 所以存储的负数会变成 &quot;2 ** 32 + 该负数&quot;，相当于自动向数组的下一个元素借了一位
+        // 但 digit 只用 30 个位，所以借一位之后应该加上 2 ** 30，而目前加的是 2 ** 32
         borrow = a-&gt;ob_digit[i] - b-&gt;ob_digit[i] - borrow;
+        // 所以还要和 PyLong_MASK 按位与，只保留后 30 个位的值
+        // 当然如果没有产生借位，borrow &amp; PyLong_MASK 的结果还是 borrow
         z-&gt;ob_digit[i] = borrow &amp; PyLong_MASK;
+        // 如果借位了，下一轮循环的时候，肯定要多减个 1，但问题是怎么判断有没有借位呢？
+        // 很简单，如果没有借位，borrow 一定小于 2 ** 30，第 31 个位一定是 0
+        // 如果借位了，那么 borrow 一定大于 2 ** 30，第 31 个位一定是 1
+        // 所以让 borrow 右移 30 个位
         borrow &gt;&gt;= PyLong_SHIFT;
-        borrow &amp;= 1; /* Keep only one sign bit */
+        // 然后和 1 按位与，如果产生了借位，borrow 就是 1，否则就是 0
+        // 等到下一轮循环的时候，再减去 borrow
+        borrow &amp;= 1;
+        /*
+        所以 Python 底层的整数只用 30 个位真的非常巧妙，尤其是在减法的时候
+        由于 digit 是 32 位，借位时会加上 2 ** 32
+        但底层只用 30 个位，所以再和 PyLong_MASK 按位与，只保留后 30 个位
+
+        而当前元素如果借位了，那么数组下一个元素要减去 1，但怎么判断它有没有借位呢？
+        首先两个不超过 2 ** 30 - 1 的数，相减的结果如果为正（没产生借位）
+        那么一定也不会超过 2 ** 30 - 1，换句话说其结果对应的第 31 位一定是 0
+        但如果两个整数相减的结果为负，那么会自动加上 2 ** 32，因此第 31 位一定是 1
+        
+        所以再让 borrow 右移 30 位，并和 1 按位与
+        如果结果为 1，证明相减为负数，确实向下一个元素借了 1，因此下一次循环时会多减一个 1
+        如果结果为 0，那么说明没有借位，下一次循环时相当于多减了一个 0
+        */
     }
+  
+    // 如果 size_a 和 size_b 不相等，那么还需要继续处理 a 的 ob_digit 剩余的元素
     for (; i &lt; size_a; ++i) {
+        // 这里的逻辑和之前分析 x_add 是类似的
         borrow = a-&gt;ob_digit[i] - borrow;
         z-&gt;ob_digit[i] = borrow &amp; PyLong_MASK;
         borrow &gt;&gt;= PyLong_SHIFT;
-        borrow &amp;= 1; /* Keep only one sign bit */
-    }
+        borrow &amp;= 1;
+    }  // 只不过由于不会产生进位，因此不需要再对 borrow 做额外判断
+       // 而 x_add 中最后还要判断 carry 有没有进位
     assert(borrow == 0);
+    // 如果 sign &lt; 0，那么证明是负数，因此还要改变 z 的符号
     if (sign &lt; 0) {
         Py_SIZE(z) = -Py_SIZE(z);
     }
+    // 最后同样要将 z 规范化，将高位的 0 忽略掉
+    // 比如 100000 - 99999，结果是 000001，显然只需要保留最低位的 1 即可
+    // 另外如果相减的结果是小整数，那么直接从池子里获取，否则返回新创建的
     return long_normalize(z);
 }
 </code></pre>
+<p>同样的，关于绝对值减法，我们也用 Python 代码演示一遍，感受底层的运算过程。</p>
+<pre><code class="language-Python">a = [5, 3]
+b = [6, 1]
+result = []
+
+# 如果计算 a - b，整个过程是怎样的呢？
+# 首先是 a[0] - b[0]，由于 a[0] &lt; b[0]，所以要借一位，而一个位是 2 ** 30
+result.append(a[0] + 2 ** 30 - b[0])
+# 注：源码中加的是 2 ** 32，所以之后还要和 PyLong_MASK 按位与
+# 因此 a[0] + 2 ** 30 - b[0] 等价于 (a[0] + 2 ** 32 - b[0]) &amp; (2 ** 30 - 1)
+
+# 然后是 a[1] - b[1]，由于 a[1] 被借走了一个位，因此要减 1
+result.append(a[1] - 1 - b[1])
+print(result)  # [1073741823, 1]
+
+# 验证一下
+print(
+    (a[0] + a[1] * 2 ** 30)
+    -
+    (b[0] + b[1] * 2 ** 30)
+)  # 2147483647
+print(
+    result[0] + result[1] * 2 ** 30
+)  # 2147483647
+</code></pre>
+<p>以上就是绝对值减法，设计的非常巧妙，可以多看几遍，并用列表模拟 ob_digit 数组，然后实际测试一下。</p>
+<h2 id="小结-15"><a class="header" href="#小结-15">小结</a></h2>
+<p>关于整数的内容，我们就介绍完了。回顾一下，首先我们剖析了整数的底层实现，了解了它不会溢出的奥秘，然后又介绍了小整数对象池。但也正如之前所说，使用数组实现大整数并不是什么特别新颖的思路，它的难点在于数学运算，这是非常考验编程技巧的地方。</p>
+<p>而我们这里只是分析了加减法，至于乘除则更加复杂，这里就不再分析了。关于乘法，解释器采用的是效率更高的 karatsuba 算法，比较有意思，有兴趣可以自己查看一下。</p>
+<p>综上所述不难发现 Python 效率低的原因，毕竟一个简单的整数运算都要做这么多工作。当然了，解释器内部也定义了很多快分支，会提前检测能否使用快速通道进行处理，当无法使用快速通道时，再走通用逻辑。</p>
+<hr />
+<p> </p>
+<p><strong>欢迎大家关注我的公众号：古明地觉的编程教室。</strong></p>
+<p><img src="./images/qrcode_for_gh.jpg" alt="" /></p>
+<p><strong>如果觉得文章对你有所帮助，也可以请作者吃个馒头，Thanks♪(･ω･)ﾉ。</strong></p>
+<p><img src="./images/supports.png" alt="" /></p>
 
                     </main>
 
