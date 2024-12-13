@@ -4213,13 +4213,13 @@ print(
 <pre><code class="language-Python">print(bool.__base__)  # &lt;class 'int'&gt;
 print(isinstance(True, bool))  # True
 
-# True 和 False 可以当成 1利 0 来用
+# True 和 False 可以当成 1 和 0 来用
 print(True * 2)  # 2
 print(3 // 3 == True)  # True
 print(sum([True, 1, 2]))  # 4
 print(False + 1)  # 1
 </code></pre>
-<p>bool 在底层对应 PyBooL_Type，因此我们可以肯定地讲，PyBool_Type 的 tp_base 字段的值一定是 &amp;PyLong_Type。</p>
+<p>bool 在底层对应 PyBool_Type，因此我们可以肯定地讲，PyBool_Type 的 tp_base 字段的值一定是 &amp;PyLong_Type。</p>
 <pre><code class="language-c">// Objects/boolobject.c
 PyTypeObject PyBool_Type = {
     PyVarObject_HEAD_INIT(&amp;PyType_Type, 0)
@@ -4240,7 +4240,7 @@ PyTypeObject PyBool_Type = {
 </code></pre>
 <p>bool 继承 int，所以它也实现了 tp_as_number。</p>
 <h2 id="布尔值的底层结构"><a class="header" href="#布尔值的底层结构">布尔值的底层结构</a></h2>
-<p>然后是 True 和 False，既然 bool 继承 int，那么布尔值和整数的底层结构是一样的。</p>
+<p>既然 bool 继承 int，那么布尔值和整数的底层结构是一样的。</p>
 <pre><code class="language-C">// Objects/boolobject.c
 
 // PyLongObject 是 struct _longobject 的类型别名
@@ -4327,16 +4327,16 @@ PyObject_IsTrue(PyObject *v)
     // 如果 v 是 None，那么返回 0
     if (v == Py_None)
         return 0;
-    // 如果 v 是数值型对象，并且它的类型对象定义了__bool__，那么调用
+    // 如果 v 是数值型对象，并且它的类型对象定义了 __bool__，那么调用
     else if (v-&gt;ob_type-&gt;tp_as_number != NULL &amp;&amp;
              v-&gt;ob_type-&gt;tp_as_number-&gt;nb_bool != NULL)
         res = (*v-&gt;ob_type-&gt;tp_as_number-&gt;nb_bool)(v);
     // 如果 v 是映射型对象，并且它的类型对象定义了 __len__，那么调用
-    // 说白了就是基于内部键值对的个数进行判断
+    // 说白了就是基于内部的键值对个数进行判断
     else if (v-&gt;ob_type-&gt;tp_as_mapping != NULL &amp;&amp;
              v-&gt;ob_type-&gt;tp_as_mapping-&gt;mp_length != NULL)
         res = (*v-&gt;ob_type-&gt;tp_as_mapping-&gt;mp_length)(v);
-    // 如果 v 是序列型对象，并且它的类型对象定义了__len__，那么调用
+    // 如果 v 是序列型对象，并且它的类型对象定义了 __len__，那么调用
     // 也就是基于内部的元素个数进行判断
     else if (v-&gt;ob_type-&gt;tp_as_sequence != NULL &amp;&amp;
              v-&gt;ob_type-&gt;tp_as_sequence-&gt;sq_length != NULL)
@@ -4352,7 +4352,7 @@ PyObject_IsTrue(PyObject *v)
 <pre><code class="language-python"># 不传参数，默认返回 False
 print(bool())  # False
 
-# 整数实现了__bool__，所以 bool(1) 会调用 int.__bool__(1)
+# 整数实现了 __bool__，所以 bool(1) 会调用 int.__bool__(1)
 print(bool(1))  # True
 
 # 字符串实现了 __len__，所以 bool(&quot;abc&quot;) 会调用 str.__len__(&quot;abc&quot;)
@@ -4398,14 +4398,14 @@ print(not not name)  # True
 </code></pre>
 <p>这两者又有什么区别呢？首先 bool(name) 在 Python 里面是一个调用，会进行参数解析，拿到对象之后调用 PyObject_IsTrue 判断真假，正常执行的话，会返回 1 或 0。然后基于 1 和 0 创建布尔值，为 1 返回 True，为 0 返回 False。</p>
 <p>而 <font color="blue">not name</font> 会对应一条 UNARY_NOT 字节码，它内部也会调用 PyObject_IsTrue，如果结果为 1 返回 False，为 0 返回 True，正好是相反的。所以 <font color="blue">not not name</font> 则相当于在 <font color="blue">not name</font> 的基础上再反过来一次，这样就和 bool(name) 的结果是一致的了。</p>
-<p>当然在工作中，无论使用哪种都可以，看自己喜好。但为了代码的可读性，显式获取布尔值的时候还是建议使用 bool(name)，效率上没太大差别。</p>
+<p>当然在工作中，使用哪种都可以，看自己喜好。但为了代码的可读性，显式获取布尔值的时候还是建议使用 bool(name)，效率上没太大差别。</p>
 <h2 id="小结-16"><a class="header" href="#小结-16">小结</a></h2>
 <p>以上就是布尔值相关的内容。</p>
 <ul>
 <li>bool 继承 int，并且布尔值在底层和整数使用同一个结构体，只是 ob_type 不同；</li>
 <li>布尔值具备整数的所有特征，可以像整数一样参与各种运算，其中 True 会被解释成 1，False 会被解释成 0；</li>
-<li>布尔值有两种，分别是 True 和 False，它们是单例的。判断时应该使用 is，而不是 ==；</li>
-<li>在 Python 里面如果要创建布尔值，有三种方式：通过 True 和 False 字面量、调用类型对象 bool，使用 not not；</li>
+<li>布尔值有两种，分别是 True 和 False，它们是单例的，判断时应该使用 is，而不是 ==，除非你把 True 和 False 当成整数使用；</li>
+<li>在 Python 里面如果要创建布尔值，有三种方式：通过 True 和 False 字面量、调用类型对象 bool、使用 not not；</li>
 </ul>
 <hr />
 <p> </p>
