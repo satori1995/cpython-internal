@@ -1,0 +1,368 @@
+<!DOCTYPE HTML>
+<html lang="zh-cn" class="sidebar-visible no-js light">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>23. bytes 对象（字节串）是怎么实现的？解密它的内部原理 - CPython3.8 源码探秘</title>
+        <!-- Custom HTML head -->
+        <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff" />
+
+        <link rel="icon" href="favicon.svg">
+        <link rel="shortcut icon" href="favicon.png">
+        <link rel="stylesheet" href="css/variables.css">
+        <link rel="stylesheet" href="css/general.css">
+        <link rel="stylesheet" href="css/chrome.css">
+        <link rel="stylesheet" href="css/print.css" media="print">
+        <!-- Fonts -->
+        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="fonts/fonts.css">
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="highlight.css">
+        <link rel="stylesheet" href="tomorrow-night.css">
+        <link rel="stylesheet" href="ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+        <link rel="stylesheet" href="theme/custom.css">
+        <!-- MathJax -->
+        <script async type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    </head>
+    <body>
+        <!-- Provide site root to javascript -->
+        <script type="text/javascript">
+            var path_to_root = "";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script type="text/javascript">
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script type="text/javascript">
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            var html = document.querySelector('html');
+            html.classList.remove('no-js')
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add('js');
+        </script>
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script type="text/javascript">
+            var html = document.querySelector('html');
+            var sidebar = 'hidden';
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            }
+            html.classList.remove('sidebar-visible');
+            html.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li class="chapter-item expanded "><a href="0.序言.html">0. 序言</a></li><li class="chapter-item expanded "><a href="1.CPython源码长什么样子？.html">1. CPython 源码长什么样子？</a></li><li class="chapter-item expanded "><a href="2.变量和对象，它们之间有什么区别和联系呢？.html">2. 变量和对象，它们之间有什么区别和联系呢？</a></li><li class="chapter-item expanded "><a href="3.Python对象有哪几种，我们可以从哪些角度进行分类呢？.html">3. Python 对象有哪几种，我们可以从哪些角度进行分类呢？</a></li><li class="chapter-item expanded "><a href="4.万丈高楼平地起，一切从PyObject开始.html">4. 万丈高楼平地起，一切从 PyObject 开始</a></li><li class="chapter-item expanded "><a href="5.详解PyTypeObject，Python类型对象的载体.html">5. 详解 PyTypeObject，Python 类型对象的载体</a></li><li class="chapter-item expanded "><a href="6.通过type和object之间的关联，进一步分析类型对象.html">6. 通过 type 和 object 之间的关联，进一步分析类型对象</a></li><li class="chapter-item expanded "><a href="7.当创建一个Python对象时，背后都经历了哪些过程？.html">7. 当创建一个 Python 对象时，背后都经历了哪些过程？</a></li><li class="chapter-item expanded "><a href="8.当调用一个Python对象时，背后都经历了哪些过程？.html">8. 当调用一个 Python 对象时，背后都经历了哪些过程？</a></li><li class="chapter-item expanded "><a href="9.再探泛型API，感受Python对象的设计哲学.html">9. 再探泛型 API，感受 Python 对象的设计哲学</a></li><li class="chapter-item expanded "><a href="10.Python对象的行为是怎么区分的？.html">10. Python 对象的行为是怎么区分的？</a></li><li class="chapter-item expanded "><a href="11.一个Python对象会在何时被销毁？.html">11. 一个 Python 对象会在何时被销毁？</a></li><li class="chapter-item expanded "><a href="12.深度解密Python的浮点数是怎么实现的？.html">12. 深度解密 Python 的浮点数是怎么实现的？</a></li><li class="chapter-item expanded "><a href="13.对象被销毁之后所占的内存一定会释放吗？解密浮点数的缓存池机制.html">13. 对象被销毁之后所占的内存一定会释放吗？解密浮点数的缓存池机制</a></li><li class="chapter-item expanded "><a href="14.浮点数支持的操作是怎么实现的？.html">14. 浮点数支持的操作是怎么实现的？</a></li><li class="chapter-item expanded "><a href="15.解密Python的复数是怎么实现的？它有什么用途呢？.html">15. 解密 Python 的复数是怎么实现的？它有什么用途呢？</a></li><li class="chapter-item expanded "><a href="16.Python的整数是怎么设计的，为什么它不会溢出？.html">16. Python 的整数是怎么设计的，为什么它不会溢出？</a></li><li class="chapter-item expanded "><a href="17.解密Python的小整数对象池.html">17. 解密 Python 的小整数对象池</a></li><li class="chapter-item expanded "><a href="18.两个Python整数之间是如何进行大小比较的？过程并不像我们想的那样简单.html">18. 两个 Python 整数之间是如何进行大小比较的？过程并不像我们想的那样简单</a></li><li class="chapter-item expanded "><a href="19.探究Python整数的加减法，感受大整数的运算哲学与魅力.html">19. 探究 Python 整数的加减法，感受大整数的运算哲学与魅力</a></li><li class="chapter-item expanded "><a href="20.Python的布尔值是怎么实现的，你对它的了解有多深呢？.html">20. Python 的布尔值是怎么实现的，你对它的了解有多深呢？</a></li><li class="chapter-item expanded "><a href="21.Python的None是怎么实现的？.html">21. Python 的 None 是怎么实现的？</a></li><li class="chapter-item expanded "><a href="22.深度解密Python切片的实现原理.html">22.深度解密 Python 切片的实现原理</a></li><li class="chapter-item expanded "><a href="23.bytes对象（字节串）是怎么实现的？解密它的内部原理.html" class="active">23. bytes 对象（字节串）是怎么实现的？解密它的内部原理</a></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky bordered">
+                    <div class="left-buttons">
+                        <button id="sidebar-toggle" class="icon-button" type="button" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </button>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light (default)</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">CPython3.8 源码探秘</h1>
+
+                    <div class="right-buttons">
+                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+                        <a href="https://github.com/satori1995/cpython-internal" title="Git repository" aria-label="Git repository">
+                            <i id="git-repository-button" class="fa fa-github"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script type="text/javascript">
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h2 id="楔子"><a class="header" href="#楔子">楔子</a></h2>
+<p>本篇文章来聊一聊 bytes 对象，也就是字节串，而说到字节串就不得不提字符串。</p>
+<ul>
+<li>字符串是由任意数量的字符组成的序列，用于表示文本数据。在大多数编程语言中，字符串被视为一种高层数据类型，能够处理和操作文本信息。</li>
+<li>字节串是由任意数量的字节组成的序列，用于表示二进制数据。</li>
+</ul>
+<p>字符串具有特定的字符编码，比如 UTF-8、ASCII 等等，这些编码定义了字符如何在内存中表示。而字节串没有预定义的编码，它只是原始的二进制序列，在处理非文本数据时非常有用。</p>
+<p>计算机在存储数据以及通过网络传输数据时，数据格式都是二进制字节串，所以如果你想传输一段文本，那么必须先将它转成字节串。</p>
+<pre><code class="language-python">name = &quot;古明地觉&quot;
+
+print(name.encode(&quot;utf-8&quot;))
+&quot;&quot;&quot;
+b'\xe5\x8f\xa4\xe6\x98\x8e\xe5\x9c\xb0\xe8\xa7\x89'
+&quot;&quot;&quot;
+print(name.encode(&quot;utf-16&quot;))
+&quot;&quot;&quot;
+b'\xff\xfe\xe4S\x0ef0W\xc9\x89'
+&quot;&quot;&quot;
+print(name.encode(&quot;gbk&quot;))
+&quot;&quot;&quot;
+b'\xb9\xc5\xc3\xf7\xb5\xd8\xbe\xf5'
+&quot;&quot;&quot;
+</code></pre>
+<p>字节串传输之后还需要转成文本数据，这个过程叫做反序列化。但由于字节串不保存编码信息，它只是一坨字节流，因此反序列化时还需要知道指定的编码，如果编码指定错误，那么反序列化会失败。</p>
+<pre><code class="language-python"># name_utf8 和 name_gbk 都只是普通的字节串
+name_utf8 = b'\xe5\x8f\xa4\xe6\x98\x8e\xe5\x9c\xb0\xe8\xa7\x89'
+name_gbk = b'\xb9\xc5\xc3\xf7\xb5\xd8\xbe\xf5'
+
+# 如果反序列化，必须要知道原始文本使用的编码是什么
+print(name_utf8.decode(&quot;utf-8&quot;))
+print(name_gbk.decode(&quot;gbk&quot;))
+&quot;&quot;&quot;
+古明地觉
+古明地觉
+&quot;&quot;&quot;
+
+# 如果指定了错误的编码，那么反序列化会失败
+try:
+    name_utf8.decode(&quot;gbk&quot;)
+except UnicodeDecodeError as e:
+    print(e)
+&quot;&quot;&quot;
+'gbk' codec can't decode byte 0xa7 in position 10: illegal multibyte sequence
+&quot;&quot;&quot;
+</code></pre>
+<p>另外我们看到字符串只有 4 个字符，但序列化之后的字节串却明显多于 4 个字节。这是因为一个字节最多能表示 256 个字符，对于英文字符来说已经足够了，但对于非英文字符则力不从心，毕竟光普通的中文字符就好几千个。</p>
+<p>所以便有了多字节编码，它使用多个字节来表示一个字符，具体使用多少个，则取决于编码。如果是 GBK 编码，那么两个字节表示一个字符，如果是 UTF-8 编码，那么三个字节表示一个字符，当然这里的字符指的是非英文字符。所以在反序列化的时候，需要指定正确的编码，否则解析一定会失败。</p>
+<p>以上就是关于 bytes 对象的一些基础概念，下面来看一下它的底层结构。</p>
+<h2 id="字节串的底层结构"><a class="header" href="#字节串的底层结构">字节串的底层结构</a></h2>
+<p>字节串的类型是 bytes，那么我们有理由相信它在底层由 PyBytesObject 结构体表示。</p>
+<pre><code class="language-C">// Include/bytesobject.h
+typedef struct {
+    PyObject_VAR_HEAD
+    Py_hash_t ob_shash;
+    char ob_sval[1];
+} PyBytesObject;
+</code></pre>
+<p>我们看一下里面的字段：</p>
+<ul>
+<li>PyObject_VAR_HEAD：变长对象的公共头部，因为字节串是由若干个字节组成的，具有长度的概念，所以它是变长对象。</li>
+<li>ob_shash：保存字节串的哈希值，因为计算哈希值需要遍历所有的字节，如果每获取一次哈希值都要重新计算的话，性能会有影响。所以第一次计算之后会用 ob_shash 字段保存起来，之后就不再计算了。如果 bytes 对象的哈希值尚未计算，那么 ob_shash 为 -1。</li>
+<li>ob_sval：char 类型的数组，负责保存具体的字节。这个和整数的 ob_digit 字段的声明方式类似，由于数组长度不属于类型的一部分，因此虽然声明的时候长度是 1，但其实长度不受限制，具体是多少取决于 bytes 对象的字节数量。</li>
+</ul>
+<p>我们创建几个不同的 bytes 对象，然后通过画图感受一下。</p>
+<p><font color="darkblue"><strong>val = b&quot;&quot;</strong></font></p>
+<p><img src="./images/78.png" alt="" /></p>
+<p>我们看到即便是空的字节序列，底层的 ob_sval 也需要一个 <font color="blue">'\0'</font>，那么这个结构体实例占多大内存呢？首先 ob_sval 之外的四个成员，每个都占 8 字节，而 ob_sval 是一个 char 类型的数组，一个 char 占 1 字节，所以 bytes 对象的内存大小等于 <font color="blue">32 + ob_sval 的长度</font>。</p>
+<p>而 ob_sval 里面至少有一个 <font color="blue">'\0'</font>，因此一个空的字节序列需要占 33 字节的内存。</p>
+<pre><code class="language-python">&gt;&gt;&gt; sys.getsizeof(b&quot;&quot;)
+33
+</code></pre>
+<p>注意：ob_size 统计的是 ob_sval 中有效字节的个数，不包括 <font color="blue">'\0'</font>，但是计算占用内存的时候，显然是需要考虑在内的，因为它确实占用了一个字节的空间。因此我们说 bytes 对象占的内存等于 <font color="blue">33 + ob_size</font> 也是可以的。</p>
+<p><font color="darkblue"><strong>val = b&quot;abc&quot;</strong></font></p>
+<p><img src="./images/79.png" alt="" /></p>
+<p>显然内存大小等于 32 + 4 = 36 字节。</p>
+<p>因此 bytes 对象的底层结构还是很好理解的，因为它是字节序列，所以在底层用一个 char 类型的数组来维护具体的值再合适不过了。</p>
+<h2 id="创建-bytes-对象"><a class="header" href="#创建-bytes-对象">创建 bytes 对象</a></h2>
+<p>下面来看一下 bytes 对象的创建方式，这里我们暂时先不介绍底层是如何创建的，等到介绍缓存池的时候再说。这里来聊一聊如何在 Python 中创建，虽然该系列是剖析源码，但是光说底层的话可能会有一些无趣，因此这个过程中也会穿插大量的 Python 内容。</p>
+<p>先观察 Python 代码执行时的表现，再通过底层的源码进行解析，两者结合起来更容易让人理解。另外该系列也能保证即使你没有相应的 C 语言基础，也一样能收获很多。</p>
+<pre><code class="language-Python">b = b&quot;hello&quot;
+</code></pre>
+<p>以上是最简单的创建方式，它使用我们之前说的特定类型 API，但通过这种方式创建的字节串只能包含 ASCII 字符。下面这种方式是不行的：</p>
+<pre><code class="language-python">b = b&quot;古明地觉&quot;
+</code></pre>
+<p>&quot;古明地觉&quot; 包含非 ASCII 字符，所以采用多字节编码，但编码方式也有多种，比如 UTF-8、GBK 等等，解释器不知道你用的是哪一种。因此采用字面量的方式，只能包含 ASCII 字符，因为对于 ASCII 字符而言，不管使用哪种编码，得到的结果都是一样的。但如果包含非 ASCII 字符，那么必须手动指定编码。</p>
+<pre><code class="language-Python">b = bytes(&quot;古明地觉&quot;, encoding=&quot;utf-8&quot;)
+print(b)
+&quot;&quot;&quot;
+b'\xe5\x8f\xa4\xe6\x98\x8e\xe5\x9c\xb0\xe8\xa7\x89'
+&quot;&quot;&quot;
+</code></pre>
+<p>里面的 \x 表示十六进制，我们知道字符 a 的 ASCII 码是 97，对应十六进制是 61。同理字符 b 是 62，字符 c 是 63，那么 b&quot;abc&quot; 就还可以这么创建。</p>
+<pre><code class="language-Python">b = b&quot;\x61\x62\x63&quot;
+print(b)
+&quot;&quot;&quot;
+b'abc'
+&quot;&quot;&quot;
+</code></pre>
+<p>以上是根据十六进制的数字创建 bytes 对象，注意：采用这种方式创建必须指定 \x，然后 <font color="blue">b&quot;\x61&quot;</font> 表示的是 1 个字节，并且该字节对应的 ASCII 码的十六进制是 61，也就是字符 a。而 <font color="blue">b&quot;61&quot;</font> 表示的是两个字节。</p>
+<pre><code class="language-Python"># \x61、\x62、\x63 均表示 1 字节
+print(b&quot;\x61\x62\x63&quot;)
+&quot;&quot;&quot;
+b'abc'
+&quot;&quot;&quot;
+# 下面这个创建的 bytes 对象是 6 字节
+print(b&quot;616263&quot;)
+&quot;&quot;&quot;
+b'616263'
+&quot;&quot;&quot;
+</code></pre>
+<p>可如果有一串字符也是十六进制格式，但开头没有 \x，这个时候要怎么转成 bytes 对象呢？很简单，使用 <font color="blue">bytes.fromhex</font> 方法即可。</p>
+<pre><code class="language-Python">print(bytes.fromhex(&quot;616263&quot;))
+&quot;&quot;&quot;
+b'abc'
+&quot;&quot;&quot;
+
+# 转成 bytes 对象之后，如果是可打印字符的话
+# 那么会显示对应的字符，比如 abc
+# 如果是不可打印字符，就原本输出，比如 \xff
+print(bytes.fromhex(&quot;616263FF&quot;))
+&quot;&quot;&quot;
+b'abc\xff'
+&quot;&quot;&quot;
+</code></pre>
+<p>该方法会将里面的字符串当成十六进制来解析，得到 bytes 对象。并且使用这种方式的话，字符的个数一定是偶数，每个字符的范围均是 <font color="blue">0~9、A~F（或者 a~f）</font>。因为十六进制需要两个字符来表示，范围是 <font color="blue">00</font> 到 <font color="blue">FF</font>。即便小于 16，也必须用两个字符表示，比如我们可以写 <font color="blue">05</font>，但绝不能只写个 <font color="blue">5</font>。</p>
+<p>总之使用 bytes.fromhex 创建时，字符串的长度一定是一个偶数，从前往后每两个分为一组。使用字面量的方式创建时也是如此，比如我们可以写成 <font color="blue">b&quot;\x01\x02&quot;</font>，但不能写成 <font color="blue">b&quot;\x1\x2&quot;</font>。</p>
+<pre><code class="language-python"># 不可以写成 b&quot;\x0&quot;，会报错
+print(b&quot;\x00&quot;)  # b'\x00'
+
+# \x 后面至少跟两个字符，但这里跟了 3 个字符
+# 所以 \x 会和 61 组合得到 'a'
+# 至于后面的那个 1 就单纯的表示字符 '1'
+print(b&quot;\x611&quot;)  # b'a1'
+</code></pre>
+<p>所以 \x 后面可以跟超过两个以上的字符，超过两个以上的部分会被当成普通字符来处理，与十六进制无关。每个 \x 只和它后面的两个字符结合，因此 \x 后面不能少于两个字符。</p>
+<p>然后我们通过索引获取的时候，得到的也是一个整数：</p>
+<pre><code class="language-python">b = &quot;古&quot;.encode(&quot;utf-8&quot;)
+print(b)  # b'\xe5\x8f\xa4'
+print([b[0], b[1], b[2]])  # [229, 143, 164]
+</code></pre>
+<p>所以 bytes 对象的每个字节都是 0 ~ 255 之间的一个整数，那么问题来了，如果我有每个字节对应的整数，那么如何再转成 bytes 对象呢？</p>
+<pre><code class="language-Python"># 里面的每个整数都必须位于 0 ~ 255 之间
+print(bytes([229, 143, 164]))
+print(bytes([229, 143, 164, 97, 98, 99]))
+&quot;&quot;&quot;
+b'\xe5\x8f\xa4'
+b'\xe5\x8f\xa4abc'
+&quot;&quot;&quot;
+
+print(bytes([229, 143, 164]).decode(&quot;utf-8&quot;))
+print(bytes([229, 143, 164, 97, 98, 99]).decode(&quot;utf-8&quot;))
+&quot;&quot;&quot;
+古
+古abc
+&quot;&quot;&quot;
+</code></pre>
+<p>以上就是 bytes 对象的几种创建方式，我们再总结一下。</p>
+<pre><code class="language-python"># 1）通过字面量的方式创建
+print(b&quot;hello&quot;)  # b'hello'
+# 也可以使用十六进制的 ASCII 码，但要指定 \x 前缀
+# \x 会和它后面的两个数字（范围是 0 ~ 9、A ~ F）进行组合，表示一个字符
+print(b&quot;\x61\x62\x63&quot;)  # b'abc'
+# 除了十六进制之外，还可以使用八进制的 ASCII 码，前缀是 \
+# \ 会和它后面的三个数字（范围是 0 ~ 7）进行组合，表示一个字符
+# 97、98、99 对应的八进制为 141、142、143
+print(b&quot;\141\142\143&quot;)  # b'abc'
+# 注：\x 要求后面必须跟两个数字，比如可以写 \x05，但不可以写 \x5
+# 而八进制的 \ 则不做要求，后面可以跟 1 ~ 3 个数字
+# 比如 9 不属于八进制整数，所以下面这个字节串长度为 4
+# 分别是 \014、9、\142、\143，而八进制的 14 对应的十六进制是 c
+# 所以打印 b&quot;\x0c9bc&quot;
+print(b&quot;\149\142\143&quot;)  # b'\x0c9bc'
+
+# 2）通过调用类型对象 bytes 创建
+print(bytes([97, 98, 99]))  # b'abc'
+# 也可以传一个字符串，并指定编码
+print(bytes(&quot;嘿嘿&quot;, encoding=&quot;utf8&quot;))  # b'\xe5\x98\xbf\xe5\x98\xbf'
+
+# 3）调用 bytes.fromhex 方法创建
+print(bytes.fromhex(&quot;616263&quot;))  # b'abc'
+</code></pre>
+<p>通过这些方法，我们可以很轻松地将数据转成 bytes 对象。</p>
+<h2 id="小结"><a class="header" href="#小结">小结</a></h2>
+<p>本篇文章我们就聊了聊什么是 bytes 对象，以及它的底层结构和几种创建方式。</p>
+<p>bytes 对象的含义是字节串，或者字节序列，它由一系列的字节组成。并且随着编码不同、字符范围不同，可能一个字节对应一个字符，也可能两个字节对应一个字符，或者三个字节对应一个字符。</p>
+<hr />
+<p> </p>
+<p><strong>欢迎大家关注我的公众号：古明地觉的编程教室。</strong></p>
+<p><img src="./images/qrcode_for_gh.jpg" alt="" /></p>
+<p><strong>如果觉得文章对你有所帮助，也可以请作者吃个馒头，Thanks♪(･ω･)ﾉ。</strong></p>
+<p><img src="./images/supports.png" alt="" /></p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="22.深度解密Python切片的实现原理.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="22.深度解密Python切片的实现原理.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+            </nav>
+
+        </div>
+
+        <script type="text/javascript">
+            window.playground_copyable = true;
+        </script>
+        <script src="elasticlunr.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="mark.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="searcher.js" type="text/javascript" charset="utf-8"></script>
+        <script src="clipboard.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="highlight.js" type="text/javascript" charset="utf-8"></script>
+        <script src="book.js" type="text/javascript" charset="utf-8"></script>
+
+        <!-- Custom JS scripts -->
+        <script type="text/javascript" src="theme/custom.js"></script>
+    </body>
+</html>
