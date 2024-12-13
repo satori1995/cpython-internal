@@ -141,8 +141,8 @@
                 <div id="content" class="content">
                     <main>
                         <h2 id="楔子"><a class="header" href="#楔子">楔子</a></h2>
-<p>None 在 Python 里面也是一个对象，用于表示空（值不存在的情况）。比如基于主键从数据库获取记录，如果没有查询到，那么一般会返回 None。另外如果函数没有返回值，那么会隐式地返回 None，表示返回的是空。</p>
-<p>本篇文章来聊一聊 None 是怎么实现的。</p>
+<p>None 在 Python 里面也是一个对象，用于表示空（值不存在的情况）。比如基于主键从数据库获取记录，如果没有查询到，那么一般会返回 None。另外如果函数没有返回值，那么也会隐式地返回 None，表示返回的是空。</p>
+<p>本篇文章就来聊一聊 None 是怎么实现的。</p>
 <h2 id="none-的底层结构"><a class="header" href="#none-的底层结构">None 的底层结构</a></h2>
 <p>和其它对象不同，由于 None 没有额外的实体数据，所以它在底层就是一个 PyObject 结构体实例。因此也能看出，None 的大小为 16 字节。</p>
 <pre><code class="language-C">// Objects/object.c
@@ -151,7 +151,7 @@ PyObject _Py_NoneStruct = {
   1, &amp;_PyNone_Type
 };
 </code></pre>
-<p>None 在底层只包含引用计数和类型，引用计数为 2 ** 32 - 1，所以 None 是一个永恒对象，然后类型为 _PyNone_Type。由于变量都是 PyObject *，所以和布尔值一样，解释器也提供了相应的宏，从而方便使用。</p>
+<p>None 在底层只包含引用计数和类型，然后类型为 _PyNone_Type。由于变量都是 PyObject *，所以和布尔值一样，解释器也提供了相应的宏，从而方便使用。</p>
 <pre><code class="language-C">// Include/object.h
 #define Py_None (&amp;_Py_NoneStruct)
 </code></pre>
