@@ -1,0 +1,890 @@
+<!DOCTYPE HTML>
+<html lang="zh-cn" class="sidebar-visible no-js light">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>37. 列表都有哪些自定义方法，它们是怎么实现的？ - CPython3.8 源码探秘</title>
+        <!-- Custom HTML head -->
+        <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff" />
+
+        <link rel="icon" href="favicon.svg">
+        <link rel="shortcut icon" href="favicon.png">
+        <link rel="stylesheet" href="css/variables.css">
+        <link rel="stylesheet" href="css/general.css">
+        <link rel="stylesheet" href="css/chrome.css">
+        <link rel="stylesheet" href="css/print.css" media="print">
+        <!-- Fonts -->
+        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="fonts/fonts.css">
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="highlight.css">
+        <link rel="stylesheet" href="tomorrow-night.css">
+        <link rel="stylesheet" href="ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+        <link rel="stylesheet" href="theme/custom.css">
+        <!-- MathJax -->
+        <script async type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    </head>
+    <body>
+        <!-- Provide site root to javascript -->
+        <script type="text/javascript">
+            var path_to_root = "";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script type="text/javascript">
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script type="text/javascript">
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            var html = document.querySelector('html');
+            html.classList.remove('no-js')
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add('js');
+        </script>
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script type="text/javascript">
+            var html = document.querySelector('html');
+            var sidebar = 'hidden';
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            }
+            html.classList.remove('sidebar-visible');
+            html.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li class="chapter-item expanded "><a href="0.序言.html">0. 序言</a></li><li class="chapter-item expanded "><a href="1.CPython源码长什么样子？.html">1. CPython 源码长什么样子？</a></li><li class="chapter-item expanded "><a href="2.变量和对象，它们之间有什么区别和联系呢？.html">2. 变量和对象，它们之间有什么区别和联系呢？</a></li><li class="chapter-item expanded "><a href="3.Python对象有哪几种，我们可以从哪些角度进行分类呢？.html">3. Python 对象有哪几种，我们可以从哪些角度进行分类呢？</a></li><li class="chapter-item expanded "><a href="4.万丈高楼平地起，一切从PyObject开始.html">4. 万丈高楼平地起，一切从 PyObject 开始</a></li><li class="chapter-item expanded "><a href="5.详解PyTypeObject，Python类型对象的载体.html">5. 详解 PyTypeObject，Python 类型对象的载体</a></li><li class="chapter-item expanded "><a href="6.通过type和object之间的关联，进一步分析类型对象.html">6. 通过 type 和 object 之间的关联，进一步分析类型对象</a></li><li class="chapter-item expanded "><a href="7.当创建一个Python对象时，背后都经历了哪些过程？.html">7. 当创建一个 Python 对象时，背后都经历了哪些过程？</a></li><li class="chapter-item expanded "><a href="8.当调用一个Python对象时，背后都经历了哪些过程？.html">8. 当调用一个 Python 对象时，背后都经历了哪些过程？</a></li><li class="chapter-item expanded "><a href="9.再探泛型API，感受Python对象的设计哲学.html">9. 再探泛型 API，感受 Python 对象的设计哲学</a></li><li class="chapter-item expanded "><a href="10.Python对象的行为是怎么区分的？.html">10. Python 对象的行为是怎么区分的？</a></li><li class="chapter-item expanded "><a href="11.一个Python对象会在何时被销毁？.html">11. 一个 Python 对象会在何时被销毁？</a></li><li class="chapter-item expanded "><a href="12.深度解密Python的浮点数是怎么实现的？.html">12. 深度解密 Python 的浮点数是怎么实现的？</a></li><li class="chapter-item expanded "><a href="13.对象被销毁之后所占的内存一定会释放吗？解密浮点数的缓存池机制.html">13. 对象被销毁之后所占的内存一定会释放吗？解密浮点数的缓存池机制</a></li><li class="chapter-item expanded "><a href="14.浮点数支持的操作是怎么实现的？.html">14. 浮点数支持的操作是怎么实现的？</a></li><li class="chapter-item expanded "><a href="15.解密Python的复数是怎么实现的？它有什么用途呢？.html">15. 解密 Python 的复数是怎么实现的？它有什么用途呢？</a></li><li class="chapter-item expanded "><a href="16.Python的整数是怎么设计的，为什么它不会溢出？.html">16. Python 的整数是怎么设计的，为什么它不会溢出？</a></li><li class="chapter-item expanded "><a href="17.解密Python的小整数对象池.html">17. 解密 Python 的小整数对象池</a></li><li class="chapter-item expanded "><a href="18.两个Python整数之间是如何进行大小比较的？过程并不像我们想的那样简单.html">18. 两个 Python 整数之间是如何进行大小比较的？过程并不像我们想的那样简单</a></li><li class="chapter-item expanded "><a href="19.探究Python整数的加减法，感受大整数的运算哲学与魅力.html">19. 探究 Python 整数的加减法，感受大整数的运算哲学与魅力</a></li><li class="chapter-item expanded "><a href="20.Python的布尔值是怎么实现的，你对它的了解有多深呢？.html">20. Python 的布尔值是怎么实现的，你对它的了解有多深呢？</a></li><li class="chapter-item expanded "><a href="21.Python的None是怎么实现的？.html">21. Python 的 None 是怎么实现的？</a></li><li class="chapter-item expanded "><a href="22.深度解密Python切片的实现原理.html">22.深度解密 Python 切片的实现原理</a></li><li class="chapter-item expanded "><a href="23.bytes对象（字节串）是怎么实现的？解密它的内部原理.html">23. bytes 对象（字节串）是怎么实现的？解密它的内部原理</a></li><li class="chapter-item expanded "><a href="24.bytes对象都支持哪些操作，它们是怎么实现的？.html">24. bytes 对象都支持哪些操作，它们是怎么实现的？</a></li><li class="chapter-item expanded "><a href="25.通过bytes对象的合并，探究缓冲区的奥秘.html">25. 通过 bytes 对象的合并，探究缓冲区的奥秘</a></li><li class="chapter-item expanded "><a href="26.解密bytes对象的缓存池.html">26. 解密 bytes 对象的缓存池</a></li><li class="chapter-item expanded "><a href="27.详解bytearray对象的底层实现.html">27. 详解 bytearray 对象的底层实现</a></li><li class="chapter-item expanded "><a href="28.字符集和字符编码.html">28. 字符集和字符编码</a></li><li class="chapter-item expanded "><a href="29.Python是怎么存储字符串的？.html">29. Python 是怎么存储字符串的？</a></li><li class="chapter-item expanded "><a href="30.解密字符串的底层结构，它是怎么实现的？.html">30. 解密字符串的底层结构，它是怎么实现的？</a></li><li class="chapter-item expanded "><a href="31.字符串的intern机制是怎么一回事？.html">31. 字符串的 intern 机制是怎么一回事？</a></li><li class="chapter-item expanded "><a href="32.聊一聊字符串常见操作的源码实现.html">32. 聊一聊字符串常见操作的源码实现</a></li><li class="chapter-item expanded "><a href="33.列表是怎么实现的？解密列表的数据结构.html">33. 列表是怎么实现的？解密列表的数据结构</a></li><li class="chapter-item expanded "><a href="34.列表是怎么扩容的？.html">34. 列表是怎么扩容的？</a></li><li class="chapter-item expanded "><a href="35.解密列表的创建与销毁，以及缓存池长什么样子？.html">35. 解密列表的创建与销毁，以及缓存池长什么样子？</a></li><li class="chapter-item expanded "><a href="36.列表作为序列型对象都支持哪些操作，它们在底层是怎么实现的？.html">36. 列表作为序列型对象都支持哪些操作，它们在底层是怎么实现的？</a></li><li class="chapter-item expanded "><a href="37.列表都有哪些自定义方法，它们是怎么实现的？.html" class="active">37. 列表都有哪些自定义方法，它们是怎么实现的？</a></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky bordered">
+                    <div class="left-buttons">
+                        <button id="sidebar-toggle" class="icon-button" type="button" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </button>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light (default)</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">CPython3.8 源码探秘</h1>
+
+                    <div class="right-buttons">
+                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+                        <a href="https://github.com/satori1995/cpython-internal" title="Git repository" aria-label="Git repository">
+                            <i id="git-repository-button" class="fa fa-github"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script type="text/javascript">
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h2 id="楔子"><a class="header" href="#楔子">楔子</a></h2>
+<p>上一篇文章我们介绍了列表作为序列型对象支持的方法，但列表还有很多的自定义方法。作为一名优秀的 Python 工程师，我们必须要知道这些方法的实现过程，以及相应的时间复杂度。</p>
+<p>实例对象能够调用的方法都定义在类型对象中，类型对象无一例外都是 PyTypeObject 结构体实例，该结构体有一个 tp_methods 字段，负责维护实例对象能够调用的方法。由于 tp_methods 指向 PyMethodDef 结构体类型的数组，所以一个 PyMethodDef 结构体实例，就是 Python 实例对象能够调用的一个方法。</p>
+<pre><code class="language-C">// Include/methodobject.h
+struct PyMethodDef {
+    // 暴露给 Python 的方法名
+    const char  *ml_name;   
+    // 承载了具体逻辑的 C 函数
+    PyCFunction ml_meth;  
+    // 指示函数的调用方式和传递参数的方式，比如 
+    /* METH_NOARGS: 表示函数不接收任何参数
+     * METH_O: 函数只接收一个参数
+     * METH_VARARGS: 函数支持以元组的形式接收多个位置参数
+     * METH_KEYWORDS: 函数支持关键字参数
+     * METH_CLASS: 函数是一个类方法，等价于 Python 里的 @classmethod
+     * METH_STATIC: 函数是一个静态方法，即 @staticmethod
+     * METH_FASTCALL: 函数使用优化的快速调用协议，Python 3.7 及以上版本可用
+                      传递参数时使用 C 数组，而不是 Python 元组
+     * METH_COEXIST: 如果希望存在两个同名函数，但类和实例分别调用不同的函数
+                     那么便可以指定 METH_COEXIST
+     */
+    int         ml_flags;   
+    // 函数的 docstring
+    const char  *ml_doc;    
+};
+</code></pre>
+<p>而 list 在底层对应 PyList_Type，它的 tp_methods 字段被赋值为 list_methods。</p>
+<p><img src="./images/102.png" alt="" /></p>
+<p>里面定义了列表可以调用的方法，相信当你以后想查看某个对象的方法的底层实现时，已经知道该怎么定位了，下面我们就来看看这些方法的实现过程。</p>
+<h2 id="append在尾部追加元素"><a class="header" href="#append在尾部追加元素">append：在尾部追加元素</a></h2>
+<p>append 方法可以往列表尾部追加元素。</p>
+<pre><code class="language-C">// Objects/clinic/listobject.c.h
+#define LIST_APPEND_METHODDEF    \
+    {&quot;append&quot;, (PyCFunction)list_append, METH_O, list_append__doc__},
+</code></pre>
+<p>它由 list_append 函数实现。</p>
+<pre><code class="language-C">// Objects/listobject.c
+static PyObject *
+list_append(PyListObject *self, PyObject *object)
+{
+    // 调用 app1 添加元素，并返回 None
+    if (app1(self, object) == 0)
+        Py_RETURN_NONE;
+    return NULL;
+}
+
+static int
+app1(PyListObject *self, PyObject *v)
+{
+    // 获取当前列表的长度
+    Py_ssize_t n = PyList_GET_SIZE(self);
+    assert (v != NULL);
+    if (n == PY_SSIZE_T_MAX) {
+        PyErr_SetString(PyExc_OverflowError,
+            &quot;cannot add more objects to list&quot;);
+        return -1;
+    }
+    // 追加元素之后 ob_size 会变成 n + 1
+    // 调用 list_resize 函数，判断 n + 1 和容量之间的关系
+    // 只要涉及到列表元素个数的改变，都要调用 list_resize 函数
+    if (list_resize(self, n+1) &lt; 0)
+        return -1;
+    // 增加引用计数
+    Py_INCREF(v);
+    // 将元素设置在索引为 n 的位置
+    PyList_SET_ITEM(self, n, v);
+    return 0;
+}
+</code></pre>
+<p>所谓往尾部追加元素，本质上就是将元素设置在索引为 len 的位置。</p>
+<h2 id="insert在任意位置插入元素"><a class="header" href="#insert在任意位置插入元素">insert：在任意位置插入元素</a></h2>
+<p>接下来是列表的 insert 方法。</p>
+<pre><code class="language-C">// Objects/clinic/listobject.c.h
+#define LIST_INSERT_METHODDEF    \
+    {&quot;insert&quot;, (PyCFunction)(void(*)(void))list_insert, METH_FASTCALL, list_insert__doc__},
+</code></pre>
+<p>它由 list_insert 函数负责实现。</p>
+<pre><code class="language-C">// Objects/clinic/listobject.c.h
+static PyObject *
+list_insert(PyListObject *self, PyObject *const *args, Py_ssize_t nargs)
+{
+    // 函数的返回值，但只会返回 None
+    PyObject *return_value = NULL;
+    // 插入的位置
+    Py_ssize_t index;
+    // 插入的元素
+    PyObject *object;
+    // insert 方法精确接收两个参数
+    if (!_PyArg_CheckPositional(&quot;insert&quot;, nargs, 2, 2)) {
+        goto exit;
+    }
+    if (PyFloat_Check(args[0])) {
+        PyErr_SetString(PyExc_TypeError,
+                        &quot;integer argument expected, got float&quot; );
+        goto exit;
+    }
+    {
+        // 参数 args 是一个元组，里面包含了插入位置和元素
+        Py_ssize_t ival = -1;
+        // 插入位置，对象必须实现 __index__
+        PyObject *iobj = PyNumber_Index(args[0]);
+        if (iobj != NULL) {
+            // 转成 Py_ssize_t
+            ival = PyLong_AsSsize_t(iobj);
+            Py_DECREF(iobj);
+        }
+        if (ival == -1 &amp;&amp; PyErr_Occurred()) {
+            goto exit;
+        }
+        // 赋值给 index
+        index = ival;
+    }
+    // 拿到待插入的元素
+    object = args[1];
+    // 调用 list_insert_impl 执行元素插入逻辑
+    return_value = list_insert_impl(self, index, object);
+
+exit:
+    // 虽然这里返回了 return_value，但我们知道 insert 方法是没有返回值的
+    // 或者说返回值为 None，所以上面的 list_insert_impl 一定返回了 None
+    return return_value;
+}
+
+// Objects/listobject.c
+static PyObject *
+list_insert_impl(PyListObject *self, Py_ssize_t index, PyObject *object)
+{
+    // 调用 ins1 插入元素，插入成功之后返回 None
+    if (ins1(self, index, object) == 0)
+        Py_RETURN_NONE;
+    return NULL;
+}
+
+static int
+ins1(PyListObject *self, Py_ssize_t where, PyObject *v)
+{
+    // 初始化循环变量 i，n 为列表长度
+    Py_ssize_t i, n = Py_SIZE(self);
+    // 指向 ob_item 数组的首元素
+    PyObject **items;
+    if (v == NULL) {
+        PyErr_BadInternalCall();
+        return -1;
+    }
+    if (n == PY_SSIZE_T_MAX) {
+        PyErr_SetString(PyExc_OverflowError,
+            &quot;cannot add more objects to list&quot;);
+        return -1;
+    }
+    // 只要涉及到元素个数的改变，比如添加和删除元素
+    // 都会先调用 list_resize，在里面检测一下容量
+    // 比如这里，如果发现 (容量 &gt;= n + 1) &amp;&amp; (容量 / 2 &lt;= n + 1)
+    // 那么说明容量目前是合理的，不需要做任何的扩容或缩容操作（如果条件不满足则需要）
+    // 然后将列表的 ob_size 修改为 n + 1，直接返回
+    if (list_resize(self, n+1) &lt; 0)
+        return -1;
+    // 判断插入位置，如果 where 小于 0，那么加上列表长度
+    if (where &lt; 0) {
+        where += n;
+        // 加上列表长度之后如果还小于 0，那么让其等于 0
+        if (where &lt; 0)
+            where = 0;
+    }
+    // 如果插入位置大于列表长度 n，那么让其等于 n，此时相当于 append
+    if (where &gt; n)
+        where = n;
+    items = self-&gt;ob_item;
+    // 将 where 以及之后的元素依次向右移动一个位置
+    for (i = n; --i &gt;= where; )
+        items[i+1] = items[i];
+    // 将待插入元素 v 的引用计数加 1，并设置在底层数组中索引为 where 的位置
+    Py_INCREF(v);
+    items[where] = v;
+    return 0;
+}
+</code></pre>
+<p>以上就是 insert 函数的底层逻辑，列表在插入数据的时候是非常灵活的，不管你在什么位置插入，都是合法的。它会自己调整，在确定待插入位置 where 之后，会将 where 以及之后的所有元素都向后挪动一个位置，空出来的地方设置为待插入的值。</p>
+<p>另外我们看到 append 和 insert 其实非常像，都是基于索引设置元素。只不过对于 append 来说，索引就是列表长度，而对于 insert 来说，索引是由外界指定的，但函数内部会进行边界调整。</p>
+<p>并且由于 insert 会涉及元素的移动，所以它的时间复杂度是 O(n)，而 append 则不会，它的时间复杂度是 O(1)。当然在极端情况下（发生扩容），append 也会退化成 O(n)，只不过这个过程不会频繁发生，所以 append 的复杂度仍然是 O(1) 的。</p>
+<h2 id="pop从尾部弹出一个元素"><a class="header" href="#pop从尾部弹出一个元素">pop：从尾部弹出一个元素</a></h2>
+<p>pop 默认会从尾部弹出一个元素，当然我们也可以指定索引，弹出指定索引对应的元素。如果不指定索引，那么默认是 -1。</p>
+<pre><code class="language-C">// Objects/clinic/listobject.c.h
+#define LIST_POP_METHODDEF    \
+    {&quot;pop&quot;, (PyCFunction)(void(*)(void))list_pop, METH_FASTCALL, list_pop__doc__},
+</code></pre>
+<p>它由 list_pop 函数负责实现。</p>
+<pre><code class="language-c">// Objects/clinic/listobject.c.h
+static PyObject *
+list_pop(PyListObject *self, PyObject *const *args, Py_ssize_t nargs)
+{
+    // 返回值
+    PyObject *return_value = NULL;
+    Py_ssize_t index = -1;
+    // pop 接收 0 ~ 1 个参数
+    if (!_PyArg_CheckPositional(&quot;pop&quot;, nargs, 0, 1)) {
+        goto exit;
+    }
+    // 如果参数个数小于 1，说白了就是没有传参，直接跳转到 skip_optional 标签
+    if (nargs &lt; 1) {
+        goto skip_optional;
+    }
+    if (PyFloat_Check(args[0])) {
+        PyErr_SetString(PyExc_TypeError,
+                        &quot;integer argument expected, got float&quot; );
+        goto exit;
+    }
+    {
+        // 如果传参了，那么拿到指定的索引
+        Py_ssize_t ival = -1;
+        PyObject *iobj = PyNumber_Index(args[0]);
+        if (iobj != NULL) {
+            ival = PyLong_AsSsize_t(iobj);
+            Py_DECREF(iobj);
+        }
+        if (ival == -1 &amp;&amp; PyErr_Occurred()) {
+            goto exit;
+        }
+        index = ival;
+    }
+skip_optional:
+    // 将列表和 index 作为参数传进去，如果不指定索引，那么 index 默认为 -1
+    return_value = list_pop_impl(self, index);
+
+exit:
+    // 返回弹出的元素
+    return return_value;
+}
+
+// Objects/listobject.c
+static PyObject *
+list_pop_impl(PyListObject *self, Py_ssize_t index)
+{
+    PyObject *v;
+    int status;
+    // 如果列表为空，那么抛出 IndexError: pop from empty list
+    if (Py_SIZE(self) == 0) {
+        PyErr_SetString(PyExc_IndexError, &quot;pop from empty list&quot;);
+        return NULL;
+    }
+    // 如果 index 小于 0，那么加上列表长度
+    if (index &lt; 0)
+        index += Py_SIZE(self);
+    // 检测索引是否合法，如果索引小于 0 或大于等于列表长度
+    // 那么抛出 IndexError: pop index out of range
+    if (!valid_index(index, Py_SIZE(self))) {
+        PyErr_SetString(PyExc_IndexError, &quot;pop index out of range&quot;);
+        return NULL;
+    }
+    // 拿到索引为 index 的元素，这也是一会儿要返回的元素
+    v = self-&gt;ob_item[index];
+    // 快分支，如果 index == Py_SIZE(self) - 1，证明弹出的是列表的最后一个元素
+    // 那么说明不涉及元素的移动，直接更新 ob_size 即可
+    if (index == Py_SIZE(self) - 1) {
+        status = list_resize(self, Py_SIZE(self) - 1);
+        if (status &gt;= 0)
+            return v;
+        else
+            return NULL;
+    }
+    Py_INCREF(v);
+    // 删除的不是最后一个元素，那么需要调用 list_ass_slice 进行删除
+    // 等价于 self[index: index + 1] = []，即删除索引为 index 的元素
+    status = list_ass_slice(self, index, index+1, (PyObject *)NULL);
+    if (status &lt; 0) {
+        Py_DECREF(v);
+        return NULL;
+    }
+    return v;
+}
+</code></pre>
+<p>以上就是 pop 方法。</p>
+<h2 id="index查询元素首次出现的位置"><a class="header" href="#index查询元素首次出现的位置">index：查询元素首次出现的位置</a></h2>
+<p>index 方法可以接收一个元素，然后返回该元素首次出现的位置。当然还可以额外指定一个 start 和 end，表示查询的范围。</p>
+<pre><code class="language-C">// Objects/clinic/listobject.c.h
+#define LIST_INDEX_METHODDEF    \
+    {&quot;index&quot;, (PyCFunction)(void(*)(void))list_index, METH_FASTCALL, list_index__doc__},
+</code></pre>
+<p>它由 list_index 负责实现。</p>
+<pre><code class="language-C">// Objects/clinic/listobject.c.h
+static PyObject *
+list_index(PyListObject *self, PyObject *const *args, Py_ssize_t nargs)
+{
+    PyObject *return_value = NULL;
+    PyObject *value;
+    Py_ssize_t start = 0;
+    Py_ssize_t stop = PY_SSIZE_T_MAX;
+    // index 方法接收 1 ~ 3 个参数
+    if (!_PyArg_CheckPositional(&quot;index&quot;, nargs, 1, 3)) {
+        goto exit;
+    }
+    // args[0] 表示查找的元素
+    value = args[0];
+    if (nargs &lt; 2) {
+        goto skip_optional;
+    }
+    // args[1] 表示查找的起始位置
+    if (!_PyEval_SliceIndexNotNone(args[1], &amp;start)) {
+        goto exit;
+    }
+    if (nargs &lt; 3) {
+        goto skip_optional;
+    }
+    // args[2] 表示查找的结束位置
+    if (!_PyEval_SliceIndexNotNone(args[2], &amp;stop)) {
+        goto exit;
+    }
+skip_optional:
+    // 调用 list_index_impl 查找元素
+    return_value = list_index_impl(self, value, start, stop);
+
+exit:
+    // 返回
+    return return_value;
+}
+
+// Objects/listobject.c
+static PyObject *
+list_index_impl(PyListObject *self, PyObject *value, Py_ssize_t start,
+                Py_ssize_t stop)
+{
+    Py_ssize_t i;
+    // 如果 start 小于 0，那么加上列表长度
+    if (start &lt; 0) {
+        start += Py_SIZE(self);
+        // 如果相加之后还小于 0，那么等于 0
+        if (start &lt; 0)
+            start = 0;
+    }
+    // 如果结束位置小于 0，那么加上列表长度，所以它们都支持负数索引
+    if (stop &lt; 0) {
+        stop += Py_SIZE(self);
+        // 如果相加之后还小于 0，那么等于 0
+        if (stop &lt; 0)
+            stop = 0;
+    }
+    // 从 start 开始遍历
+    for (i = start; i &lt; stop &amp;&amp; i &lt; Py_SIZE(self); i++) {
+        // 获取对应元素
+        PyObject *obj = self-&gt;ob_item[i];
+        Py_INCREF(obj);
+        // 然后进行比较，这个函数我们之前说过
+        // 它会先比较地址是否相同，如果地址相同，那么直接判定为相等
+        // 如果地址不同，那么比较值是否相等
+        int cmp = PyObject_RichCompareBool(obj, value, Py_EQ);
+        Py_DECREF(obj);
+        // 相等返回 1，不相等返回 0，比较失败返回 -1
+        // 如果 cmp 大于 0，表示两者相等，返回索引
+        if (cmp &gt; 0)
+            return PyLong_FromSsize_t(i);
+        else if (cmp &lt; 0)
+            return NULL;
+    }
+    // 到这里说明元素不存在，那么抛出 ValueError: x is not in list
+    PyErr_Format(PyExc_ValueError, &quot;%R is not in list&quot;, value);
+    return NULL;
+}
+</code></pre>
+<p>所以列表 index 方法的时间复杂度为 O(n)，因为它在底层要循环整个列表，如果运气好，可能第一个元素就是；运气不好，就只能循环整个列表了。</p>
+<p>然后需要注意的是，在比较的时候，会先判断地址是否相同，然后再比较值是否相等。</p>
+<pre><code class="language-Python">class A:
+
+    def __eq__(self, other):
+        return False
+
+
+a = A()
+data = [a]
+
+print(a == data[0])  # False
+print(data.index(a))  # 0
+</code></pre>
+<p>a 和 data[0] 指向的对象不相等，但 data.index(a) 却返回了相应的索引，因为两者保存的地址是相同的。</p>
+<p>同理 <font color="blue">if v in data</font> 这种也是类似的，先比较地址，地址不同再比较维护的值。</p>
+<h2 id="count查询元素出现的次数"><a class="header" href="#count查询元素出现的次数">count：查询元素出现的次数</a></h2>
+<p>列表有一个 count 方法，可以计算出某个元素出现的次数。</p>
+<pre><code class="language-C">// Objects/clinic/listobject.c.h
+#define LIST_COUNT_METHODDEF    \
+    {&quot;count&quot;, (PyCFunction)list_count, METH_O, list_count__doc__},
+</code></pre>
+<p>它由 list_count 函数负责实现。</p>
+<pre><code class="language-C">// Objects/listobject.c
+static PyObject *
+list_count(PyListObject *self, PyObject *value)
+{
+    Py_ssize_t count = 0;
+    Py_ssize_t i;
+    // 遍历每一个元素
+    for (i = 0; i &lt; Py_SIZE(self); i++) {
+        // 如果地址相同，直接判定为相等，count 自增 1
+        PyObject *obj = self-&gt;ob_item[i];
+        if (obj == value) {
+           count++;
+           continue;
+        }
+        Py_INCREF(obj);
+        // 地址不同（a is b 不成立），则比较维护的值是否相等（看 a == b 是否成立）
+        int cmp = PyObject_RichCompareBool(obj, value, Py_EQ);
+        Py_DECREF(obj);
+        if (cmp &gt; 0)
+            count++;
+        else if (cmp &lt; 0)
+            return NULL;
+    }
+    // 返回元素出现的次数
+    return PyLong_FromSsize_t(count);
+}
+</code></pre>
+<p>毫无疑问，count 方法无论在什么情况下，它都是一个时间复杂度为 O(n) 的操作，因为列表必须要从头遍历到尾。</p>
+<p>但还是要注意里面判断相等的方式，因为变量只是一个指针，所以 C 的 == 相当于 Python 的 is，但 Python 的 == 则对应 PyObject_RichCompare 函数。而源码里面在比较的时候先执行 ==，所以会先判断两者是不是指向同一个对象。</p>
+<pre><code class="language-python">class A:
+
+    def __eq__(self, other):
+        return False
+
+a = A()
+data = [a, a, a]
+print(data[0] == a)  # False
+print(data[1] == a)  # False
+print(data[2] == a)  # False
+
+print(data.count(a))  # 3
+</code></pre>
+<p>我们看到列表里的三个元素和 a 都不相等，但计算数量的时候，结果是 3。原因就是比较的时候是先比较地址，如果地址一样，那么认为元素相同。</p>
+<p>当然 PyObject_RichCompareBool 函数里面已经包含了比较地址的逻辑，该函数会先比较地址是否一样，如果一样则认为相等，不一样再比较对象维护的值是否相等。但在 count 方法里面，将比较地址的逻辑又单独拿了出来，可以理解为快分支。当然即遍没有也无所谓，因为在函数 PyObject_RichCompareBool 里面还是会先对地址进行比较。</p>
+<h2 id="remove删除指定元素"><a class="header" href="#remove删除指定元素">remove：删除指定元素</a></h2>
+<p>除了根据索引删除元素之外，也可以根据值来删除元素，会删除第一个出现的元素。</p>
+<pre><code class="language-C">// Objects/clinic/listobject.c.h
+#define LIST_REMOVE_METHODDEF    \
+    {&quot;remove&quot;, (PyCFunction)list_remove, METH_O, list_remove__doc__},
+</code></pre>
+<p>它由 list_remove 函数实现。</p>
+<pre><code class="language-C">// Objects/listobject.c
+static PyObject *
+list_remove(PyListObject *self, PyObject *value)
+{
+    Py_ssize_t i;
+    // 遍历每一个元素
+    for (i = 0; i &lt; Py_SIZE(self); i++) {
+        PyObject *obj = self-&gt;ob_item[i];
+        Py_INCREF(obj);
+        // 比较是否相等，如果地址相同，那么认为相等
+        int cmp = PyObject_RichCompareBool(obj, value, Py_EQ);
+        Py_DECREF(obj);
+        // 如果相等，那么进行删除
+        if (cmp &gt; 0) {
+            // 可以看到在删除元素的时候，调用了 list_ass_slice
+            // 等价于 self[i: i + 1] = []
+            if (list_ass_slice(self, i, i+1,
+                               (PyObject *)NULL) == 0)
+                Py_RETURN_NONE;
+            return NULL;
+        }
+        else if (cmp &lt; 0)
+            return NULL;
+    }
+    // 否则说明元素不在列表中，抛出 ValueError: list.remove(x): x not in list
+    PyErr_SetString(PyExc_ValueError, &quot;list.remove(x): x not in list&quot;);
+    return NULL;
+}
+</code></pre>
+<p>以上就是 remove 函数的底层实现，说白了就是一层 for 循环，依次比较列表的每个元素和待删除元素是否相等。如果出现了相等的元素，则删除，然后直接返回，因为只删除一个；但如果整个循环遍历结束也没有发现满足条件的元素，那么报错，待删除元素不存在。</p>
+<p>所以背后的逻辑并没有我们想象中的那么神秘。</p>
+<h2 id="reverse翻转列表"><a class="header" href="#reverse翻转列表">reverse：翻转列表</a></h2>
+<p>如果是你的话，你会怎么对列表进行翻转呢？显然是采用双指针，头指针指向列表的第一个元素，尾指针指向列表的最后一个元素，然后两两交换。交换完毕之后，头指针后移一位、尾指针前移一位，继续交换。当两个指针相遇时，停止交换，而 Python 底层也是这么做的。</p>
+<pre><code class="language-C">// Objects/clinic/listobject.c.h
+#define LIST_REVERSE_METHODDEF    \
+    {&quot;reverse&quot;, (PyCFunction)list_reverse, METH_NOARGS, list_reverse__doc__},
+</code></pre>
+<p>它由 list_reverse 负责实现。</p>
+<pre><code class="language-C">// Objects/clinic/listobject.c.h
+static PyObject *
+list_reverse(PyListObject *self, PyObject *Py_UNUSED(ignored))
+{
+    return list_reverse_impl(self);
+}
+
+// Objects/listobject.c
+static PyObject *
+list_reverse_impl(PyListObject *self)
+{   
+    // 如果列表长度不大于 1，那么什么也不做，直接返回 None 即可
+    if (Py_SIZE(self) &gt; 1)
+        // 大于 1 的话，执行 reverse_slice，传递了两个参数
+        // 第一个参数是底层数组首元素的地址
+        // 而第二个参数则是底层数组中索引为 ob_size 的元素的地址
+        // 但很明显能访问的最大索引应该是 ob_size - 1 才对啊
+        // 别急，我们继续往下看，看一下 reverse_slice 函数的实现
+        reverse_slice(self-&gt;ob_item, self-&gt;ob_item + Py_SIZE(self));
+    Py_RETURN_NONE;
+}
+
+static void
+reverse_slice(PyObject **lo, PyObject **hi)
+{
+    assert(lo &amp;&amp; hi);
+    // 我们看到又执行了一次 --hi
+    // 让二级指针 hi 指向了索引为 ob_size - 1 的元素
+    --hi;
+    // 数组元素的地址，从左往右是依次增大的
+    // 如果 lo &lt; hi，证明 lo 依旧在 hi 的左边，那么交换指向的元素
+    // 如果 lo &gt; hi，证明两者相遇了，交换结束
+    while (lo &lt; hi) {
+        // 交换指向的元素，下面三步等价于 *lo, *hi = *hi, *lo
+        // 但 C 不支持这么写，它需要借助一个中间变量
+        PyObject *t = *lo;
+        *lo = *hi;
+        *hi = t;
+        // 两个指针继续靠近，指向的元素继续交换，直到两个指针相遇
+        ++lo;
+        --hi;
+    }
+}
+</code></pre>
+<p>所以到现在，你还认为 Python 的列表神秘吗？虽然我们很难自己写出一个 Python 解释器，但是底层的一些思想其实并没有那么难，作为一名程序猿很容易想的到。</p>
+<h2 id="clear清空列表"><a class="header" href="#clear清空列表">clear：清空列表</a></h2>
+<p>将列表中的元素全部清空，让列表回到初始状态。</p>
+<pre><code class="language-c">// Objects/clinic/listobject.c.h
+#define LIST_CLEAR_METHODDEF    \
+    {&quot;clear&quot;, (PyCFunction)list_clear, METH_NOARGS, list_clear__doc__},
+</code></pre>
+<p>它由 list_clear 负责实现。</p>
+<pre><code class="language-c">// Objects/clinic/listobject.c.h
+static PyObject *
+list_clear(PyListObject *self, PyObject *Py_UNUSED(ignored))
+{
+    return list_clear_impl(self);
+}
+
+// Objects/listobject.c
+static PyObject *
+list_clear_impl(PyListObject *self)
+{
+    _list_clear(self);
+    Py_RETURN_NONE;
+}
+
+static int
+_list_clear(PyListObject *a)
+{
+    Py_ssize_t i;
+    PyObject **item = a-&gt;ob_item;
+    if (item != NULL) {
+        // 获取列表的长度
+        i = Py_SIZE(a);
+        // 将 ob_size 设置为 0
+        Py_SIZE(a) = 0;
+        // ob_item 设置为 NULL
+        a-&gt;ob_item = NULL;
+        // 将容量设置为 0
+        a-&gt;allocated = 0;
+        // 将列表中每个元素指向的对象的引用计数减 1
+        while (--i &gt;= 0) {
+            Py_XDECREF(item[i]);
+        }
+        // 释放底层数组所占的内存
+        PyMem_FREE(item);
+    }
+    return 0;
+}
+</code></pre>
+<p>过程非常简单，当列表为空时，除了将 ob_size 和 allocated 设置为 0 之外，还会将底层数组释放掉，减少内存占用。</p>
+<h2 id="copy列表的拷贝"><a class="header" href="#copy列表的拷贝">copy：列表的拷贝</a></h2>
+<p>调用列表的 copy 方法，可以将列表拷贝一份。</p>
+<pre><code class="language-C">// Objects/clinic/listobject.c.h
+#define LIST_COPY_METHODDEF    \
+    {&quot;copy&quot;, (PyCFunction)list_copy, METH_NOARGS, list_copy__doc__},
+</code></pre>
+<p>它由 list_copy 负责实现。</p>
+<pre><code class="language-C">// Objects/clinic/listobject.c.h
+static PyObject *
+list_copy(PyListObject *self, PyObject *Py_UNUSED(ignored))
+{
+    return list_copy_impl(self);
+}
+
+// Objects/listobject.c
+static PyObject *
+list_copy_impl(PyListObject *self)
+{
+    // 调用 list_slice，也就是基于切片获取元素
+    // 所以 data.copy() 等价于 data[:]
+    return list_slice(self, 0, Py_SIZE(self));
+}
+
+static PyObject *
+list_slice(PyListObject *a, Py_ssize_t ilow, Py_ssize_t ihigh)
+{
+    // 指向创建的新列表
+    PyListObject *np;
+    // 指向列表的底层数组的首元素
+    PyObject **src, **dest;
+    Py_ssize_t i, len;
+    // 创建的新列表的长度
+    len = ihigh - ilow;
+    // 创建底层数组长度为 len 的列表
+    np = (PyListObject *) list_new_prealloc(len);
+    if (np == NULL)
+        return NULL;
+
+    src = a-&gt;ob_item + ilow;
+    dest = np-&gt;ob_item;
+    // 将原始列表中的元素依次拷贝到新列表中
+    for (i = 0; i &lt; len; i++) {
+        PyObject *v = src[i];
+        Py_INCREF(v);
+        dest[i] = v;
+    }
+    // 将新列表的 ob_size 设置为 len
+    Py_SIZE(np) = len;
+    // 转成泛型指针之后返回
+    return (PyObject *)np;
+}
+</code></pre>
+<p>过程非常简单，但列表的 copy 方法或者说 data[:] 这种叫做列表的浅拷贝。关于列表的深浅拷贝也是初学者容易犯的错误之一，我们看一个 Python 的例子。</p>
+<pre><code class="language-Python">data = [[]]
+
+# 默认是浅拷贝，这个过程会创建一个新列表
+# 但我们说列表里面的元素都是指针，因此只会将里面的指针拷贝一份
+# 而指针指向的内存并没有拷贝
+data_cp = data.copy()
+
+# 两个对象的地址是一样的
+print(id(data[0]), id(data[0]))  
+&quot;&quot;&quot;
+1338344668224 1338344668224
+&quot;&quot;&quot;
+
+# 操作 data[0], 会改变 data_cp[0]
+data[0].append(123)
+print(data, data_cp)
+&quot;&quot;&quot;
+[[123]] [[123]]
+&quot;&quot;&quot;
+
+# 操作 data_cp[0]，会改变 data[0]
+data_cp[0].append(456)
+print(data, data_cp)
+&quot;&quot;&quot;
+[[123, 456]] [[123, 456]]
+&quot;&quot;&quot;
+</code></pre>
+<p>之所以会有这样的现象，是因为 Python 的变量、容器里面的元素都是泛型指针 PyObject *，在传递的时候会传递指针， 但是在操作的时候会操作指针指向的内存。所以 data.copy() 就是创建了一个新列表，然后把元素拷贝了过去，只不过元素都是指针。因为只是拷贝指针，没有拷贝指针指向的对象（内存），因此它们指向的是同一个对象。</p>
+<p>但如果我们就想在拷贝指针的同时也拷贝指针指向的对象呢？答案是使用一个叫 copy 的模块。</p>
+<pre><code class="language-Python">import copy
+
+data = [[]]
+# 此时拷贝的时候，会把指针指向的对象也给拷贝一份
+data_cp1 = copy.deepcopy(data)
+data_cp2 = data[:]
+
+data[0].append(123)
+print(data_cp1)  # [[]]
+print(data_cp2)  # [[123]]
+
+# data[:] 这种方式也是浅拷贝，所以修改 data[0]，会影响 data_cp2[0]
+# 但是没有影响 data_cp1[0]，证明它们是相互独立的，因为指向的是不同的对象
+</code></pre>
+<p><font color="blue"><strong>浅拷贝示意图如下：</strong></font></p>
+<p><img src="./images/103.png" alt="" /></p>
+<p>里面的两个指针数组存储的元素是一样的，都是同一个对象的地址。</p>
+<p><font color="blue"><strong>深拷贝示意图如下：</strong></font></p>
+<p><img src="./images/104.png" alt="" /></p>
+<p>里面的两个指针数组存储的元素是不一样的，因为是不同对象的地址。</p>
+<p>注意：copy.deepcopy 虽然在拷贝指针的同时会将指针指向的对象也拷贝一份，但这仅仅是针对可变对象，而不可变对象是不会拷贝的。</p>
+<pre><code class="language-python">import copy
+
+data = [[], &quot;古明地觉&quot;]
+data_cp = copy.deepcopy(data)
+
+print(data[0] is data_cp[0])  # False
+print(data[1] is data_cp[1])  # True
+</code></pre>
+<p>为什么会这样，其实原因很简单。因为不可变对象是不支持本地修改的，你若想修改只能创建新的对象并指向它。但这对其它的变量而言则没有影响，其它变量该指向谁就还指向谁。</p>
+<p>因为 b = a 只是将 <font color="blue">a 存储的对象的指针</font>拷贝一份给 b，然后 a 和 b 都指向了同一个对象，至于 a 和 b 本身则是没有任何关系的。如果此时 a 指向了新的对象，是完全不会影响 b 的，b 还是指向原来的对象。</p>
+<p>因此，如果一个指针指向的对象不支持本地修改，那么深拷贝不会拷贝对象本身，因为指向的是不可变对象，所以不会有修改一个影响另一个的情况出现。</p>
+<p><strong>关于列表还有一些陷阱：</strong></p>
+<pre><code class="language-python">data = [[]] * 5
+data[0].append(1)
+print(data)  # [[1], [1], [1], [1], [1]]
+# 列表乘上一个 n，等于把列表里面的元素重复 n 次
+# 但列表里面存储的是指针，也就是将指针重复 n 次
+# 所以上面的列表里面的 5 个指针存储的地址是相同的
+# 也就是说，它们都指向了同一个列表
+
+# 这种方式创建的话，里面的指针都指向了不同的列表
+data = [[], [], [], [], []]
+data[0].append(1)
+print(data)  # [[1], [], [], [], []]
+
+
+# 再比如字典，在后续系列中会说
+d = dict.fromkeys([1, 2, 3, 4], [])
+print(d)  # {1: [], 2: [], 3: [], 4: []}
+d[1].append(123)
+print(d)  # {1: [123], 2: [123], 3: [123], 4: [123]}
+# 它们都指向了同一个列表
+</code></pre>
+<p>类似的陷阱还有很多，因此在工作中要注意，否则一不小心就会出现大问题。</p>
+<p>总之记住三句话：</p>
+<ul>
+<li>虽然 Python 一切皆对象，但我们拿到的其实是指向对象的指针；</li>
+<li>变量在传递的时候本质上是将对象的指针拷贝一份，所以 Python 是变量的赋值传递、对象的引用传递；</li>
+<li>操作变量（指针）的时候，会自动操作变量（指针）指向的内存。</li>
+</ul>
+<h2 id="小结"><a class="header" href="#小结">小结</a></h2>
+<p>到此关于列表的内容就介绍完了，作为 Python 中的万能容器，我们可以自由地添加、修改和删除元素。但在使用的时候要了解它的底层结构以及元素是如何存储的，应该在什么场景下使用列表，它的每个方法的时间复杂度是多少。</p>
+<p>下一篇文章来介绍元组，或许你觉得自己在代码中很少创建元组，但其实它无处不在。</p>
+<hr />
+<p> </p>
+<p><strong>欢迎大家关注我的公众号：古明地觉的编程教室。</strong></p>
+<p><img src="./images/qrcode_for_gh.jpg" alt="" /></p>
+<p><strong>如果觉得文章对你有所帮助，也可以请作者吃个馒头，Thanks♪(･ω･)ﾉ。</strong></p>
+<p><img src="./images/supports.png" alt="" /></p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="36.列表作为序列型对象都支持哪些操作，它们在底层是怎么实现的？.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="36.列表作为序列型对象都支持哪些操作，它们在底层是怎么实现的？.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+            </nav>
+
+        </div>
+
+        <script type="text/javascript">
+            window.playground_copyable = true;
+        </script>
+        <script src="elasticlunr.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="mark.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="searcher.js" type="text/javascript" charset="utf-8"></script>
+        <script src="clipboard.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="highlight.js" type="text/javascript" charset="utf-8"></script>
+        <script src="book.js" type="text/javascript" charset="utf-8"></script>
+
+        <!-- Custom JS scripts -->
+        <script type="text/javascript" src="theme/custom.js"></script>
+    </body>
+</html>
