@@ -1,0 +1,308 @@
+<!DOCTYPE HTML>
+<html lang="zh-cn" class="sidebar-visible no-js light">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>39. 聊一聊喜闻乐见的哈希表 - CPython3.8 源码探秘</title>
+        <!-- Custom HTML head -->
+        <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff" />
+
+        <link rel="icon" href="favicon.svg">
+        <link rel="shortcut icon" href="favicon.png">
+        <link rel="stylesheet" href="css/variables.css">
+        <link rel="stylesheet" href="css/general.css">
+        <link rel="stylesheet" href="css/chrome.css">
+        <link rel="stylesheet" href="css/print.css" media="print">
+        <!-- Fonts -->
+        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="fonts/fonts.css">
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="highlight.css">
+        <link rel="stylesheet" href="tomorrow-night.css">
+        <link rel="stylesheet" href="ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+        <link rel="stylesheet" href="theme/custom.css">
+        <!-- MathJax -->
+        <script async type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    </head>
+    <body>
+        <!-- Provide site root to javascript -->
+        <script type="text/javascript">
+            var path_to_root = "";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script type="text/javascript">
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script type="text/javascript">
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            var html = document.querySelector('html');
+            html.classList.remove('no-js')
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add('js');
+        </script>
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script type="text/javascript">
+            var html = document.querySelector('html');
+            var sidebar = 'hidden';
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            }
+            html.classList.remove('sidebar-visible');
+            html.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li class="chapter-item expanded "><a href="0.序言.html">0. 序言</a></li><li class="chapter-item expanded "><a href="1.CPython源码长什么样子？.html">1. CPython 源码长什么样子？</a></li><li class="chapter-item expanded "><a href="2.变量和对象，它们之间有什么区别和联系呢？.html">2. 变量和对象，它们之间有什么区别和联系呢？</a></li><li class="chapter-item expanded "><a href="3.Python对象有哪几种，我们可以从哪些角度进行分类呢？.html">3. Python 对象有哪几种，我们可以从哪些角度进行分类呢？</a></li><li class="chapter-item expanded "><a href="4.万丈高楼平地起，一切从PyObject开始.html">4. 万丈高楼平地起，一切从 PyObject 开始</a></li><li class="chapter-item expanded "><a href="5.详解PyTypeObject，Python类型对象的载体.html">5. 详解 PyTypeObject，Python 类型对象的载体</a></li><li class="chapter-item expanded "><a href="6.通过type和object之间的关联，进一步分析类型对象.html">6. 通过 type 和 object 之间的关联，进一步分析类型对象</a></li><li class="chapter-item expanded "><a href="7.当创建一个Python对象时，背后都经历了哪些过程？.html">7. 当创建一个 Python 对象时，背后都经历了哪些过程？</a></li><li class="chapter-item expanded "><a href="8.当调用一个Python对象时，背后都经历了哪些过程？.html">8. 当调用一个 Python 对象时，背后都经历了哪些过程？</a></li><li class="chapter-item expanded "><a href="9.再探泛型API，感受Python对象的设计哲学.html">9. 再探泛型 API，感受 Python 对象的设计哲学</a></li><li class="chapter-item expanded "><a href="10.Python对象的行为是怎么区分的？.html">10. Python 对象的行为是怎么区分的？</a></li><li class="chapter-item expanded "><a href="11.一个Python对象会在何时被销毁？.html">11. 一个 Python 对象会在何时被销毁？</a></li><li class="chapter-item expanded "><a href="12.深度解密Python的浮点数是怎么实现的？.html">12. 深度解密 Python 的浮点数是怎么实现的？</a></li><li class="chapter-item expanded "><a href="13.对象被销毁之后所占的内存一定会释放吗？解密浮点数的缓存池机制.html">13. 对象被销毁之后所占的内存一定会释放吗？解密浮点数的缓存池机制</a></li><li class="chapter-item expanded "><a href="14.浮点数支持的操作是怎么实现的？.html">14. 浮点数支持的操作是怎么实现的？</a></li><li class="chapter-item expanded "><a href="15.解密Python的复数是怎么实现的？它有什么用途呢？.html">15. 解密 Python 的复数是怎么实现的？它有什么用途呢？</a></li><li class="chapter-item expanded "><a href="16.Python的整数是怎么设计的，为什么它不会溢出？.html">16. Python 的整数是怎么设计的，为什么它不会溢出？</a></li><li class="chapter-item expanded "><a href="17.解密Python的小整数对象池.html">17. 解密 Python 的小整数对象池</a></li><li class="chapter-item expanded "><a href="18.两个Python整数之间是如何进行大小比较的？过程并不像我们想的那样简单.html">18. 两个 Python 整数之间是如何进行大小比较的？过程并不像我们想的那样简单</a></li><li class="chapter-item expanded "><a href="19.探究Python整数的加减法，感受大整数的运算哲学与魅力.html">19. 探究 Python 整数的加减法，感受大整数的运算哲学与魅力</a></li><li class="chapter-item expanded "><a href="20.Python的布尔值是怎么实现的，你对它的了解有多深呢？.html">20. Python 的布尔值是怎么实现的，你对它的了解有多深呢？</a></li><li class="chapter-item expanded "><a href="21.Python的None是怎么实现的？.html">21. Python 的 None 是怎么实现的？</a></li><li class="chapter-item expanded "><a href="22.深度解密Python切片的实现原理.html">22.深度解密 Python 切片的实现原理</a></li><li class="chapter-item expanded "><a href="23.bytes对象（字节串）是怎么实现的？解密它的内部原理.html">23. bytes 对象（字节串）是怎么实现的？解密它的内部原理</a></li><li class="chapter-item expanded "><a href="24.bytes对象都支持哪些操作，它们是怎么实现的？.html">24. bytes 对象都支持哪些操作，它们是怎么实现的？</a></li><li class="chapter-item expanded "><a href="25.通过bytes对象的合并，探究缓冲区的奥秘.html">25. 通过 bytes 对象的合并，探究缓冲区的奥秘</a></li><li class="chapter-item expanded "><a href="26.解密bytes对象的缓存池.html">26. 解密 bytes 对象的缓存池</a></li><li class="chapter-item expanded "><a href="27.详解bytearray对象的底层实现.html">27. 详解 bytearray 对象的底层实现</a></li><li class="chapter-item expanded "><a href="28.字符集和字符编码.html">28. 字符集和字符编码</a></li><li class="chapter-item expanded "><a href="29.Python是怎么存储字符串的？.html">29. Python 是怎么存储字符串的？</a></li><li class="chapter-item expanded "><a href="30.解密字符串的底层结构，它是怎么实现的？.html">30. 解密字符串的底层结构，它是怎么实现的？</a></li><li class="chapter-item expanded "><a href="31.字符串的intern机制是怎么一回事？.html">31. 字符串的 intern 机制是怎么一回事？</a></li><li class="chapter-item expanded "><a href="32.聊一聊字符串常见操作的源码实现.html">32. 聊一聊字符串常见操作的源码实现</a></li><li class="chapter-item expanded "><a href="33.列表是怎么实现的？解密列表的数据结构.html">33. 列表是怎么实现的？解密列表的数据结构</a></li><li class="chapter-item expanded "><a href="34.列表是怎么扩容的？.html">34. 列表是怎么扩容的？</a></li><li class="chapter-item expanded "><a href="35.解密列表的创建与销毁，以及缓存池长什么样子？.html">35. 解密列表的创建与销毁，以及缓存池长什么样子？</a></li><li class="chapter-item expanded "><a href="36.列表作为序列型对象都支持哪些操作，它们在底层是怎么实现的？.html">36. 列表作为序列型对象都支持哪些操作，它们在底层是怎么实现的？</a></li><li class="chapter-item expanded "><a href="37.列表都有哪些自定义方法，它们是怎么实现的？.html">37. 列表都有哪些自定义方法，它们是怎么实现的？</a></li><li class="chapter-item expanded "><a href="38.解密Python元组的实现原理.html">38. 解密 Python 元组的实现原理</a></li><li class="chapter-item expanded "><a href="39.聊一聊喜闻乐见的哈希表.html" class="active">39. 聊一聊喜闻乐见的哈希表</a></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky bordered">
+                    <div class="left-buttons">
+                        <button id="sidebar-toggle" class="icon-button" type="button" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </button>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light (default)</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">CPython3.8 源码探秘</h1>
+
+                    <div class="right-buttons">
+                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+                        <a href="https://github.com/satori1995/cpython-internal" title="Git repository" aria-label="Git repository">
+                            <i id="git-repository-button" class="fa fa-github"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script type="text/javascript">
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h2 id="楔子"><a class="header" href="#楔子">楔子</a></h2>
+<p>Python 的字典是一种映射型容器对象，保存了键（key）到值（value）的映射关系。通过字典，我们可以实现快速查找，JSON 这种数据结构也是借鉴了 Python 的字典。另外字典是经过高度优化的，因为 Python 底层也在大量地使用字典。</p>
+<p>在 Python 里面我们要如何创建一个字典呢？</p>
+<pre><code class="language-python"># 创建一个字典
+d = {&quot;a&quot;: 1, &quot;b&quot;: 2}
+print(d)  # {'a': 1, 'b': 2}
+
+# 或者我们还可以调用 dict，传入关键字参数即可
+d = dict(a=1, b=2, c=3, d=4)
+print(d)  # {'a': 1, 'b': 2, 'c': 3, 'd': 4}
+
+# 当然 dict 里面还可以接收位置参数，但是最多接收一个
+d1 = dict({&quot;a&quot;: 1, &quot;b&quot;: 2}, c=3, d=4)
+d2 = dict([(&quot;a&quot;, 1), (&quot;b&quot;, 2)], c=3, d=4)
+print(d1)  # {'a': 1, 'b': 2, 'c': 3, 'd': 4}
+print(d2)  # {'a': 1, 'b': 2, 'c': 3, 'd': 4}
+
+
+# 还可以根据已有字典创建新的字典
+d = {**{&quot;a&quot;: 1, &quot;b&quot;: 2}, &quot;c&quot;: 3, **{&quot;d&quot;: 4}}
+print(d)  # {'a': 1, 'b': 2, 'c': 3, 'd': 4}
+
+# 当然通过调用 dict 也是可以的
+# 但是注意：** 这种方式本质上是把字典变成多个关键字参数
+# 所以里面的 key 一定要符合 Python 的变量命名规范
+d = dict(**{&quot;a&quot;: 1, &quot;b&quot;: 2}, c=3, **{&quot;d&quot;: 4})
+print(d)  # {'a': 1, 'b': 2, 'c': 3, 'd': 4}
+
+try:
+    # 这种是不合法的，因为 **{1: 1} 等价于 1=1
+    d = dict(**{1: 1})
+except Exception as e:
+    print(e)  # keywords must be strings
+# 但下面是合法的
+d = {**{1: 1, 2: 2}}
+print(d)  # {1: 1, 2: 2}
+</code></pre>
+<p>字典的底层是借助哈希表实现的，关于哈希表我们一会儿说，总之字典添加元素、删除元素、查找元素等操作的平均时间复杂度是 O(1)。</p>
+<p>我们来测试一下字典的执行效率吧，看看它和列表之间的区别。</p>
+<pre><code class="language-Python">import time
+import numpy as np
+
+def test(count: int, value: int):
+    &quot;&quot;&quot;
+    :param count: 循环次数
+    :param value: 查询的元素
+    :return:
+    &quot;&quot;&quot;
+    # 包含一千个随机数的列表
+    lst = list(np.random.randint(0, 2 ** 30, size=1000))
+    # 基于列表构建一个字典
+    d = dict.fromkeys(lst)
+
+    # 查询元素 value 是否在列表中，循环 count 次，并统计时间
+    t1 = time.perf_counter()
+    for _ in range(count):
+        value in lst
+    t2 = time.perf_counter()
+    print(&quot;列表查询耗时:&quot;, round(t2 - t1, 2))
+
+    # 查询元素 value 是否在字典中，循环 count 次，并统计时间
+    t1 = time.perf_counter()
+    for _ in range(count):
+        value in d
+    t2 = time.perf_counter()
+    print(&quot;字典查询耗时:&quot;, round(t2 - t1, 2))
+
+
+# 分别查询一千次、一万次、十万次、二十万次
+test(10 ** 3, 22333)
+&quot;&quot;&quot;
+列表查询耗时: 0.13
+字典查询耗时: 0.0
+&quot;&quot;&quot;
+test(10 ** 4, 22333)
+&quot;&quot;&quot;
+列表查询耗时: 1.22
+字典查询耗时: 0.0
+&quot;&quot;&quot;
+test(10 ** 5, 22333)
+&quot;&quot;&quot;
+列表查询耗时: 12.68
+字典查询耗时: 0.01
+&quot;&quot;&quot;
+test(10 ** 5 * 2, 22333)
+&quot;&quot;&quot;
+列表查询耗时: 25.72
+字典查询耗时: 0.01
+&quot;&quot;&quot;
+</code></pre>
+<p>字典的查询速度非常快，从测试中我们看到，随着循环次数越来越多，列表所花费的总时间越来越长。但是字典由于查询所花费的时间极少，查询速度非常快，所以即便循环 50 万次，花费的总时间也不过才 0.01 秒左右。</p>
+<p>此外字典还有一个特点，就是它的<font color="blue">快</font>不会受到数据量的影响，从含有一万个键值对的字典中查找，和从含有一千万个键值对的字典中查找，两者花费的时间几乎是没有区别的。</p>
+<p>那么哈希表到底是什么样的数据结构，为什么能这么快呢？下面来分析一下。</p>
+<h2 id="什么是哈希表"><a class="header" href="#什么是哈希表">什么是哈希表</a></h2>
+<p>映射型容器的使用场景非常广泛，基本上所有的主流语言都支持。例如 C++ 里面的 map 就是一种映射型容器，但它是基于红黑树实现的。红黑树是一种平衡二叉树，元素的插入、删除、查询等操作的时间复杂度均为 O(logN)，另外 Linux 的 epoll 也使用了红黑树。</p>
+<p>而对于 Python 来讲，映射型容器指的就是字典，我们说字典在 Python 内部是被高度优化的。因为不光我们在用，虚拟机在运行时也在大量使用，比如类对象、自定义类的实例对象都有自己的属性字典，还有全局变量也是通过字典存储的。因此基于以上种种原因，Python 对字典的性能要求会更加苛刻。</p>
+<p>所以 Python 字典采用的数据结构，在添加、删除、查询元素等方面肯定是要优于红黑树的，没错，就是哈希表。其原理是将 key 通过哈希函数进行运算，得到一个哈希值，再将这个哈希值映射成索引。</p>
+<p>我们举例说明：</p>
+<p><img src="./images/108.png" alt="" /></p>
+<p>我们发现除了 key、value 之外，还有一个 index，因为哈希表本质上也是使用了索引。虽然数组在遍历的时候是个时间复杂度为 O(n) 的操作，但通过索引定位元素则是一个 O(1) 的操作，不管数组有多长，通过索引总是能瞬间定位到指定元素。</p>
+<p>所以哈希表本质上就是一个数组，通过将 key 映射成一个数值，作为数组的索引，然后将键值对存在数组里面。至于它是怎么映射的，我们后面再谈，现在就假设是按照我们接下来说的方法映射的。</p>
+<p>比如这里有一个能容纳 8 个元素的字典，如上图所示。我们先设置 <font color="blue">d[&quot;koishi&quot;]=79</font>，那么会对 &quot;koishi&quot; 这个字符串进行哈希运算，得到一个哈希值，然后再让哈希值对当前的总容量进行取模，这样的话是不是能够得到一个小于 8 的数呢？假设是 3，那么就存在索引为 3 的位置。</p>
+<p>然后 <font color="blue">d[&quot;scarlet&quot;]=95</font>，按照同样的规则运算得到 6，那么就存在索引为 6 的位置；同理第三次设置 <font color="blue">d[&quot;satori&quot;]=80</font>，对字符串 satori 进行哈希、取模，得到 1，那么存储在索引为 1 的位置。</p>
+<p>同理当我们根据键来获取值的时候，比如：<font color="blue">d[&quot;satori&quot;]</font>，那么同样会对字符串 &quot;satori&quot; 进行哈希、取模，得到索引发现是1，然后就把索引为 1 的 value 给取出来。</p>
+<p>当然这种方式肯定存在缺陷，比如：</p>
+<ul>
+<li>不同的 key 进行哈希、取模运算之后得到的结果一定是不同的吗？</li>
+<li>在运算之后得到索引的时候，发现这个位置已经有人占了怎么办？</li>
+<li>取值的时候，索引为 1，可如果索引为 1 对应的 key 和我们指定的 key 不一致怎么办？</li>
+</ul>
+<p>所以哈希运算是会冲突的，如果冲突，那么 Python 底层会改变策略重新映射，直到映射出来的索引没有人用。比如我们设置一个新的键值对 <font color="blue">d[&quot;tomoyo&quot;]=88</font>，可是 &quot;tomoyo&quot; 这个 key 映射之后得到的结果也是 1，而索引为 1 的地方已经被 key 为 &quot;satori&quot; 的键值对给占了，那么 Python 就会改变规则来对 &quot;tomoyo&quot; 重新映射，直到找到一个空位置。</p>
+<p>但如果我们再次设置 <font color="blue">d[&quot;satori&quot;]=100</font>，那么对 satori 映射得到的结果也是 1，而 key 是一致的，那么就会把对应的值进行修改。</p>
+<p>同理，当我们获取值的时候，比如 <font color="blue">d[&quot;tomoyo&quot;]</font>，那么对 key 进行映射，得到索引。但是发现该索引对应的 key 不是 &quot;tomoyo&quot; 而是 &quot;satori&quot;，于是改变规则（这个规则跟设置 key 冲突时，采用的规则是一样的），重新映射，得到新的索引，然后发现 key 是一致的，于是将值取出来。</p>
+<p>所以从这里就已经能说明问题了，就是把 key 转换成数组的索引。可能有人问，这些键值对貌似不是连续的啊。对的，肯定不是连续的。并不是说你先存，你的索引就小、就在前面，这是由 key 进行哈希运算之后的结果决定的。</p>
+<p>另外哈希表、或者说字典也会扩容，并且它还不是像列表那样，容量不够才扩容，而是当键值对个数达到容量的三分之二的时候就会扩容。</p>
+<p>因为字典不可能会像列表那样，键值对之间是连续、一个一个挨在一起的。既然是哈希运算，得到的哈希值肯定是随机的，再根据哈希值映射出的索引也是随机的。那么在键值对个数达到容量三分之二的时候，计算出来的索引发生碰撞的概率会非常大，不可能等到容量不够了再去扩容，而是在键值对个数达到容量的三分之二时就要扩容，也就是申请一个更大的哈希表。</p>
+<p><font color="#ac39ff"><strong>一句话总结：哈希表就是一种空间换时间的方法。</strong></font></p>
+<p>假设容量为 1024，那么就相当于数组有 1024 个位置，每个 key 都会映射成索引，找到自己的位置，将键值对存在里面。但很明显各自的位置是不固定的，肯定会空出来很多，但是无所谓，只要保证通过索引能在相应的位置找到它即可。</p>
+<p>大量的文字会有些枯燥，我们用两张图来解释一下设置元素和获取元素的整个过程。</p>
+<p><img src="./images/109.png" alt="" /></p>
+<p>以上是设置元素，还是比较清晰的，果然图像是个好东西。再来看看获取元素：</p>
+<p><img src="./images/110.png" alt="" /></p>
+<p>以上就是哈希表的基本原理，说白了它就是个数组。存储键值对的时候，先将 key 映射成索引，然后基于索引找到数组中的指定位置，将键值对存进去。</p>
+<h2 id="小结"><a class="header" href="#小结">小结</a></h2>
+<p>目前介绍的正是 Python 早期所采用的哈希表，但是它有一个严重的问题，就是内存浪费严重。下一篇文章我们就来看看字典的底层结构，以及 Python 是如何对哈希表进行优化的。</p>
+<hr />
+<p> </p>
+<p><strong>欢迎大家关注我的公众号：古明地觉的编程教室。</strong></p>
+<p><img src="./images/qrcode_for_gh.jpg" alt="" /></p>
+<p><strong>如果觉得文章对你有所帮助，也可以请作者吃个馒头，Thanks♪(･ω･)ﾉ。</strong></p>
+<p><img src="./images/supports.png" alt="" /></p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="38.解密Python元组的实现原理.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="38.解密Python元组的实现原理.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+            </nav>
+
+        </div>
+
+        <script type="text/javascript">
+            window.playground_copyable = true;
+        </script>
+        <script src="elasticlunr.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="mark.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="searcher.js" type="text/javascript" charset="utf-8"></script>
+        <script src="clipboard.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="highlight.js" type="text/javascript" charset="utf-8"></script>
+        <script src="book.js" type="text/javascript" charset="utf-8"></script>
+
+        <!-- Custom JS scripts -->
+        <script type="text/javascript" src="theme/custom.js"></script>
+    </body>
+</html>
