@@ -9162,16 +9162,16 @@ typedef struct _dictkeysobject PyDictKeysObject;
 // Objects/dict-common.h
 struct _dictkeysobject {
     // key 的引用计数，也就是 key 被多少个字典所使用
-    // 如果是结合表，那么该成员始终是 1，因为结合表独占一组 key
-    // 如果是分离表，那么该成员大于等于 1，因为分离表可以共享一组 key
+    // 如果是结合表，那么该字段始终是 1，因为结合表独占一组 key
+    // 如果是分离表，那么该字段大于等于 1，因为分离表可以共享一组 key
     Py_ssize_t dk_refcnt;
 
     // 哈希表的大小、或者说长度，注意：dk_size 满足 2 的 n 次方
-    // 这样可将模运算优化成按位与运算，也就是将 num % dk_size 替换成 num &amp; (dk_size - 1)
+    // 这样可将取模运算优化成按位与运算，也就是将 num % dk_size 优化成 num &amp; (dk_size - 1)
     Py_ssize_t dk_size;
 
     // 哈希函数，用于计算 key 的哈希值，然后映射成索引
-    // 一个好的哈希函数应该能尽量少的避免冲突，并且哈希函数对哈希表的性能起着至关重要的作用
+    // 一个好的哈希函数应该尽可能少的产生冲突，并且哈希函数对哈希表的性能起着至关重要的作用
     // 所以底层的哈希函数有很多种，会根据对象的种类选择最合适的一个
     dict_lookup_func dk_lookup;
 
@@ -9204,7 +9204,7 @@ typedef struct {
 <p><img src="./images/111.png" alt="" /></p>
 <p>字典的真正实现藏在 PyDictKeysObject 中，它的内部包含两个关键数组：一个是哈希索引数组 dk_indices，另一个是键值对数组 dk_entries。</p>
 <p>字典维护的键值对（entry）会按照先来后到的顺序保存在键值对数组中，而哈希索引数组则保存<font color="blue">键值对</font>在<font color="blue">键值对数组</font>中的索引。另外，哈希索引数组中的一个位置我们称之为一个<font color="blue">槽</font>，比如图中的哈希索引数组便有 8 个槽，其数量由 dk_size 字段维护。</p>
-<p>比如我们创建一个空字典，注意：虽然字典是空的，但是容量已经有了，然后往里面插入键值对 <font color="blue">&quot;komeiji&quot;: 99</font> 的时候，Python 会执行以下步骤：</p>
+<p>假设我们创建一个空字典，注意：虽然字典是空的，但是容量已经有了，然后往里面插入键值对 <font color="blue">&quot;komeiji&quot;: 99</font> 的时候，Python 会执行以下步骤：</p>
 <ul>
 <li>将键值对保存在 dk_entries 中，由于初始字典是空的，所以会保存在 dk_entries 数组中索引为 0 的位置。</li>
 <li>通过哈希函数计算出 &quot;komeiji&quot; 的哈希值，然后将哈希值映射成索引，假设是 6。</li>
@@ -9260,6 +9260,7 @@ typedef struct {
 <li>哈希表本质上就是个数组，只不过 Python 选择使用两个数组实现，其中哈希索引数组的长度便是哈希表的容量，而该长度由 dk_size 字段维护。</li>
 <li>由于哈希表最多使用 2/3，那么就只为键值对数组申请 2/3 容量的空间。对于容量为 8 的哈希表，那么哈希索引数组的长度就是 8，键值对数组的长度就是 5。</li>
 <li>dk_usable 字段表示键值对数组还可以容纳的 entry 的个数，所以它的初始值也是 5。</li>
+<li>dk_nentries 字段表示当前已存在的 entry 的数量，假设哈希表，或者说键值对数组存储了 3 个键值对，那么 dk_nentries 就是 3。而 dk_usable 则会变成 5 - 3 等于 2，因为它表示键值对数组还可以容纳多少 entry。</li>
 </ul>
 <p>咦，前面介绍 PyDictObject 的时候，看到里面有一个 ma_used 字段，表示字典的长度。那么 dk_nentries 和 ma_used 有啥区别呢，从字面意思上看，两者的含义貌似是等价的，关于这一点后续再解释。</p>
 <p>最后就是 dk_indices 和 dk_entries，它们表示哈希索引数组和键值对数组。到此我们就把每个字段的含义又重新回顾了一遍，现在再来看是不是就清晰多了呢。</p>
@@ -9268,7 +9269,7 @@ typedef struct {
 <p>其实很简单，在存储时，虽然映射之后的索引是随机的，但键值对本身始终是按照先来后到的顺序被添加进键值对数组中。而字典在 for 循环时，会直接遍历键值对数组，所以遍历的结果是有序的。但即便如此，我们也不应该依赖此特性。</p>
 <p>还是以之前的图为例，我们顺序写入三个键值对，key 分别是 &quot;a&quot;、&quot;b&quot;、&quot;c&quot;：</p>
 <p><img src="./images/113.png" alt="" /></p>
-<p>早期的哈希表只有一个键值对数组，键值对在存储时本身就是无序的，那么遍历的结果自然也是无序的。对于当前来说，遍历的结果就是 &quot;b&quot;、&quot;a&quot;、&quot;c&quot;。</p>
+<p>早期的哈希表只有一个键值对数组，而键值对在存储时本身就是无序的，那么遍历的结果自然也是无序的。对于当前来说，遍历的结果就是 &quot;b&quot;、&quot;a&quot;、&quot;c&quot;。</p>
 <p>但从 3.6 开始，键值对数组中的键值对，和添加顺序是一致的。而遍历时，会直接遍历键值对数组，因此遍历的结果是有序的。对于当前来说，遍历的结果就是 &quot;a&quot;、&quot;b&quot;、&quot;c&quot;。</p>
 <p>当然，如果你是 Python 的设计者，希望遍历依旧不保持有序的话，那么该怎么做呢？很简单，可以先遍历哈希索引数组，将存储的有效索引依次取出，对于当前来说就是 1、0、2。然后基于这些索引，从键值对数组中获取键值对，那么遍历的结果也是 &quot;b&quot;、&quot;a&quot;、&quot;c&quot;。</p>
 <h2 id="字典的内存大小"><a class="header" href="#字典的内存大小">字典的内存大小</a></h2>
@@ -9297,7 +9298,7 @@ struct _dictkeysobject {
 // 如果不算哈希索引数组 dk_indices 和键值对数组 dk_entries
 // 那么 PyDictKeysObject 实例占 40 个字节
 </code></pre>
-<p>然后是剩余的两个数组，一个是 char 类型的数组 dk_indices，里面 1 个元素占 1 字节；还有一个 PyDictKeyEntry 类型的数组 dk_entries，里面一个元素占 24 字节。所以对于容量为 n 的字典来说：</p>
+<p>然后是剩余的两个数组，一个是哈希索引数组 dk_indices，里面 1 个元素可能占 1 字节、2 字节、或 4 字节；还有一个键值对数组 dk_entries，里面一个元素占 24 字节。所以对于容量为 n 的字典来说：</p>
 <ul>
 <li>如果 n &lt; 256，字典大小等于 48 + 40 + n + n * 2 // 3 * 24</li>
 <li>如果 256 &lt;= n &lt; 65536，字典大小等于 48 + 40 + n * 2 + n * 2 // 3 * 24</li>
