@@ -1,0 +1,333 @@
+<!DOCTYPE HTML>
+<html lang="zh-cn" class="sidebar-visible no-js light">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>46. 字典是怎么扩容的？它会经历哪些过程？ - CPython3.8 源码探秘</title>
+        <!-- Custom HTML head -->
+        <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff" />
+
+        <link rel="icon" href="favicon.svg">
+        <link rel="shortcut icon" href="favicon.png">
+        <link rel="stylesheet" href="css/variables.css">
+        <link rel="stylesheet" href="css/general.css">
+        <link rel="stylesheet" href="css/chrome.css">
+        <link rel="stylesheet" href="css/print.css" media="print">
+        <!-- Fonts -->
+        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="fonts/fonts.css">
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="highlight.css">
+        <link rel="stylesheet" href="tomorrow-night.css">
+        <link rel="stylesheet" href="ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+        <link rel="stylesheet" href="theme/custom.css">
+        <!-- MathJax -->
+        <script async type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    </head>
+    <body>
+        <!-- Provide site root to javascript -->
+        <script type="text/javascript">
+            var path_to_root = "";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script type="text/javascript">
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script type="text/javascript">
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            var html = document.querySelector('html');
+            html.classList.remove('no-js')
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add('js');
+        </script>
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script type="text/javascript">
+            var html = document.querySelector('html');
+            var sidebar = 'hidden';
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            }
+            html.classList.remove('sidebar-visible');
+            html.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li class="chapter-item expanded "><a href="0.序言.html">0. 序言</a></li><li class="chapter-item expanded "><a href="1.CPython源码长什么样子？.html">1. CPython 源码长什么样子？</a></li><li class="chapter-item expanded "><a href="2.变量和对象，它们之间有什么区别和联系呢？.html">2. 变量和对象，它们之间有什么区别和联系呢？</a></li><li class="chapter-item expanded "><a href="3.Python对象有哪几种，我们可以从哪些角度进行分类呢？.html">3. Python 对象有哪几种，我们可以从哪些角度进行分类呢？</a></li><li class="chapter-item expanded "><a href="4.万丈高楼平地起，一切从PyObject开始.html">4. 万丈高楼平地起，一切从 PyObject 开始</a></li><li class="chapter-item expanded "><a href="5.详解PyTypeObject，Python类型对象的载体.html">5. 详解 PyTypeObject，Python 类型对象的载体</a></li><li class="chapter-item expanded "><a href="6.通过type和object之间的关联，进一步分析类型对象.html">6. 通过 type 和 object 之间的关联，进一步分析类型对象</a></li><li class="chapter-item expanded "><a href="7.当创建一个Python对象时，背后都经历了哪些过程？.html">7. 当创建一个 Python 对象时，背后都经历了哪些过程？</a></li><li class="chapter-item expanded "><a href="8.当调用一个Python对象时，背后都经历了哪些过程？.html">8. 当调用一个 Python 对象时，背后都经历了哪些过程？</a></li><li class="chapter-item expanded "><a href="9.再探泛型API，感受Python对象的设计哲学.html">9. 再探泛型 API，感受 Python 对象的设计哲学</a></li><li class="chapter-item expanded "><a href="10.Python对象的行为是怎么区分的？.html">10. Python 对象的行为是怎么区分的？</a></li><li class="chapter-item expanded "><a href="11.一个Python对象会在何时被销毁？.html">11. 一个 Python 对象会在何时被销毁？</a></li><li class="chapter-item expanded "><a href="12.深度解密Python的浮点数是怎么实现的？.html">12. 深度解密 Python 的浮点数是怎么实现的？</a></li><li class="chapter-item expanded "><a href="13.对象被销毁之后所占的内存一定会释放吗？解密浮点数的缓存池机制.html">13. 对象被销毁之后所占的内存一定会释放吗？解密浮点数的缓存池机制</a></li><li class="chapter-item expanded "><a href="14.浮点数支持的操作是怎么实现的？.html">14. 浮点数支持的操作是怎么实现的？</a></li><li class="chapter-item expanded "><a href="15.解密Python的复数是怎么实现的？它有什么用途呢？.html">15. 解密 Python 的复数是怎么实现的？它有什么用途呢？</a></li><li class="chapter-item expanded "><a href="16.Python的整数是怎么设计的，为什么它不会溢出？.html">16. Python 的整数是怎么设计的，为什么它不会溢出？</a></li><li class="chapter-item expanded "><a href="17.解密Python的小整数对象池.html">17. 解密 Python 的小整数对象池</a></li><li class="chapter-item expanded "><a href="18.两个Python整数之间是如何进行大小比较的？过程并不像我们想的那样简单.html">18. 两个 Python 整数之间是如何进行大小比较的？过程并不像我们想的那样简单</a></li><li class="chapter-item expanded "><a href="19.探究Python整数的加减法，感受大整数的运算哲学与魅力.html">19. 探究 Python 整数的加减法，感受大整数的运算哲学与魅力</a></li><li class="chapter-item expanded "><a href="20.Python的布尔值是怎么实现的，你对它的了解有多深呢？.html">20. Python 的布尔值是怎么实现的，你对它的了解有多深呢？</a></li><li class="chapter-item expanded "><a href="21.Python的None是怎么实现的？.html">21. Python 的 None 是怎么实现的？</a></li><li class="chapter-item expanded "><a href="22.深度解密Python切片的实现原理.html">22.深度解密 Python 切片的实现原理</a></li><li class="chapter-item expanded "><a href="23.bytes对象（字节串）是怎么实现的？解密它的内部原理.html">23. bytes 对象（字节串）是怎么实现的？解密它的内部原理</a></li><li class="chapter-item expanded "><a href="24.bytes对象都支持哪些操作，它们是怎么实现的？.html">24. bytes 对象都支持哪些操作，它们是怎么实现的？</a></li><li class="chapter-item expanded "><a href="25.通过bytes对象的合并，探究缓冲区的奥秘.html">25. 通过 bytes 对象的合并，探究缓冲区的奥秘</a></li><li class="chapter-item expanded "><a href="26.解密bytes对象的缓存池.html">26. 解密 bytes 对象的缓存池</a></li><li class="chapter-item expanded "><a href="27.详解bytearray对象的底层实现.html">27. 详解 bytearray 对象的底层实现</a></li><li class="chapter-item expanded "><a href="28.字符集和字符编码.html">28. 字符集和字符编码</a></li><li class="chapter-item expanded "><a href="29.Python是怎么存储字符串的？.html">29. Python 是怎么存储字符串的？</a></li><li class="chapter-item expanded "><a href="30.解密字符串的底层结构，它是怎么实现的？.html">30. 解密字符串的底层结构，它是怎么实现的？</a></li><li class="chapter-item expanded "><a href="31.字符串的intern机制是怎么一回事？.html">31. 字符串的 intern 机制是怎么一回事？</a></li><li class="chapter-item expanded "><a href="32.聊一聊字符串常见操作的源码实现.html">32. 聊一聊字符串常见操作的源码实现</a></li><li class="chapter-item expanded "><a href="33.列表是怎么实现的？解密列表的数据结构.html">33. 列表是怎么实现的？解密列表的数据结构</a></li><li class="chapter-item expanded "><a href="34.列表是怎么扩容的？.html">34. 列表是怎么扩容的？</a></li><li class="chapter-item expanded "><a href="35.解密列表的创建与销毁，以及缓存池长什么样子？.html">35. 解密列表的创建与销毁，以及缓存池长什么样子？</a></li><li class="chapter-item expanded "><a href="36.列表作为序列型对象都支持哪些操作，它们在底层是怎么实现的？.html">36. 列表作为序列型对象都支持哪些操作，它们在底层是怎么实现的？</a></li><li class="chapter-item expanded "><a href="37.列表都有哪些自定义方法，它们是怎么实现的？.html">37. 列表都有哪些自定义方法，它们是怎么实现的？</a></li><li class="chapter-item expanded "><a href="38.解密Python元组的实现原理.html">38. 解密 Python 元组的实现原理</a></li><li class="chapter-item expanded "><a href="39.聊一聊喜闻乐见的哈希表.html">39. 聊一聊喜闻乐见的哈希表</a></li><li class="chapter-item expanded "><a href="40.字典是怎么实现的，它的底层结构长什么样子？.html">40. 字典是怎么实现的，它的底层结构长什么样子？</a></li><li class="chapter-item expanded "><a href="41.什么是可哈希对象，它的哈希值是怎么计算的？.html">41. 什么是可哈希对象，它的哈希值是怎么计算的？</a></li><li class="chapter-item expanded "><a href="42.字典的key是怎么映射成索引的，索引冲突了又该怎么办？.html">42. 字典的 key 是怎么映射成索引的，索引冲突了又该怎么办？</a></li><li class="chapter-item expanded "><a href="43.哈希表是怎么删除元素的，能直接删除吗？.html">43. 哈希表是怎么删除元素的，能直接删除吗？</a></li><li class="chapter-item expanded "><a href="44.字典是怎么创建的，支持的操作又是如何实现的？.html">44. 字典是怎么创建的，支持的操作又是如何实现的？</a></li><li class="chapter-item expanded "><a href="45.字典的自定义方法是怎么实现的？.html">45. 字典的自定义方法是怎么实现的？</a></li><li class="chapter-item expanded "><a href="46.字典是怎么扩容的？它会经历哪些过程？.html" class="active">46. 字典是怎么扩容的？它会经历哪些过程？</a></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky bordered">
+                    <div class="left-buttons">
+                        <button id="sidebar-toggle" class="icon-button" type="button" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </button>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light (default)</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">CPython3.8 源码探秘</h1>
+
+                    <div class="right-buttons">
+                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+                        <a href="https://github.com/satori1995/cpython-internal" title="Git repository" aria-label="Git repository">
+                            <i id="git-repository-button" class="fa fa-github"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script type="text/javascript">
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <p>在介绍字典的底层结构时我们看到，当已使用的 entry 数量达到总容量的 2/3 时，会发生扩容。</p>
+<p>而在早期，哈希表只使用一个键值对数组，这个键值对数组不仅要存储具体的 entry，还要承载哈希索引数组的功能。本来这个方式很简单，但是内存浪费严重，于是后面 Python 官方就将一个数组拆成两个数组来实现。</p>
+<p>不是说只能用 2/3 吗？那就只给键值对数组申请 2/3 容量的空间，并且只负责存储键值对。至于索引，则由哈希索引数组来承载。通过将 key 映射成索引，找到指定的哈希槽，再根据槽里面存储的索引，找到键值对数组中存储的 entry。</p>
+<blockquote>
+<p>因此减少内存开销的核心就在于，避免键值对数组的浪费。</p>
+</blockquote>
+<p>所以哈希索引数组的长度就可以看成是哈希表的容量，而键值对数组的长度本身就是哈希索引数组长度的 2/3、或者说容量的 2/3。那么很明显，当键值对数组满了，就说明当前的哈希表要扩容了。</p>
+<pre><code class="language-C">// Objects/dictobject.c
+#define GROWTH_RATE(d) ((d)-&gt;ma_used*3)
+</code></pre>
+<p>扩容之后的新哈希表的容量要<font color="blue">大于等于 ma_used * 3</font>，注意是大于等于 <font color="blue">ma_used * 3</font>，不是 <font color="blue">dk_nentries * 3</font>。因为 dk_nentries 还包含了被删除的 entry，但哈希表在扩容的候会将其丢弃，所以扩容之后新哈希表的容量取决于 ma_used。</font></p>
+<p>当然啦，哈希表的容量还要等于 2 的幂次方，所以有两个条件：</p>
+<ul>
+<li>大于等于 ma_used * 3；</li>
+<li>等于 2 的幂次方；</li>
+</ul>
+<p>基于以上两个限制条件，取到的最小值便是扩容之后的容量。而扩容的具体过程我们稍后会介绍，目前先来回顾一下基础知识。</p>
+<p><img src="./images/131.png" alt="" /></p>
+<p>以上是字典的底层结构，假设变量 mp 指向了 PyDictObject 实例，那么可以得到如下信息。</p>
+<ul>
+<li><code>mp-&gt;ma_keys-&gt;dk_indices</code> 便是哈希索引数组，它的长度便是哈希表的容量。</li>
+<li><code>mp-&gt;ma_keys-&gt;dk_entries</code> 便是键值对数组，里面的一个 entry 就是一个键值对。</li>
+<li>如果字典使用的是结合表，那么 entry 的 me_key、me_value 字段负责存储键和值，此时 <code>mp-&gt;ma_values</code> 为 NULL。</li>
+<li>如果字典使用的是分离表，那么 entry 的 me_key 字段负责存储键，me_value 字段则始终为 NULL，此时由 <code>mp-&gt;ma_values</code> 负责存储值，这种做法可以让多个字典共享一组 key，从而节省内存。</li>
+</ul>
+<p>因为分离表是 Python 针对实例对象的属性字典单独设计的，我们平时创建的都是结合表，所以一开始并没有讨论分离表。但分离表其实非常简单，这里来补充一下吧。现在假设有一个字典，里面有三个键值对 <font color="blue">&quot;a&quot;: 1, &quot;b&quot;: 2, &quot;c&quot;: 3</font>，我们看一下分别使用结合表和分离表存储时，字典的结构是什么样子。</p>
+<p><img src="./images/132.png" alt="" /></p>
+<p>所以结合表是键和值存在一起，分离表是键和值分开存储，非常好理解。我们自己创建的字典，使用的都是结合表，分离表是为了减少对象属性字典的内存使用而专门引入的。因此对于一个分离表而言，它的 key 一定都是字符串，否则不可能是分离表。而如果 key 都是字符串，那么既可以是分离表，也可以是结合表。</p>
+<p>接着是转换关系：分离表可以重构为结合表，但反过来不行。</p>
+<p>好，下面我们来看一下扩容逻辑，它由 dictresize 函数负责。</p>
+<pre><code class="language-C">// Objects/dictobject.c
+
+#define PyDict_MINSIZE 8
+
+static int
+dictresize(PyDictObject *mp, Py_ssize_t minsize)
+{
+    // 参数 minsize 表示字典的 ma_used * 3，即长度 * 3
+  
+    Py_ssize_t newsize, numentries;
+    // mp-&gt;ma_keys
+    PyDictKeysObject *oldkeys;
+    // mp-&gt;ma_values
+    PyObject **oldvalues;
+    // mp-&gt;ma_values-&gt;dk_entries
+    PyDictKeyEntry *oldentries, *newentries;
+
+    /* Find the smallest table size &gt; minused. */
+    // 初始容量为 8，如果 newsize &lt; minsize，那么不断循环
+    // 直到条件不满足时，便找到了大于等于 minsize 的最小 2 的幂次方数
+    // newsize 便是字典扩容之后的新容量
+    for (newsize = PyDict_MINSIZE;
+         newsize &lt; minsize &amp;&amp; newsize &gt; 0;
+         newsize &lt;&lt;= 1)
+        ;
+    if (newsize &lt;= 0) {
+        PyErr_NoMemory();
+        return -1;
+    }
+    // 获取扩容之前的 ma_keys
+    oldkeys = mp-&gt;ma_keys;
+    // 在介绍字典的创建时，我们说过这个函数，它负责为 PyDictKeysObject 实例申请内存
+    mp-&gt;ma_keys = new_keys_object(newsize);
+    if (mp-&gt;ma_keys == NULL) {
+        mp-&gt;ma_keys = oldkeys;
+        return -1;
+    }
+    assert(mp-&gt;ma_keys-&gt;dk_usable &gt;= mp-&gt;ma_used);
+    // 设置探测函数
+    if (oldkeys-&gt;dk_lookup == lookdict)
+        mp-&gt;ma_keys-&gt;dk_lookup = lookdict;
+    // 字典的长度
+    numentries = mp-&gt;ma_used;
+    // 扩容之前的键值对数组
+    oldentries = DK_ENTRIES(oldkeys);
+    // 扩容之后的键值对数组
+    newentries = DK_ENTRIES(mp-&gt;ma_keys);
+    // 扩容之前的 ma_values
+    oldvalues = mp-&gt;ma_values;
+    // 如果 oldvalues 不为 NULL，说明字典使用的是分离表
+    // 那么当字典发生扩容时，要转成结合表
+    if (oldvalues != NULL) {
+        // 将旧的键值对数组的 entry 拷贝到新的键值对数组中
+        for (Py_ssize_t i = 0; i &lt; numentries; i++) {
+            assert(oldvalues[i] != NULL);
+            PyDictKeyEntry *ep = &amp;oldentries[i];
+            PyObject *key = ep-&gt;me_key;
+            Py_INCREF(key);
+            // key 始终存储在 entry 中
+            newentries[i].me_key = key;
+            // 设置哈希值
+            newentries[i].me_hash = ep-&gt;me_hash;
+            // 将 mp-&gt;ma_values 里面的值，赋值给 entry-&gt;me_value
+            newentries[i].me_value = oldvalues[i];
+        }
+        // 旧的 ma_keys 和 ma_values 要释放掉
+        dictkeys_decref(oldkeys);
+        mp-&gt;ma_values = NULL;
+        if (oldvalues != empty_values) {
+            free_values(oldvalues);
+        }
+    }
+    // 说明字典使用的是结合表，重构的结果依旧是结合表
+    else {  // combined table.
+        // 如果 entry 的数量等于字典的长度，说明没有被删除的 entry，那么直接 memcpy 过去即可
+        if (oldkeys-&gt;dk_nentries == numentries) {
+            memcpy(newentries, oldentries, numentries * sizeof(PyDictKeyEntry));
+        }
+        // 否则遍历 oldentries，将 me_value != NULL 的 entry 拷贝过去
+        else {
+            PyDictKeyEntry *ep = oldentries;
+            for (Py_ssize_t i = 0; i &lt; numentries; i++) {
+                while (ep-&gt;me_value == NULL)
+                    ep++;
+                newentries[i] = *ep++;
+            }
+        }
+
+        assert(oldkeys-&gt;dk_lookup != lookdict_split);
+        assert(oldkeys-&gt;dk_refcnt == 1);
+        // 缓存池逻辑，后续聊
+        if (oldkeys-&gt;dk_size == PyDict_MINSIZE &amp;&amp;
+            numfreekeys &lt; PyDict_MAXFREELIST) {
+            _Py_DEC_REFTOTAL;
+            keys_free_list[numfreekeys++] = oldkeys;
+        }
+        else {
+            _Py_DEC_REFTOTAL;
+            PyObject_FREE(oldkeys);
+        }
+    }
+    // 到此键值对数组的元素就拷贝完了，然后还要进行索引映射，并存储在哈希槽中
+    build_indices(mp-&gt;ma_keys, newentries, numentries);
+    // dk_usable 表示还可以容纳多少个键值对
+    // dk_nentries 表示已经容纳了多少个键值对
+    // 而 numentries 表示字典的长度，所以重构之后
+    // dk_usable 的大小要减去 numentries，dk_nentries 直接等于 numentries
+    mp-&gt;ma_keys-&gt;dk_usable -= numentries;
+    mp-&gt;ma_keys-&gt;dk_nentries = numentries;
+    return 0;
+}
+</code></pre>
+<p>因为要对哈希表的种类分情况讨论，所以导致代码有点长，但逻辑不难理解：</p>
+<ul>
+<li>首先确定哈希表的容量，它要满足 2 的幂次方，并且大于等于 ma_used * 3。</li>
+<li>为 ma_keys 重新申请内存。</li>
+<li>根据哈希表的种类分情况讨论，但核心都是将旧的没有被删除的 entry 搬过去。</li>
+<li>释放 ma_keys，如果字典之前是分离表，还要释放 ma_values。</li>
+</ul>
+<p>以上就是哈希表的扩容，或者说字典的扩容，我们就介绍到这儿，下一篇文章来介绍字典的缓存池。</p>
+<hr />
+<p> </p>
+<p><strong>欢迎大家关注我的公众号：古明地觉的编程教室。</strong></p>
+<p><img src="./images/qrcode_for_gh.jpg" alt="" /></p>
+<p><strong>如果觉得文章对你有所帮助，也可以请作者吃个馒头，Thanks♪(･ω･)ﾉ。</strong></p>
+<p><img src="./images/supports.png" alt="" /></p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="45.字典的自定义方法是怎么实现的？.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="45.字典的自定义方法是怎么实现的？.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+            </nav>
+
+        </div>
+
+        <script type="text/javascript">
+            window.playground_copyable = true;
+        </script>
+        <script src="elasticlunr.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="mark.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="searcher.js" type="text/javascript" charset="utf-8"></script>
+        <script src="clipboard.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="highlight.js" type="text/javascript" charset="utf-8"></script>
+        <script src="book.js" type="text/javascript" charset="utf-8"></script>
+
+        <!-- Custom JS scripts -->
+        <script type="text/javascript" src="theme/custom.js"></script>
+    </body>
+</html>
