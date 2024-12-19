@@ -14172,10 +14172,6 @@ int main() {
     printf(&quot;a + b = %d\n&quot;, result);
 }
 </code></pre>
-<p>当执行函数 add 时，那么当前帧显然就是函数 add 的栈帧，而调用者的帧（上一级栈帧）显然就是函数 main 的栈帧。</p>
-<blockquote>
-<p>栈是先入后出的数据结构，地址从栈底到栈顶是减小的。对于一个函数而言，所有对局部变量的操作都在自己的栈帧中完成，而调用函数的时候则会为其创建新的栈帧。</p>
-</blockquote>
 <p>当执行函数 main 的时候，RSP 指向 main 栈帧的顶部，RBP 指向 main 栈帧的基址。然后在 main 里面又调用了函数 add，那么毫无疑问，系统会在地址空间中，在 main 的栈帧之上为 add 创建栈帧。然后让 RSP 指向 add 栈帧的顶部，RBP 指向 add 栈帧的基址，而 add 栈帧的基址保存了上一级栈帧（main 栈帧）的基址。</p>
 <p>当函数 add 执行结束时，会销毁对应栈帧，再将 RSP 和 RBP 恢复为创建 add 栈帧之前的值，这样程序的执行流程就又回到了函数 main 里面，当然程序的运行空间也回到了函数 main 的栈帧中。</p>
 <p>不难发现，通过两个 CPU 寄存器 RSP、RBP，以及栈帧中保存的上一级栈帧的基址，完美地维护了函数之间的调用链，这就是可执行文件在 x64 机器上的运行原理。</p>
@@ -14225,7 +14221,7 @@ print(type(frame))
 </code></pre>
 <p>我们看到栈帧的类型是 &lt;class 'frame'&gt;，正如 PyCodeObject 对象的类型是 &lt;class 'code'&gt; 一样，这两个类没有暴露给我们，所以不可以直接使用。</p>
 <p>同理，还有 Python 的函数，类型是 &lt;class 'function'&gt;，模块的类型是 &lt;class 'module'&gt;。这些解释器都没有给我们提供，如果直接使用的话，那么 frame、code、function、module 只是几个没有定义的变量罢了，这些类我们只能通过这种间接的方式获取。</p>
-<p>下面我们来看一下 PyFrameObject 里面每个字段的含义。</p>
+<p>下面来看一下 PyFrameObject 里面每个字段的含义。</p>
 <p><font color="darkblue"><strong>PyObject_VAR_HEAD</strong></font></p>
 <p>变长对象的头部信息，所以栈帧也是一个对象。</p>
 <p><font color="darkblue"><strong>struct _frame *f_back</strong></font></p>
@@ -14251,7 +14247,7 @@ print(frame.f_back.f_back)
 None
 &quot;&quot;&quot;
 </code></pre>
-<p>所以通过栈帧，可以轻松地获取完整的函数调用链路，我们一会儿演示。</p>
+<p>因此通过栈帧，可以轻松地获取完整的函数调用链路，我们一会儿演示。</p>
 <p><font color="darkblue"><strong>PyCodeObject *f_code</strong></font></p>
 <p>栈帧对象是在 PyCodeObject 之上构建的，所以它内部一定有一个字段指向 PyCodeObject，而该字段就是 f_code。</p>
 <pre><code class="language-Python">import inspect
