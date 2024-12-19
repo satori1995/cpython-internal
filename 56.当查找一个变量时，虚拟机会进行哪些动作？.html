@@ -142,14 +142,14 @@
                     <main>
                         <h2 id="楔子"><a class="header" href="#楔子">楔子</a></h2>
 <p>上一篇文章我们介绍了名字空间，并且知道了全局变量都存在 global 名字空间中，往 global 空间添加一个键值对相当于定义一个全局变量。那么问题来了，如果往函数的 local 空间里面添加一个键值对，是不是也等价于创建了一个局部变量呢？</p>
-<pre><code class="language-Python">def f1():
-    locals()[&quot;name &quot;] = &quot;古明地觉&quot;
+<pre><code class="language-Python">def foo():
+    locals()[&quot;name&quot;] = &quot;古明地觉&quot;
     try:
         print(name)
     except Exception as e:
         print(e)
 
-f1()  # name 'name' is not defined
+foo()  # name 'name' is not defined
 </code></pre>
 <p>全局变量的创建是通过向字典添加键值对实现的，因为全局变量会一直变，需要使用字典来动态维护。</p>
 <p>但对于函数来讲，内部的变量是通过静态方式存储和访问的，因为局部作用域中存在哪些变量在编译的时候就已经确定了，我们通过 PyCodeObject 的 co_varnames 即可获取内部都有哪些变量。</p>
