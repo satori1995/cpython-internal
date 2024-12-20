@@ -400,10 +400,10 @@ b'd\x00Z\x00d\x01Z\x01e\x00e\x01\x17\x00Z\x02d\x02S\x00'
 <p>而随着元素的入栈和出栈，运行时栈的栈顶、或者说 stack_pointer 也在不断变化，但无论如何，stack_pointer 始终指向运行时栈的栈顶。当然啦，由于栈顶发生变化，后续还要对 f_stacktop 进行更新。</p>
 <p><font color="darkblue"><strong>f_valuestack</strong></font></p>
 <p>一个指针，指向运行时栈的栈底。</p>
-<p>另外我们说 localsplus 数组被分成了 4 份，最后一份给了运行时栈，因此虽然我们称之为栈，但它其实就是一个数组，而且还是数组的一部分。</p>
+<p>另外我们说 f_localsplus 数组被分成了 4 份，最后一份给了运行时栈，因此虽然我们称之为栈，但它其实就是一个数组，而且还是数组的一部分。</p>
 <p>而对于数组而言，内存地址从左往右是增大的。</p>
 <p><img src="./images/157.png" alt="" /></p>
-<p>这是 localsplus 的示意图，灰色区域表示运行时栈之前的部分，这里我们只看运行时栈，目前栈里面有两个元素，stack_pointer 指向栈顶。</p>
+<p>这是 f_localsplus 的示意图，灰色区域表示运行时栈之前的部分，这里我们只看运行时栈，目前栈里面有两个元素，stack_pointer 指向栈顶。</p>
 <p>这时如果要添加一个元素 3，那么直接 <font color="blue">*stack_pointer++ = 3</font> 即可。</p>
 <p><img src="./images/158.png" alt="" /></p>
 <p>如果要将栈顶元素弹出，那么执行 <font color="blue">v = *--stack_pointer</font> 即可。</p>
@@ -438,14 +438,14 @@ b'd\x00Z\x00d\x01Z\x01e\x00e\x01\x17\x00Z\x02d\x02S\x00'
 </code></pre>
 <p>宏还是比较多的，我们来逐一介绍。假设目前运行时栈内部有三个元素，从栈底到栈顶分别是整数 1、2、3，那么运行时栈的结构就是下面这样。</p>
 <p><img src="./images/160.png" alt="" /></p>
-<p>localsplus 数组被分成 4 个区域，运行时栈占据最后一个，因此图中的灰色区域便是运行时栈之前的内存。由于我们是研究运行时栈，所以这部分区域后续就不再画了。</p>
+<p>f_localsplus 数组被分成 4 个区域，运行时栈占据最后一个，因此图中的灰色区域便是运行时栈之前的内存。由于我们是研究运行时栈，所以这部分区域后续就不再画了。</p>
 <p>然后看一下这些和运行时栈相关的宏都是干嘛的。</p>
 <p><font color="darkblue"><strong>STACK_LEVEL()</strong></font></p>
 <p>返回运行时栈的元素个数，显然直接让栈顶指针和栈底指针相减就完事了。</p>
 <pre><code class="language-C">#define STACK_LEVEL()     ((int)(stack_pointer - f-&gt;f_valuestack))
 </code></pre>
 <p>所以 STACK_LEVEL() 是会动态变化的，因为 stack_pointer 会动态变化。</p>
-<p>记得之前在介绍 PyCodeObject 时，我们说它内部的 co_stacksize 字段表示执行代码块所需要的<font color="blue">栈空间</font>，而这个栈空间就是运行时栈的长度。当然也可以理解为要想执行这段代码块，后续创建栈桢时，应该给 localsplus 数组中表示运行时栈的区域分配能存储多少个元素的内存。</p>
+<p>记得之前在介绍 PyCodeObject 时，我们说它内部的 co_stacksize 字段表示执行代码块所需要的<font color="blue">栈空间</font>，而这个栈空间就是运行时栈的长度。当然也可以理解为要想执行这段代码块，后续创建栈桢时，应该给 f_localsplus 数组中表示运行时栈的区域分配能存储多少个元素的内存。</p>
 <p>比如 co_stacksize 是 1，那么表示应该给运行时栈分配能存储 1 个元素的内存，即运行时栈的长度为 1。</p>
 <blockquote>
 <p>STACK_LEVEL() 表示当前运行时栈已存储的元素数量，而 co_stacksize 表示运行时栈的长度，即最多能存储多少个元素。</p>
@@ -507,7 +507,7 @@ print(some_func.__code__.co_stacksize)  # 3
 <p>相信你现在应该理解 co_stacksize 的作用了，它表示运行时栈最多能容纳多少个元素，也就是运行时栈的长度。以上面代码为例，由于最多会压入 3 个元素，所以运行时栈的长度就是 3，即最多能容纳 3 个元素。并且这个长度在编译之后就已经确定了，因为可以通过遍历指令集静态计算出来。</p>
 <p>我们画一张图描述一下上面的代码在执行时，运行时栈的变化过程。</p>
 <p><img src="./images/161.png" alt="" /></p>
-<p>整个过程应该很清晰，当然上面只是运行时栈的变化，localsplus 中存储局部变量的内存区域也在变化。另外如果代码块位于全局作用域，那么变化的就是全局名字空间，相关细节后续详细展开。</p>
+<p>整个过程应该很清晰，当然上面只是运行时栈的变化，f_localsplus 中存储局部变量的内存区域也在变化。另外如果代码块位于全局作用域，那么变化的就是全局名字空间，相关细节后续详细展开。</p>
 <p><font color="darkblue"><strong>EMPTY()</strong></font></p>
 <pre><code class="language-c">#define EMPTY()           (STACK_LEVEL() == 0)
 </code></pre>
