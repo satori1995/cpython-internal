@@ -14345,25 +14345,12 @@ print(frame.f_lineno)  # 4
 </code></pre>
 <p>我们是在第 4 行获取的栈帧，所以打印结果是 4。</p>
 <p><font color="darkblue"><strong>int f_iblock</strong></font></p>
-<p>用于跟踪 try / except / finally 代码块的层级深度，它记录了当前栈帧中活跃的 try 语句块的数量，每进入一个新的 try 语句块时加 1，离开 try 语句块时减 1。</p>
-<pre><code class="language-Python">try:           # f_iblock = 1
-    try:       # f_iblock = 2
-        pass
-    except:
-        pass   
-except:        # f_iblock = 1
-    pass
-finally:       # f_iblock = 0
-    pass
-</code></pre>
-<p>f_iblock 对于虚拟机的异常捕获来说非常重要，可以在异常处理时确定当前代码在哪个 try 语句块内，帮助确定应该执行哪个 except 或 finally 子句，保证异常处理和清理代码能按正确的嵌套顺序执行。</p>
+<p>用于跟踪 try / except / finally 代码块的层级深度。具体等介绍异常捕获的时候再说，总之 f_iblock 对于虚拟机的异常捕获来说非常重要，可以在异常处理时确定当前代码在哪个 try 语句块内，帮助确定应该执行哪个 except 或 finally 子句，保证异常处理和清理代码能按正确的嵌套顺序执行。</p>
 <p><font color="darkblue"><strong>char f_executing</strong></font></p>
 <p>当前栈帧是否仍在执行。</p>
 <p><font color="darkblue"><strong>PyTryBlock f_blockstack[CO_MAXBLOCKS]</strong></font></p>
 <p>一个栈，用于追踪代码块，比如代码块的进入和退出，以及管理代码块的上下文信息。那么都支持哪些代码块呢？</p>
 <ul>
-<li>SETUP_LOOP：循环块（for / while）</li>
-<li>SETUP_EXCEPT：try / except 块</li>
 <li>SETUP_FINALLY：try / finally 块</li>
 <li>SETUP_WITH：with 语句块</li>
 <li>SETUP_ASYNC_WITH：async with 语句块</li>
