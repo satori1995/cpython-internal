@@ -663,8 +663,9 @@ posonlyargcount = foo.__code__.co_posonlyargcount
 print(posonlyargcount)  # 2
 print(varnames[: posonlyargcount])  # ('a', 'b')
 
-# 2. 寻找可以通过位置参数或者关键字参数传递的参数
+# 2. 寻找可以通过位置参数（或关键字参数）传递的参数
 argcount = foo.__code__.co_argcount
+# 注：co_argcount 里面包含了 co_posonlyargcount
 print(argcount)  # 4
 print(varnames[: argcount])  # ('a', 'b', 'c', 'd')
 print(varnames[posonlyargcount: argcount])  # ('c', 'd')
