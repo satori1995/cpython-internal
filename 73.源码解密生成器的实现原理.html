@@ -1,0 +1,672 @@
+<!DOCTYPE HTML>
+<html lang="zh-cn" class="sidebar-visible no-js light">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>73. 源码解密生成器的实现原理 - CPython3.8 源码探秘</title>
+        <!-- Custom HTML head -->
+        <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff" />
+
+        <link rel="icon" href="favicon.svg">
+        <link rel="shortcut icon" href="favicon.png">
+        <link rel="stylesheet" href="css/variables.css">
+        <link rel="stylesheet" href="css/general.css">
+        <link rel="stylesheet" href="css/chrome.css">
+        <link rel="stylesheet" href="css/print.css" media="print">
+        <!-- Fonts -->
+        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="fonts/fonts.css">
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="highlight.css">
+        <link rel="stylesheet" href="tomorrow-night.css">
+        <link rel="stylesheet" href="ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+        <link rel="stylesheet" href="theme/custom.css">
+        <!-- MathJax -->
+        <script async type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    </head>
+    <body>
+        <!-- Provide site root to javascript -->
+        <script type="text/javascript">
+            var path_to_root = "";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script type="text/javascript">
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script type="text/javascript">
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            var html = document.querySelector('html');
+            html.classList.remove('no-js')
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add('js');
+        </script>
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script type="text/javascript">
+            var html = document.querySelector('html');
+            var sidebar = 'hidden';
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            }
+            html.classList.remove('sidebar-visible');
+            html.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li class="chapter-item expanded "><a href="0.序言.html">0. 序言</a></li><li class="chapter-item expanded "><a href="1.CPython源码长什么样子？.html">1. CPython 源码长什么样子？</a></li><li class="chapter-item expanded "><a href="2.变量和对象，它们之间有什么区别和联系呢？.html">2. 变量和对象，它们之间有什么区别和联系呢？</a></li><li class="chapter-item expanded "><a href="3.Python对象有哪几种，我们可以从哪些角度进行分类呢？.html">3. Python 对象有哪几种，我们可以从哪些角度进行分类呢？</a></li><li class="chapter-item expanded "><a href="4.万丈高楼平地起，一切从PyObject开始.html">4. 万丈高楼平地起，一切从 PyObject 开始</a></li><li class="chapter-item expanded "><a href="5.详解PyTypeObject，Python类型对象的载体.html">5. 详解 PyTypeObject，Python 类型对象的载体</a></li><li class="chapter-item expanded "><a href="6.通过type和object之间的关联，进一步分析类型对象.html">6. 通过 type 和 object 之间的关联，进一步分析类型对象</a></li><li class="chapter-item expanded "><a href="7.当创建一个Python对象时，背后都经历了哪些过程？.html">7. 当创建一个 Python 对象时，背后都经历了哪些过程？</a></li><li class="chapter-item expanded "><a href="8.当调用一个Python对象时，背后都经历了哪些过程？.html">8. 当调用一个 Python 对象时，背后都经历了哪些过程？</a></li><li class="chapter-item expanded "><a href="9.再探泛型API，感受Python对象的设计哲学.html">9. 再探泛型 API，感受 Python 对象的设计哲学</a></li><li class="chapter-item expanded "><a href="10.Python对象的行为是怎么区分的？.html">10. Python 对象的行为是怎么区分的？</a></li><li class="chapter-item expanded "><a href="11.一个Python对象会在何时被销毁？.html">11. 一个 Python 对象会在何时被销毁？</a></li><li class="chapter-item expanded "><a href="12.深度解密Python的浮点数是怎么实现的？.html">12. 深度解密 Python 的浮点数是怎么实现的？</a></li><li class="chapter-item expanded "><a href="13.对象被销毁之后所占的内存一定会释放吗？解密浮点数的缓存池机制.html">13. 对象被销毁之后所占的内存一定会释放吗？解密浮点数的缓存池机制</a></li><li class="chapter-item expanded "><a href="14.浮点数支持的操作是怎么实现的？.html">14. 浮点数支持的操作是怎么实现的？</a></li><li class="chapter-item expanded "><a href="15.解密Python的复数是怎么实现的？它有什么用途呢？.html">15. 解密 Python 的复数是怎么实现的？它有什么用途呢？</a></li><li class="chapter-item expanded "><a href="16.Python的整数是怎么设计的，为什么它不会溢出？.html">16. Python 的整数是怎么设计的，为什么它不会溢出？</a></li><li class="chapter-item expanded "><a href="17.解密Python的小整数对象池.html">17. 解密 Python 的小整数对象池</a></li><li class="chapter-item expanded "><a href="18.两个Python整数之间是如何进行大小比较的？过程并不像我们想的那样简单.html">18. 两个 Python 整数之间是如何进行大小比较的？过程并不像我们想的那样简单</a></li><li class="chapter-item expanded "><a href="19.探究Python整数的加减法，感受大整数的运算哲学与魅力.html">19. 探究 Python 整数的加减法，感受大整数的运算哲学与魅力</a></li><li class="chapter-item expanded "><a href="20.Python的布尔值是怎么实现的，你对它的了解有多深呢？.html">20. Python 的布尔值是怎么实现的，你对它的了解有多深呢？</a></li><li class="chapter-item expanded "><a href="21.Python的None是怎么实现的？.html">21. Python 的 None 是怎么实现的？</a></li><li class="chapter-item expanded "><a href="22.深度解密Python切片的实现原理.html">22.深度解密 Python 切片的实现原理</a></li><li class="chapter-item expanded "><a href="23.bytes对象（字节串）是怎么实现的？解密它的内部原理.html">23. bytes 对象（字节串）是怎么实现的？解密它的内部原理</a></li><li class="chapter-item expanded "><a href="24.bytes对象都支持哪些操作，它们是怎么实现的？.html">24. bytes 对象都支持哪些操作，它们是怎么实现的？</a></li><li class="chapter-item expanded "><a href="25.通过bytes对象的合并，探究缓冲区的奥秘.html">25. 通过 bytes 对象的合并，探究缓冲区的奥秘</a></li><li class="chapter-item expanded "><a href="26.解密bytes对象的缓存池.html">26. 解密 bytes 对象的缓存池</a></li><li class="chapter-item expanded "><a href="27.详解bytearray对象的底层实现.html">27. 详解 bytearray 对象的底层实现</a></li><li class="chapter-item expanded "><a href="28.字符集和字符编码.html">28. 字符集和字符编码</a></li><li class="chapter-item expanded "><a href="29.Python是怎么存储字符串的？.html">29. Python 是怎么存储字符串的？</a></li><li class="chapter-item expanded "><a href="30.解密字符串的底层结构，它是怎么实现的？.html">30. 解密字符串的底层结构，它是怎么实现的？</a></li><li class="chapter-item expanded "><a href="31.字符串的intern机制是怎么一回事？.html">31. 字符串的 intern 机制是怎么一回事？</a></li><li class="chapter-item expanded "><a href="32.聊一聊字符串常见操作的源码实现.html">32. 聊一聊字符串常见操作的源码实现</a></li><li class="chapter-item expanded "><a href="33.列表是怎么实现的？解密列表的数据结构.html">33. 列表是怎么实现的？解密列表的数据结构</a></li><li class="chapter-item expanded "><a href="34.列表是怎么扩容的？.html">34. 列表是怎么扩容的？</a></li><li class="chapter-item expanded "><a href="35.解密列表的创建与销毁，以及缓存池长什么样子？.html">35. 解密列表的创建与销毁，以及缓存池长什么样子？</a></li><li class="chapter-item expanded "><a href="36.列表作为序列型对象都支持哪些操作，它们在底层是怎么实现的？.html">36. 列表作为序列型对象都支持哪些操作，它们在底层是怎么实现的？</a></li><li class="chapter-item expanded "><a href="37.列表都有哪些自定义方法，它们是怎么实现的？.html">37. 列表都有哪些自定义方法，它们是怎么实现的？</a></li><li class="chapter-item expanded "><a href="38.解密元组的实现原理.html">38. 解密元组的实现原理</a></li><li class="chapter-item expanded "><a href="39.聊一聊喜闻乐见的哈希表.html">39. 聊一聊喜闻乐见的哈希表</a></li><li class="chapter-item expanded "><a href="40.字典是怎么实现的，它的底层结构长什么样子？.html">40. 字典是怎么实现的，它的底层结构长什么样子？</a></li><li class="chapter-item expanded "><a href="41.什么是可哈希对象，它的哈希值是怎么计算的？.html">41. 什么是可哈希对象，它的哈希值是怎么计算的？</a></li><li class="chapter-item expanded "><a href="42.字典的key是怎么映射成索引的，索引冲突了又该怎么办？.html">42. 字典的 key 是怎么映射成索引的，索引冲突了又该怎么办？</a></li><li class="chapter-item expanded "><a href="43.哈希表是怎么删除元素的，能直接删除吗？.html">43. 哈希表是怎么删除元素的，能直接删除吗？</a></li><li class="chapter-item expanded "><a href="44.字典是怎么创建的，支持的操作又是如何实现的？.html">44. 字典是怎么创建的，支持的操作又是如何实现的？</a></li><li class="chapter-item expanded "><a href="45.字典的自定义方法是怎么实现的？.html">45. 字典的自定义方法是怎么实现的？</a></li><li class="chapter-item expanded "><a href="46.字典是怎么扩容的？它会经历哪些过程？.html">46. 字典是怎么扩容的？它会经历哪些过程？</a></li><li class="chapter-item expanded "><a href="47.身虽死，道未消，解密字典的缓存池.html">47. 身虽死，道未消，解密字典的缓存池</a></li><li class="chapter-item expanded "><a href="48.解密集合的实现原理.html">48. 解密集合的实现原理</a></li><li class="chapter-item expanded "><a href="49.集合支持的操作有哪些，它们是怎么实现的？.html">49. 集合支持的操作有哪些，它们是怎么实现的？</a></li><li class="chapter-item expanded "><a href="50.迭代器是怎么实现的？.html">50. 迭代器是怎么实现的？</a></li><li class="chapter-item expanded "><a href="51.Python源文件编译之后会得到什么，它的结构是怎样的？和字节码又有什么联系？.html">51. Python 源文件编译之后会得到什么，它的结构是怎样的？和字节码又有什么联系？</a></li><li class="chapter-item expanded "><a href="52.PyCodeObject拾遗.html">52. PyCodeObject 拾遗</a></li><li class="chapter-item expanded "><a href="53.一文让你搞懂pyc文件.html">53. 一文让你搞懂 pyc 文件</a></li><li class="chapter-item expanded "><a href="54.深度解密虚拟机的执行环境：栈帧对象.html">54. 深度解密虚拟机的执行环境：栈帧对象</a></li><li class="chapter-item expanded "><a href="55.名字空间：变量的容身之所.html">55. 名字空间：变量的容身之所</a></li><li class="chapter-item expanded "><a href="56.当查找一个变量时，虚拟机会进行哪些动作？.html">56. 当查找一个变量时，虚拟机会进行哪些动作？</a></li><li class="chapter-item expanded "><a href="57.虚拟机是怎么执行字节码的？背后都经历了哪些过程.html">57. 虚拟机是怎么执行字节码的？背后都经历了哪些过程</a></li><li class="chapter-item expanded "><a href="58.深入源码，进一步考察字节码的执行流程.html">58. 深入源码，进一步考察字节码的执行流程</a></li><li class="chapter-item expanded "><a href="59.局部变量是怎么实现静态查找的，它和local名字空间又有什么联系呢？.html">59. 局部变量是怎么实现静态查找的，它和 local 名字空间又有什么联系呢？</a></li><li class="chapter-item expanded "><a href="60.剖析字节码指令，以及Python赋值语句的原理.html">60. 剖析字节码指令，以及 Python 赋值语句的原理</a></li><li class="chapter-item expanded "><a href="61.流程控制语句if是怎么实现的？.html">61. 流程控制语句 if 是怎么实现的？</a></li><li class="chapter-item expanded "><a href="62.流程控制语句for、while是怎么实现的？.html">62. 流程控制语句 for、while 是怎么实现的？</a></li><li class="chapter-item expanded "><a href="63.异常是怎么实现的？虚拟机是如何将异常抛出去的？.html">63. 异常是怎么实现的？虚拟机是如何将异常抛出去的？</a></li><li class="chapter-item expanded "><a href="64.虚拟机是如何捕获异常的？.html">64. 虚拟机是如何捕获异常的？</a></li><li class="chapter-item expanded "><a href="65.函数在底层长什么样子？.html">65. 函数在底层长什么样子？</a></li><li class="chapter-item expanded "><a href="66.函数是怎么创建的，背后经历了哪些过程？.html">66. 函数是怎么创建的，背后经历了哪些过程？</a></li><li class="chapter-item expanded "><a href="67.函数在底层是如何调用的？.html">67. 函数在底层是如何调用的？</a></li><li class="chapter-item expanded "><a href="68.函数是如何解析位置参数的？.html">68. 函数是如何解析位置参数的？</a></li><li class="chapter-item expanded "><a href="69.函数是如何解析关键字参数的？.html">69. 函数是如何解析关键字参数的？</a></li><li class="chapter-item expanded "><a href="70.扩展位置参数和扩展关键字参数是如何解析的？.html">70. 扩展位置参数和扩展关键字参数是如何解析的？</a></li><li class="chapter-item expanded "><a href="71.闭包是怎么实现的？.html">71. 闭包是怎么实现的？</a></li><li class="chapter-item expanded "><a href="72.生成器是做什么的，为什么会有生成器？.html">72. 生成器是做什么的，为什么会有生成器？</a></li><li class="chapter-item expanded "><a href="73.源码解密生成器的实现原理.html" class="active">73. 源码解密生成器的实现原理</a></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky bordered">
+                    <div class="left-buttons">
+                        <button id="sidebar-toggle" class="icon-button" type="button" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </button>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light (default)</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">CPython3.8 源码探秘</h1>
+
+                    <div class="right-buttons">
+                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+                        <a href="https://github.com/satori1995/cpython-internal" title="Git repository" aria-label="Git repository">
+                            <i id="git-repository-button" class="fa fa-github"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script type="text/javascript">
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h2 id="楔子"><a class="header" href="#楔子">楔子</a></h2>
+<p>上一篇文章我们介绍了生成器的基本概念和相关用法，如果一个函数内部出现了 yield 关键字，那么它就是生成器函数，调用之后会返回生成器。生成器可以通过 yield 关键字暂停执行，并且还可以通过 __next__ 方法从上一次暂停的位置重新恢复执行。</p>
+<p>关于普通函数和生成器函数，我们举一个生动的例子。</p>
+<p>普通函数可以想象成一匹马，只要调用了，那么不把里面的代码执行完毕誓不罢休，而函数内部的 return xxx，就是调用之后的返回值。</p>
+<p>生成器函数则好比一头驴，调用的时候并没有动，只是返回一个生成器对象，然后需要每次拿鞭子抽一下（调用一次 __next__），才往前走一步。通过不断地驱动生成器，最终将里面的代码执行完毕，然后将设置了返回值的 StopIteration 抛出来。</p>
+<p>另外我们也可以把生成器看成是可以暂停的函数，其中 yield 就类似于 return，只不过可以有多个 yield。当执行到一个 yield 时，将值返回、同时暂停在此处。然后当调用 __next__ 驱动时，从暂停的地方继续执行，直到找到下一个 yield。如果找不到下一个 yield，就会抛出 StopIteration 异常。</p>
+<pre><code class="language-python">def gen():
+    print(&quot;生成器开始执行了&quot;)
+
+    name = &quot;古明地觉&quot;
+    print(&quot;创建了一个局部变量 name&quot;)
+    yield name
+    
+    age = 16
+    print(&quot;创建了一个局部变量age&quot;)
+    yield age
+
+    gender = &quot;female&quot;
+    print(&quot;创建了一个局部变量gender&quot;)
+    yield gender
+
+
+# 生成器函数也是一个函数
+print(gen)  # &lt;function gen at 0x7f31171ac550&gt;
+print(type(gen))  # &lt;class 'function'&gt;
+
+# 调用生成器函数并不会立刻执行，而是会返回一个生成器对象
+g = gen()
+print(g)  # &lt;generator object gen at 0x7f31170b0740&gt;
+print(g.__class__)  # &lt;class 'generator'&gt;
+</code></pre>
+<p>那么本次就来看看生成器底层是怎么实现的？</p>
+<h2 id="生成器函数的创建"><a class="header" href="#生成器函数的创建">生成器函数的创建</a></h2>
+<p>调用生成器函数会返回生成器，那么我们就要先看看生成器函数是如何构建的，它和普通函数有什么区别？</p>
+<pre><code class="language-python">import dis
+
+code_string = &quot;&quot;&quot;
+def gen():
+    yield 123
+&quot;&quot;&quot;
+
+dis.dis(compile(code_string, &quot;&lt;file&gt;&quot;, &quot;exec&quot;))
+</code></pre>
+<p>看一下字节码指令：</p>
+<pre><code class="language-c">  0 LOAD_CONST               0 (&lt;code object gen at 0x7f3...&gt;)
+  2 LOAD_CONST               1 ('gen')
+  4 MAKE_FUNCTION            0
+  6 STORE_NAME               0 (gen)
+  8 LOAD_CONST               2 (None)
+ 10 RETURN_VALUE
+
+Disassembly of &lt;code object gen at 0x7f3...&gt;:
+ 0 LOAD_CONST               1 (123)
+ 2 YIELD_VALUE
+ 4 POP_TOP
+ 6 LOAD_CONST               0 (None)
+ 8 RETURN_VALUE
+&gt;&gt;&gt; 
+</code></pre>
+<p>字节码指令依旧分为两部分，这里我们只看模块对应的字节码指令。可以发现，构建生成器函数时的指令和构建普通函数是一模一样的，原因也很好解释，因为生成器函数也是函数。当然啦，还有协程函数、异步生成器函数，它们在构建时的字节码指令都是一样的，因为它们都是函数，类型都是 &lt;class 'function'&gt;。</p>
+<p>然后调用生成器函数，返回生成器对象；调用协程函数，返回协程对象；调用异步生成器函数，返回异步生成器对象；调用普通函数，会立刻执行内部代码，返回的就是函数的返回值。</p>
+<p>那么问题来了，既然它们都是函数，那虚拟机在调用时是如何区分彼此的呢？毕竟返回的对象不同。还记得 PyCodeObject 的 co_flags 吗？它除了可以判断一个函数是否定义了 *args、**kwargs，更重要的是它还可以判断函数的类型。</p>
+<pre><code class="language-python">def gen():
+    yield
+
+# 生成器函数，co_flags &amp; 0x20 为真
+# 调用会得到生成器，而生成器的类型是 &lt;class 'generator'&gt;
+print(gen.__code__.co_flags &amp; 0x20)  # 32
+
+
+async def coro():
+    return
+  
+# 协程函数，co_flags &amp; 0x80 为真
+# 调用会得到协程，而协程的类型是 &lt;class 'coroutine'&gt;
+print(coro.__code__.co_flags &amp; 0x80)  # 128
+
+
+async def async_gen():
+    yield
+    
+# 异步生成器函数，co_flags &amp; 0x200 为真
+# 调用会得到异步生成器，而异步生成器的类型是 &lt;class 'async_generator'&gt;
+print(async_gen.__code__.co_flags &amp; 0x200)  # 512
+</code></pre>
+<p>这些都是在语法解析的时候确定的，当编译器看到一个函数里面出现了 yield，那么它就知道这是生成器函数。于是创建 PyCodeObject 的时候，会设置 co_flags，让它 <font color="blue">&amp; 0x20</font> 为真。</p>
+<pre><code class="language-C">//Include/code.h
+
+#define CO_OPTIMIZED    0x0001
+#define CO_NEWLOCALS    0x0002
+#define CO_VARARGS      0x0004
+#define CO_VARKEYWORDS  0x0008
+#define CO_NESTED       0x0010
+#define CO_GENERATOR    0x0020
+</code></pre>
+<p>我们看到 CO_GENERATOR 的值为 0x20，如果想判断一个函数是否是生成器函数，那么就可以通过 co_flags &amp; 0x20 是否为真来判断。</p>
+<p>当生成器函数创建完毕之后就要调用了，来创建一个生成器。还记得函数的调用流程吗？</p>
+<p><img src="./images/230.png" alt="" /></p>
+<p>由于这是一个生成器函数，因此调用时不会进入快速通道，而是会进入通用通道。</p>
+<pre><code class="language-C">PyObject *
+_PyEval_EvalCodeWithName(PyObject *_co, PyObject *globals, PyObject *locals,
+           PyObject *const *args, Py_ssize_t argcount,
+           PyObject *const *kwnames, PyObject *const *kwargs,
+           Py_ssize_t kwcount, int kwstep,
+           PyObject *const *defs, Py_ssize_t defcount,
+           PyObject *kwdefs, PyObject *closure,
+           PyObject *name, PyObject *qualname)
+{
+    // ...
+    // 根据 co_flags 检测函数的种类，如果是生成器函数、协程函数、异步生成器函数三者之一
+    if (co-&gt;co_flags &amp; (CO_GENERATOR | CO_COROUTINE | CO_ASYNC_GENERATOR)) {
+        PyObject *gen;
+        int is_coro = co-&gt;co_flags &amp; CO_COROUTINE;
+        Py_CLEAR(f-&gt;f_back);
+        if (is_coro) {
+            // 如果是协程函数，创建协程
+            gen = PyCoro_New(f, name, qualname);
+        } else if (co-&gt;co_flags &amp; CO_ASYNC_GENERATOR) {
+            // 如果是异步生成器函数，创建异步生成器
+            gen = PyAsyncGen_New(f, name, qualname);
+        } else {
+            // 否则说明是生成器函数，那么创建生成器
+            gen = PyGen_NewWithQualName(f, name, qualname);
+        }
+        if (gen == NULL) {
+            return NULL;
+        }
+        // 被 GC 跟踪
+        _PyObject_GC_TRACK(f);
+        // 返回
+        return gen;
+    }
+    // ...
+}
+</code></pre>
+<p>在编译时将函数种类体现在 co_flags 中，调用时再根据 co_flags 创建不同的对象。</p>
+<h2 id="生成器的底层结构"><a class="header" href="#生成器的底层结构">生成器的底层结构</a></h2>
+<p>通过源码我们得知，生成器对象是通过调用 PyGen_NewWithQualName 创建的，不过在看这个函数之前，我们先看一下生成器的底层结构。</p>
+<pre><code class="language-C">// Include/genobject.h
+
+#define _PyGenObject_HEAD(prefix)                                           \
+    PyObject_HEAD                                                           \
+    struct _frame *prefix##_frame;                                          \
+    char prefix##_running;                                                  \
+    PyObject *prefix##_code;                                                \
+    PyObject *prefix##_weakreflist;                                         \
+    PyObject *prefix##_name;                                                \
+    PyObject *prefix##_qualname;                                            \
+    _PyErr_StackItem prefix##_exc_state;
+
+typedef struct {
+    _PyGenObject_HEAD(gi)
+} PyGenObject;
+</code></pre>
+<p>如果我们将其整理一下，等价于如下：</p>
+<pre><code class="language-c">typedef struct {
+    // 头部信息
+    PyObject_HEAD
+    // 生成器执行时对应的栈帧对象，用于保存执行上下文信息
+    struct _frame *gi_frame; 
+    // 标识生成器是否在运行当中
+    char gi_running;  
+    // 生成器函数的 PyCodeObject 对象
+    PyObject *gi_code; 
+    // 弱引用相关，不深入讨论
+    PyObject *gi_weakreflist; 
+    // 生成器的名字
+    PyObject *gi_name; 
+    // 生成器的全限定名
+    PyObject *gi_qualname; 
+    // 生成器执行出现异常时的异常栈，更准确的说，其实是异常栈的一个 entry
+    // 里面包含了 exc_type、exc_value、exc_traceback
+    // 以及通过 previous_item 指针指向上一个 entry
+    _PyErr_StackItem *gi_exc_state; 
+} PyGenObject;
+</code></pre>
+<p>所以生成器在底层对应 PyGenObject，它的类型则是 PyGen_Type。至此，生成器的结构就非常清晰了，我们来画一张图：</p>
+<p><img src="./images/231.png" alt="" /></p>
+<p>无论是普通函数还是生成器函数，在调用时，虚拟机都会为其创建栈帧，因为栈帧是函数执行的上下文。只是对于生成器函数来说，由于它的 co_flags 带有 CO_GENERATOR 标识，所以知道这是一个生成器函数。在调用时不会立刻执行里面的字节码，而是创建了一个生成器对象，并将栈帧交由 gi_frame 字段保存，然后将生成器返回了。</p>
+<p>我们可以从 Python 层面来验证得到的结论。</p>
+<pre><code class="language-python">def gen():
+    yield
+
+# 在内部会创建栈帧，但是和普通函数不同
+# 虚拟机不会立即执行字节码，而是创建一个生成器
+# 然后让 &quot;生成器 -&gt; gi_frame = 栈帧&quot;
+g = gen()
+
+
+# 通过 gi_frame 即可拿到栈帧
+print(g.gi_frame)  # &lt;frame at 0x7f3...&gt;
+
+# 由于生成器还没有运行，所以栈帧的 f_back 是 None
+# 如果是普通函数的栈帧，那么它的 f_back 应该是模块对应的栈帧
+# 因为对于普通函数而言，能拿到它的栈帧，说明一定执行了
+# 而生成器则不同，它还没有运行，所以 f_back 是 None
+print(g.gi_frame.f_back)  # None
+
+# f_lasti 表示上一条已执行完毕的字节码指令的偏移量
+# -1 代表尚未执行
+print(g.gi_frame.f_lasti)  # -1
+
+# 所以 gi_running 也是 False
+print(g.gi_running)  # False
+
+
+# 还可以获取 PyCodeObject，有三种方式
+print(
+    g.gi_code is g.gi_frame.f_code is gen.__code__
+)  # True
+</code></pre>
+<p>所以生成器相当于对栈帧进行了一个封装，当我们驱动它执行时，会将内部的栈帧插入到栈帧链中执行。一旦遇到 yield，停止运行，将栈帧从栈帧链中移除。</p>
+<p>然后再次驱动执行，那么再将内部的栈帧插入到栈帧链中执行字节码指令，由于 f_lasti 记录了上一条已执行完毕的指令的偏移量，所以是从上次中断的位置开始执行的。如果又遇到了 yield，那么依旧停止运行，将栈帧从栈帧链中移除。</p>
+<p>就这样不断重复，直到执行完毕。而生成器一旦执行完毕了（return 之后），那么会将栈帧设置为 None。</p>
+<pre><code class="language-python">def gen():
+    yield
+
+g = gen()
+
+print(g.gi_frame is None)  # False
+
+for _ in g:
+    pass
+
+print(g.gi_frame is None)  # True
+</code></pre>
+<p>所以生成器只能顺序遍历一次，从这里我们也可以看出原因，因为遍历完之后栈帧都没了。</p>
+<pre><code class="language-python">g = (x for x in [1, 2, 3])
+
+print(tuple(g))  # (1, 2, 3)
+print(tuple(g))  # ()
+</code></pre>
+<p>还是很好理解的。</p>
+<h2 id="生成器的创建"><a class="header" href="#生成器的创建">生成器的创建</a></h2>
+<p>然后再来看看生成器的创建过程，我们上面提到，生成器是在通用通道里面调用 PyGen_NewWithQualName 创建的，来看看这个函数长什么样子。</p>
+<pre><code class="language-C">// Objects/genobject.c
+
+PyObject *
+PyGen_NewWithQualName(PyFrameObject *f, PyObject *name, PyObject *qualname)
+{
+    return gen_new_with_qualname(&amp;PyGen_Type, f, name, qualname);
+}
+</code></pre>
+<p>该函数接收三个参数，分别是栈帧对象、__name__、__qualname__。注意这个栈帧对象，它是在通用通道里面创建好的，然后将其作为参数传递到 PyGen_NewWithQualName 里面进行调用。</p>
+<p>而该函数又调用了 gen_new_with_qualname，所以具体逻辑在这个函数里面，来看一下。</p>
+<pre><code class="language-C">// Objects/genobject.c
+
+static PyObject *
+gen_new_with_qualname(PyTypeObject *type, PyFrameObject *f,
+                      PyObject *name, PyObject *qualname)
+{
+    // 为生成器对象申请内存
+    PyGenObject *gen = PyObject_GC_New(PyGenObject, type);
+    if (gen == NULL) {
+        Py_DECREF(f);
+        return NULL;
+    }
+    // 将通用通道里面的栈帧交给 gi_frame 保存，所以普通函数和生成器函数调用时都会创建栈帧
+    // 但普通函数调用时，会在栈帧里面将字节码全部执行完毕
+    // 而生成器函数调用时，会返回生成器对象，并将栈帧保存在里面
+    gen-&gt;gi_frame = f;
+    // 注意这里，又让栈帧的 f_gen 成员保存生成器对象
+    // 如果是普通函数，那么 f_gen 显然为空
+    f-&gt;f_gen = (PyObject *) gen;
+    Py_INCREF(f-&gt;f_code);
+    // 让生成器的 gi_code 也保存 PyCodeObject
+    gen-&gt;gi_code = (PyObject *)(f-&gt;f_code);
+    // 初始时，gi_running 为 0
+    gen-&gt;gi_running = 0;
+    // 弱引用列表为空
+    gen-&gt;gi_weakreflist = NULL;
+    // gi_exc_state 和异常栈相关，内部字段初始为 NULL
+    gen-&gt;gi_exc_state.exc_type = NULL;
+    gen-&gt;gi_exc_state.exc_value = NULL;
+    gen-&gt;gi_exc_state.exc_traceback = NULL;
+    gen-&gt;gi_exc_state.previous_item = NULL;
+    // 设置 gi_name
+    if (name != NULL)
+        gen-&gt;gi_name = name;
+    else
+        gen-&gt;gi_name = ((PyCodeObject *)gen-&gt;gi_code)-&gt;co_name;
+    Py_INCREF(gen-&gt;gi_name);
+    // 设置 gi_qualname 
+    if (qualname != NULL)
+        gen-&gt;gi_qualname = qualname;
+    else
+        gen-&gt;gi_qualname = gen-&gt;gi_name;
+    Py_INCREF(gen-&gt;gi_qualname);
+    // 让生成器对象被 GC 跟踪
+    _PyObject_GC_TRACK(gen);
+    // 返回
+    return (PyObject *)gen;
+}
+</code></pre>
+<p>所以生成器就是对栈帧进行了一个封装，通过 yield 和 __next__、send，我们可以操控栈帧的执行。但普通函数没有给我们这个机会，它在创建完栈帧之后，不将字节码全执行完是不会罢休的。</p>
+<h2 id="生成器的执行"><a class="header" href="#生成器的执行">生成器的执行</a></h2>
+<p>由于调用 __next__、send 方法可以驱动生成器执行，因此相关细节就隐藏在这两个函数当中。</p>
+<p><img src="./images/232.png" alt="" /></p>
+<p>__next__ 对应类型对象 PyGen_Type 的 tp_iternext，而 send 是一个普通的方法，所以它位于 tp_methods 中。所以如果调用 __next__，底层会执行 gen_iternext，如果调用 send，底层会执行 _PyGen_Send。</p>
+<pre><code class="language-C">// Objects/genobject.c
+
+static PyObject *
+gen_iternext(PyGenObject *gen)
+{
+    return gen_send_ex(gen, NULL, 0, 0);
+}
+
+PyObject *
+_PyGen_Send(PyGenObject *gen, PyObject *arg)
+{
+    return gen_send_ex(gen, arg, 0, 0);
+}
+</code></pre>
+<p>无论哪种方式，在底层最终都是通过 gen_send_ex 函数完成的，只是 __next__ 不接收参数，因此 gen_iternext 在调用时传递了一个空。而 send 接收一个参数，因此 _PyGen_Send 在调用时传了一个 arg。</p>
+<p>所以核心逻辑显然在 gen_send_ex 函数里面。</p>
+<pre><code class="language-C">static PyObject *
+gen_send_ex(PyGenObject *gen, PyObject *arg, int exc, int closing)
+{
+    // 获取线程状态对象
+    PyThreadState *tstate = _PyThreadState_GET();
+    // 拿到生成器内部保存的栈帧对象
+    PyFrameObject *f = gen-&gt;gi_frame;
+    // 返回值
+    PyObject *result;
+    // 重点来了，f 就是生成器内部的栈帧，f-&gt;f_back 表示生成器内部栈帧的上一级栈帧
+    // 而 tstate-&gt;frame 表示当前栈帧，也就是调用 __next__ 或者 send 时所在的栈帧
+    // 假设我们是在模块作用域调用了生成器的 __next__ 方法，那么 tstate-&gt;frame 就是模块对应的栈帧
+    // 而当下面这行代码执行完毕后，tstate-&gt;frame 就变成了生成器内部栈帧的上一级栈帧
+    // 生成器内部的栈帧则变成了当前栈帧，所以这是不是就相当于将生成器内部的栈帧插入到栈帧链当中了呢？
+    f-&gt;f_back = tstate-&gt;frame;
+    // 生成器正在运行
+    gen-&gt;gi_running = 1;
+    gen-&gt;gi_exc_state.previous_item = tstate-&gt;exc_info;
+    tstate-&gt;exc_info = &amp;gen-&gt;gi_exc_state;
+    // 而插入到栈帧链之后要干啥？显然是执行栈帧内的字节码
+    // 栈帧对象保存着生成器的执行上下文，f_lasti 字段则跟踪生成器内部代码的执行进度
+    // 当遇到 yield 之后，将后面的值返回给 result
+    result = PyEval_EvalFrameEx(f, exc);
+    tstate-&gt;exc_info = gen-&gt;gi_exc_state.previous_item;
+    gen-&gt;gi_exc_state.previous_item = NULL;
+    gen-&gt;gi_running = 0;
+}  
+</code></pre>
+<p>至于剩下的逻辑我们显然再清楚不过了，最终会调用帧评估函数在栈帧对象中执行字节码。每执行完一条指令就自增 f_lasti 字段、next_instr 字段，直到字节码全部执行完毕、或者中间出现异常时结束循环。当然啦，遇到 yield 也会结束循环。</p>
+<p>举例说明：</p>
+<pre><code class="language-python">def gen():
+    yield 1
+    yield 2
+    yield 3
+   
+g = gen()
+print(g.gi_frame.f_back)  # None
+g.__next__()
+</code></pre>
+<p>g = gen() 之后会创建一个生成器，但此时生成器的代码还没有执行，所以生成器内部栈帧的上一级栈帧为空。等到调用生成器的 __next__ 方法时，会接入到栈帧链并开始执行。另外，由于我们是在模块作用域中调用的 __next__，所以当前栈帧链里面其实只包含了一个栈帧，就是模块的栈帧。</p>
+<p><img src="./images/233.png" alt="" /></p>
+<p>所以接入栈帧链，其实就是让生成器内部栈帧的 f_back 字段，指向调用 __next__ 或 send 时所在的栈帧。比如当前是在模块作用域中调用的 __next__，那么就让 f_back 字段指向模块栈帧。就好像在模块的栈帧之上，创建了一个新的栈帧一样，开始执行，直到遇见个 yield。</p>
+<h2 id="生成器的暂停"><a class="header" href="#生成器的暂停">生成器的暂停</a></h2>
+<p>先看看生成器内部的字节码长什么样子？</p>
+<pre><code class="language-python">def gen():
+    name = &quot;古明地觉&quot;
+    yield name
+    
+    age = 16
+    res = yield age
+    
+    gender = &quot;female&quot;
+    yield gender
+</code></pre>
+<p>字节码如下：</p>
+<pre><code class="language-C">  // 加载字符串常量 &quot;古明地觉&quot;
+  0 LOAD_CONST               1 ('古明地觉')
+  // 使用局部变量 name 保存
+  2 STORE_FAST               0 (name)
+  // 对应 yield name
+  // 加载局部变量 name，然后将值 yield 出去
+  // 注意：执行完 YIELD_VALUE 之后，生成器会暂停
+  4 LOAD_FAST                0 (name)
+  6 YIELD_VALUE
+  // 这里为啥会出现 POP_TOP 呢？
+  // 因为驱动生成器执行时，我们是可以传值的
+  // 但是 yield name 左边没有变量接收，所以是 POP_TOP
+  8 POP_TOP
+
+  // 加载整数常量 16
+ 10 LOAD_CONST               2 (16)
+  // 使用局部变量 age 保存
+ 12 STORE_FAST               1 (age)
+  // 加载局部变量 age，然后将值 yield 出去
+ 14 LOAD_FAST                1 (age)
+ 16 YIELD_VALUE
+  // 但这里需要注意，因为是 res = yield age
+  // 所以这里是 STORE_FAST，会将调用方传递的值使用 res 变量保存
+ 18 STORE_FAST               2 (res)
+  
+  // 加载字符串常量 &quot;female&quot;
+ 20 LOAD_CONST               3 ('female')
+  // 使用局部变量 gender 保存
+ 22 STORE_FAST               3 (gender)
+  // 加载局部变量 gender，然后将值 yield 出去
+ 24 LOAD_FAST                3 (gender)
+ 26 YIELD_VALUE
+  // 弹出调用方传递的值
+ 28 POP_TOP
+  
+  // return None
+ 30 LOAD_CONST               0 (None)
+ 32 RETURN_VALUE
+</code></pre>
+<p>指令很好理解，显然重点是在 YIELD_VALUE 上面，我们看一下这个指令：</p>
+<pre><code class="language-C">case TARGET(YIELD_VALUE): {
+    // 执行 yield value 之前，会先将 value 压入运行时栈
+    // 然后这里再将 value 从栈里面弹出
+    retval = POP();
+    // 异步生成器逻辑，当前不用关注
+    if (co-&gt;co_flags &amp; CO_ASYNC_GENERATOR) {
+        PyObject *w = _PyAsyncGenValueWrapperNew(retval);
+        Py_DECREF(retval);
+        if (w == NULL) {
+            retval = NULL;
+            goto error;
+        }
+        retval = w;
+    }
+    // stack_pointer 指向运行时栈的栈顶
+    // 因为要跳出循环了，所以赋值给f-&gt;f_stacktop
+    f-&gt;f_stacktop = stack_pointer;
+    // 直接通过 goto 语句跳出 for 循环，来到 exit_yielding 标签
+    goto exit_yielding;
+}
+</code></pre>
+<p>紧接着，帧评估函数会将当前栈帧（也就是生成器内部的栈帧）从栈帧链中移除，至于移除方式也很简单，只需要将它的 f_back 设置为 None 即可，然后回退到上一级栈帧。</p>
+<p><img src="./images/234.png" alt="" /></p>
+<p>同理，当再次调用 __next__ 或者 send 方法时，生成器将恢复执行，底层会调用 gen_send_ex 函数。然后虚拟机会把生成器的栈帧对象挂到栈帧链中，并最终调用帧评估函数逐条执行字节码。</p>
+<p><img src="./images/235.png" alt="" /></p>
+<p>通过不断调用 __next__，最终将整个生成器内的代码执行完毕，我们用 Python 代码演示一下这个过程。</p>
+<pre><code class="language-Python">def gen():
+    name = &quot;古明地觉&quot;
+    yield name
+    
+    age = 16
+    res = yield age
+    
+    gender = &quot;female&quot;
+    yield gender
+  
+  
+g = gen()
+
+# 生成器尚未执行，f_lasti 初始为 -1
+print(g.gi_frame.f_lasti)  # -1    
+
+# 调用 __next__，会将生成器内部栈帧插入到栈帧链中，开始执行
+# 那什么时候暂停呢？如果站在 Python 的角度，肯定是在 yield 处暂停
+# 但如果从虚拟机的角度，应该是在 YIELD_VALUE 的结束位置暂停
+g.__next__()
+# f_lasti 表示上一条已执行的指令的偏移量，而上一条执行的指令是 YIELD_VALUE，因此是 6
+print(g.gi_frame.f_lasti)  # 6
+print(g.gi_frame.f_locals)  # {'name': '古明地觉'}
+
+# 第二个 YIELD_VALUE 的偏移量是 16
+g.__next__()
+print(g.gi_frame.f_lasti)  # 16
+print(g.gi_frame.f_locals)  # {'name': '古明地觉', 'age': 16}
+
+# 第三个 YIELD_VALUE 的偏移量是 26
+g.__next__()
+print(g.gi_frame.f_lasti)  # 26
+print(g.gi_frame.f_locals)  # {'name': '古明地觉', 'age': 16, 'res': None, 'gender': 'female'}
+
+# 再次调用 g.__next__()，生成器执行完毕
+try:
+    g.__next__()
+except StopIteration:
+    pass
+  
+# 一旦执行完毕，gi_frame 会设置为 None，因此生成器只能顺序遍历一次
+print(g.gi_frame)  # None
+</code></pre>
+<p>遇见 yield 产生中断，调用 __next__、send 恢复执行，并且在这个过程中，f_lasti 也在不断变化，始终维护着生成器的执行进度。而基于 f_lasti，生成器就可以记住自己的中断位置，并在下一次被驱动的时候，能够从中断的位置恢复执行。</p>
+<p>而以上也正是协程能够实现的理论基础，虽然 Python 在 3.5 提供了基于 async def 的原生协程，但它底层依旧是使用了生成器。</p>
+<h2 id="小结"><a class="header" href="#小结">小结</a></h2>
+<p>以上我们从源码的角度剖析了生成器的实现原理，下面总结一下。</p>
+<p>1）Python 具有词法作用域，当函数内部出现 yield 关键字时，会给对应的 PyCodeObject 增加一个 CO_GENERATOR 标识。这个标识让虚拟机在调用时能够分辨出是普通函数、还是生成器函数。</p>
+<p>2）和普通函数一样，生成器函数在调用时，也会由虚拟机创建栈帧，作为执行上下文。但和普通函数不同的是，调用生成器函数时创建的栈帧不会立即进入帧评估函数执行字节码。而是以栈帧为参数，创建生成器对象。</p>
+<p>3）可以调用 __next__、send 方法驱动生成器执行，虚拟机会将生成器的栈帧插入栈帧链，也就是将它的 f_back 设置为调用 __next__、send 时所在的栈帧。然后生成器的栈帧就变成了当前栈帧，于是开始执行字节码。</p>
+<p>4）执行到 YIELD_VALUE 指令时，说明生成器该暂停了。于是修改 f_stacktop，通过一个 goto 语句跳出执行指令的 for 循环，退回到上一级栈帧，然后将 yield 右边的值压入运行时栈的栈顶，供调用方使用。并且还会将生成器内部栈帧的 f_back 设置为空，以及设置 f_lasti 等字段。</p>
+<p>5）当再次调用 __next__或者 send 方法时，虚拟机仍会修改 f_back，将生成器的栈帧重新插入到栈帧链中，然后继续执行生成器内部的字节码。但是从什么地方开始执行呢？显然是上一次中断的位置，那么上一次中断的位置虚拟机如何得知呢？没错，显然是通过 f_lasti，直接从偏移量为 f_lasti + 2 的指令开始执行即可。所以执行时，会从上一个 YIELD_VALUE 的下一条指令开始执行，另外由于要获取调用者传递的值，因此 YIELD_VALUE 的下一条指令一般是 POP_TOP 或者 STORE_FAST。</p>
+<p>6）随着不断驱动生成器执行，总有执行完毕的那一刻。而当生成器执行完毕后，gi_frame 会被设置为 None，因此生成器只能顺序遍历一次。</p>
+<hr />
+<p> </p>
+<p><strong>欢迎大家关注我的公众号：古明地觉的编程教室。</strong></p>
+<p><img src="./images/qrcode_for_gh.jpg" alt="" /></p>
+<p><strong>如果觉得文章对你有所帮助，也可以请作者吃个馒头，Thanks♪(･ω･)ﾉ。</strong></p>
+<p><img src="./images/supports.png" alt="" /></p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="72.生成器是做什么的，为什么会有生成器？.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="72.生成器是做什么的，为什么会有生成器？.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+            </nav>
+
+        </div>
+
+        <script type="text/javascript">
+            window.playground_copyable = true;
+        </script>
+        <script src="elasticlunr.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="mark.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="searcher.js" type="text/javascript" charset="utf-8"></script>
+        <script src="clipboard.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="highlight.js" type="text/javascript" charset="utf-8"></script>
+        <script src="book.js" type="text/javascript" charset="utf-8"></script>
+
+        <!-- Custom JS scripts -->
+        <script type="text/javascript" src="theme/custom.js"></script>
+    </body>
+</html>
