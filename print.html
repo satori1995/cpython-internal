@@ -22553,7 +22553,7 @@ print(async_gen.__code__.co_flags &amp; 0x200)  # 512
 #define CO_GENERATOR    0x0020
 </code></pre>
 <p>我们看到 CO_GENERATOR 的值为 0x20，如果想判断一个函数是否是生成器函数，那么就可以通过 co_flags &amp; 0x20 是否为真来判断。</p>
-<p>当生成器函数创建完毕之后就要调用了，来创建一个生成器。还记得函数的调用流程吗？</p>
+<p>当生成器函数创建完毕后就要调用了，会得到一个生成器。还记得函数的调用流程吗？</p>
 <p><img src="./images/230.png" alt="" /></p>
 <p>由于这是一个生成器函数，因此调用时不会进入快速通道，而是会进入通用通道。</p>
 <pre><code class="language-C">PyObject *
@@ -22615,7 +22615,7 @@ typedef struct {
 <pre><code class="language-c">typedef struct {
     // 头部信息
     PyObject_HEAD
-    // 生成器执行时对应的栈帧对象，用于保存执行上下文信息
+    // 生成器执行时对应的栈帧对象
     struct _frame *gi_frame; 
     // 标识生成器是否在运行当中
     char gi_running;  
@@ -22635,7 +22635,7 @@ typedef struct {
 </code></pre>
 <p>所以生成器在底层对应 PyGenObject，它的类型则是 PyGen_Type。至此，生成器的结构就非常清晰了，我们来画一张图：</p>
 <p><img src="./images/231.png" alt="" /></p>
-<p>无论是普通函数还是生成器函数，在调用时，虚拟机都会为其创建栈帧，因为栈帧是函数执行的上下文。只是对于生成器函数来说，由于它的 co_flags 带有 CO_GENERATOR 标识，所以知道这是一个生成器函数。在调用时不会立刻执行里面的字节码，而是创建了一个生成器对象，并将栈帧交由 gi_frame 字段保存，然后将生成器返回了。</p>
+<p>无论是普通函数还是生成器函数，在调用时，虚拟机都会为其创建栈帧，因为栈帧是函数执行的上下文。只是对于生成器函数来说，由于它的 co_flags 带有 CO_GENERATOR 标识，所以知道这是一个生成器函数。在调用时不会立刻执行里面的字节码，而是会创建一个生成器对象，并将栈帧交由 gi_frame 字段保存，然后将生成器返回。</p>
 <p>我们可以从 Python 层面来验证得到的结论。</p>
 <pre><code class="language-python">def gen():
     yield
@@ -22669,8 +22669,8 @@ print(
 )  # True
 </code></pre>
 <p>所以生成器相当于对栈帧进行了一个封装，当我们驱动它执行时，会将内部的栈帧插入到栈帧链中执行。一旦遇到 yield，停止运行，将栈帧从栈帧链中移除。</p>
-<p>然后再次驱动执行，那么再将内部的栈帧插入到栈帧链中执行字节码指令，由于 f_lasti 记录了上一条已执行完毕的指令的偏移量，所以是从上次中断的位置开始执行的。如果又遇到了 yield，那么依旧停止运行，将栈帧从栈帧链中移除。</p>
-<p>就这样不断重复，直到执行完毕。而生成器一旦执行完毕了（return 之后），那么会将栈帧设置为 None。</p>
+<p>然后再次驱动执行，继续将内部的栈帧插入到栈帧链中执行字节码指令，由于 f_lasti 记录了上一条已执行完毕的指令的偏移量，所以会从上次中断的位置开始执行。如果又遇到了 yield，那么依旧停止运行，将栈帧从栈帧链中移除。</p>
+<p>就这样不断重复，直到执行完毕。而生成器一旦执行完毕（return 之后），会将栈帧设置为 None。</p>
 <pre><code class="language-python">def gen():
     yield
 
@@ -22714,11 +22714,11 @@ gen_new_with_qualname(PyTypeObject *type, PyFrameObject *f,
         Py_DECREF(f);
         return NULL;
     }
-    // 将通用通道里面的栈帧交给 gi_frame 保存，所以普通函数和生成器函数调用时都会创建栈帧
+    // 将栈帧交给 gi_frame 保存，所以普通函数和生成器函数调用时都会创建栈帧
     // 但普通函数调用时，会在栈帧里面将字节码全部执行完毕
     // 而生成器函数调用时，会返回生成器对象，并将栈帧保存在里面
     gen-&gt;gi_frame = f;
-    // 注意这里，又让栈帧的 f_gen 成员保存生成器对象
+    // 注意这里，又让栈帧的 f_gen 字段保存生成器对象
     // 如果是普通函数，那么 f_gen 显然为空
     f-&gt;f_gen = (PyObject *) gen;
     Py_INCREF(f-&gt;f_code);
@@ -22755,7 +22755,7 @@ gen_new_with_qualname(PyTypeObject *type, PyFrameObject *f,
 <h2 id="生成器的执行"><a class="header" href="#生成器的执行">生成器的执行</a></h2>
 <p>由于调用 __next__、send 方法可以驱动生成器执行，因此相关细节就隐藏在这两个函数当中。</p>
 <p><img src="./images/232.png" alt="" /></p>
-<p>__next__ 对应类型对象 PyGen_Type 的 tp_iternext，而 send 是一个普通的方法，所以它位于 tp_methods 中。所以如果调用 __next__，底层会执行 gen_iternext，如果调用 send，底层会执行 _PyGen_Send。</p>
+<p>__next__ 对应类型对象 PyGen_Type 的 tp_iternext，而 send 是一个普通的方法，所以它位于 tp_methods 中。通过源码可以看出，如果调用 __next__，底层会执行 gen_iternext，如果调用 send，底层会执行 _PyGen_Send。</p>
 <pre><code class="language-C">// Objects/genobject.c
 
 static PyObject *
@@ -22777,13 +22777,15 @@ gen_send_ex(PyGenObject *gen, PyObject *arg, int exc, int closing)
 {
     // 获取线程状态对象
     PyThreadState *tstate = _PyThreadState_GET();
-    // 拿到生成器内部保存的栈帧对象
+    // 获取生成器内部保存的栈帧对象
     PyFrameObject *f = gen-&gt;gi_frame;
     // 返回值
     PyObject *result;
+    // ...
+  
     // 重点来了，f 就是生成器内部的栈帧，f-&gt;f_back 表示生成器内部栈帧的上一级栈帧
     // 而 tstate-&gt;frame 表示当前栈帧，也就是调用 __next__ 或者 send 时所在的栈帧
-    // 假设我们是在模块作用域调用了生成器的 __next__ 方法，那么 tstate-&gt;frame 就是模块对应的栈帧
+    // 假设我们是在模块作用域中调用了生成器的 __next__ 方法，那么 tstate-&gt;frame 就是模块对应的栈帧
     // 而当下面这行代码执行完毕后，tstate-&gt;frame 就变成了生成器内部栈帧的上一级栈帧
     // 生成器内部的栈帧则变成了当前栈帧，所以这是不是就相当于将生成器内部的栈帧插入到栈帧链当中了呢？
     f-&gt;f_back = tstate-&gt;frame;
@@ -22791,13 +22793,15 @@ gen_send_ex(PyGenObject *gen, PyObject *arg, int exc, int closing)
     gen-&gt;gi_running = 1;
     gen-&gt;gi_exc_state.previous_item = tstate-&gt;exc_info;
     tstate-&gt;exc_info = &amp;gen-&gt;gi_exc_state;
-    // 而插入到栈帧链之后要干啥？显然是执行栈帧内的字节码
+    // 而插入到栈帧链之后要干啥？显然是在栈帧中执行字节码
     // 栈帧对象保存着生成器的执行上下文，f_lasti 字段则跟踪生成器内部代码的执行进度
     // 当遇到 yield 之后，将后面的值返回给 result
     result = PyEval_EvalFrameEx(f, exc);
     tstate-&gt;exc_info = gen-&gt;gi_exc_state.previous_item;
     gen-&gt;gi_exc_state.previous_item = NULL;
     gen-&gt;gi_running = 0;
+  
+    // ...
 }  
 </code></pre>
 <p>至于剩下的逻辑我们显然再清楚不过了，最终会调用帧评估函数在栈帧对象中执行字节码。每执行完一条指令就自增 f_lasti 字段、next_instr 字段，直到字节码全部执行完毕、或者中间出现异常时结束循环。当然啦，遇到 yield 也会结束循环。</p>
@@ -22811,9 +22815,9 @@ g = gen()
 print(g.gi_frame.f_back)  # None
 g.__next__()
 </code></pre>
-<p>g = gen() 之后会创建一个生成器，但此时生成器的代码还没有执行，所以生成器内部栈帧的上一级栈帧为空。等到调用生成器的 __next__ 方法时，会接入到栈帧链并开始执行。另外，由于我们是在模块作用域中调用的 __next__，所以当前栈帧链里面其实只包含了一个栈帧，就是模块的栈帧。</p>
+<p>g = gen() 之后会创建一个生成器，但此时生成器的代码还没有执行，所以生成器内部栈帧的上一级栈帧为空。等到调用生成器的 __next__ 方法时，会接入到栈帧链并开始执行。另外，由于我们是在模块作用域中调用的 __next__，所以当前栈帧链里面其实只有一个栈帧，就是模块的栈帧。</p>
 <p><img src="./images/233.png" alt="" /></p>
-<p>所以接入栈帧链，其实就是让生成器内部栈帧的 f_back 字段，指向调用 __next__ 或 send 时所在的栈帧。比如当前是在模块作用域中调用的 __next__，那么就让 f_back 字段指向模块栈帧。就好像在模块的栈帧之上，创建了一个新的栈帧一样，开始执行，直到遇见个 yield。</p>
+<p>所以接入栈帧链，其实就是让生成器内部栈帧的 f_back 字段，指向调用 __next__ 或 send 时所在的栈帧。比如当前是在模块作用域中调用的 __next__，那么就让 f_back 字段指向模块栈帧。就好像在模块的栈帧之上，创建了一个新的栈帧一样，开始执行，直到遇见 yield。</p>
 <h2 id="生成器的暂停"><a class="header" href="#生成器的暂停">生成器的暂停</a></h2>
 <p>先看看生成器内部的字节码长什么样子？</p>
 <pre><code class="language-python">def gen():
@@ -22882,7 +22886,7 @@ g.__next__()
         retval = w;
     }
     // stack_pointer 指向运行时栈的栈顶
-    // 因为要跳出循环了，所以赋值给f-&gt;f_stacktop
+    // 因为要跳出循环了，所以赋值给 f-&gt;f_stacktop
     f-&gt;f_stacktop = stack_pointer;
     // 直接通过 goto 语句跳出 for 循环，来到 exit_yielding 标签
     goto exit_yielding;
@@ -22892,7 +22896,7 @@ g.__next__()
 <p><img src="./images/234.png" alt="" /></p>
 <p>同理，当再次调用 __next__ 或者 send 方法时，生成器将恢复执行，底层会调用 gen_send_ex 函数。然后虚拟机会把生成器的栈帧对象挂到栈帧链中，并最终调用帧评估函数逐条执行字节码。</p>
 <p><img src="./images/235.png" alt="" /></p>
-<p>通过不断调用 __next__，最终将整个生成器内的代码执行完毕，我们用 Python 代码演示一下这个过程。</p>
+<p>通过不断调用 __next__，最终将整个生成器内部的代码执行完毕，我们实际演示一下这个过程。</p>
 <pre><code class="language-Python">def gen():
     name = &quot;古明地觉&quot;
     yield name
@@ -22936,15 +22940,15 @@ except StopIteration:
 # 一旦执行完毕，gi_frame 会设置为 None，因此生成器只能顺序遍历一次
 print(g.gi_frame)  # None
 </code></pre>
-<p>遇见 yield 产生中断，调用 __next__、send 恢复执行，并且在这个过程中，f_lasti 也在不断变化，始终维护着生成器的执行进度。而基于 f_lasti，生成器就可以记住自己的中断位置，并在下一次被驱动的时候，能够从中断的位置恢复执行。</p>
+<p>遇见 yield 产生中断，调用 __next__、send 恢复执行，并且在这个过程中，f_lasti 也在不断变化，并始终维护着生成器的执行进度。而基于 f_lasti，生成器就可以记住自己的中断位置，并在下一次被驱动的时候，能够从中断的位置恢复执行。</p>
 <p>而以上也正是协程能够实现的理论基础，虽然 Python 在 3.5 提供了基于 async def 的原生协程，但它底层依旧是使用了生成器。</p>
 <h2 id="小结-59"><a class="header" href="#小结-59">小结</a></h2>
-<p>以上我们从源码的角度剖析了生成器的实现原理，下面总结一下。</p>
+<p>以上我们就从源码的角度剖析了生成器的实现原理，下面总结一下。</p>
 <p>1）Python 具有词法作用域，当函数内部出现 yield 关键字时，会给对应的 PyCodeObject 增加一个 CO_GENERATOR 标识。这个标识让虚拟机在调用时能够分辨出是普通函数、还是生成器函数。</p>
 <p>2）和普通函数一样，生成器函数在调用时，也会由虚拟机创建栈帧，作为执行上下文。但和普通函数不同的是，调用生成器函数时创建的栈帧不会立即进入帧评估函数执行字节码。而是以栈帧为参数，创建生成器对象。</p>
 <p>3）可以调用 __next__、send 方法驱动生成器执行，虚拟机会将生成器的栈帧插入栈帧链，也就是将它的 f_back 设置为调用 __next__、send 时所在的栈帧。然后生成器的栈帧就变成了当前栈帧，于是开始执行字节码。</p>
-<p>4）执行到 YIELD_VALUE 指令时，说明生成器该暂停了。于是修改 f_stacktop，通过一个 goto 语句跳出执行指令的 for 循环，退回到上一级栈帧，然后将 yield 右边的值压入运行时栈的栈顶，供调用方使用。并且还会将生成器内部栈帧的 f_back 设置为空，以及设置 f_lasti 等字段。</p>
-<p>5）当再次调用 __next__或者 send 方法时，虚拟机仍会修改 f_back，将生成器的栈帧重新插入到栈帧链中，然后继续执行生成器内部的字节码。但是从什么地方开始执行呢？显然是上一次中断的位置，那么上一次中断的位置虚拟机如何得知呢？没错，显然是通过 f_lasti，直接从偏移量为 f_lasti + 2 的指令开始执行即可。所以执行时，会从上一个 YIELD_VALUE 的下一条指令开始执行，另外由于要获取调用者传递的值，因此 YIELD_VALUE 的下一条指令一般是 POP_TOP 或者 STORE_FAST。</p>
+<p>4）执行到 YIELD_VALUE 指令时，说明生成器该暂停了。于是修改 f_stacktop，通过一个 goto 语句跳出执行指令的 for 循环，回退到上一级栈帧，然后将 yield 右边的值压入运行时栈。并且还会将生成器内部栈帧的 f_back 设置为空，以及设置 f_lasti 等字段。</p>
+<p>5）当再次调用 __next__ 或者 send 方法时，虚拟机仍会修改 f_back，将生成器的栈帧重新插入到栈帧链中，然后继续执行生成器内部的字节码。但是从什么地方开始执行呢？显然是从上一次中断的位置，那么上一次中断的位置虚拟机要如何得知呢？没错，显然是通过 f_lasti，直接从偏移量为 f_lasti + 2 的指令开始执行即可。所以执行时，会从上一个 YIELD_VALUE 的下一条指令开始执行，另外由于要获取调用者传递的值，因此 YIELD_VALUE 的下一条指令一般是 POP_TOP 或者 STORE_FAST。</p>
 <p>6）随着不断驱动生成器执行，总有执行完毕的那一刻。而当生成器执行完毕后，gi_frame 会被设置为 None，因此生成器只能顺序遍历一次。</p>
 <hr />
 <p> </p>
