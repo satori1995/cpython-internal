@@ -154,7 +154,7 @@ print(a - b)  # 9
 <p>但是问题来了，首先调用 int.__sub__ 的时候，我们知道底层肯定是调用 long_as_number 中的 long_sub 函数。而 int.__sub__(self, other) 里面的参数类型显然都应该是 int，但我们传递的是 MyInt，那么虚拟机是怎么做的呢？</p>
 <p>目前带着这些疑问，先来看一张草图，后面会一点一点揭开：</p>
 <p><img src="./images/237.png" alt="" /></p>
-<p>图中的 &quot;__sub__&quot; 对应的 value 并不是一个直接指向 long_sub 函数的指针，而是指向一个结构体，至于指向 long_sub 函数的指针则在该结构体内部。而这个结构体是谁，以及具体细节，我们后面会详细说**。**</p>
+<p>图中的 &quot;__sub__&quot; 对应的 value 并不是一个直接指向 long_sub 函数的指针，而是指向一个结构体，至于指向 long_sub 函数的指针则在该结构体内部。而这个结构体是谁，以及具体细节，我们后面会详细说。</p>
 <p>另外我们知道，一个对象能否被调用，取决于它的类对象（或者说类型对象）中是否定义了__call__ 函数。因此：所谓调用，就是执行类型对象的 tp_call 指向的函数。</p>
 <pre><code class="language-python">class Girl:
     def __call__(self, *args, **kwargs):
@@ -171,7 +171,7 @@ print(hasattr(int, &quot;__call__&quot;))  # True
 print(&quot;__call__&quot; in dir(int))  # False
 print(&quot;__call__&quot; in dir(type))  # True
 </code></pre>
-<p>如果一个对象不存在某个属性，那么会自动到对应的类型对象里面去找。int 的类型是 type，而 type 里面有 __call__，因此 hasattr(int, &quot;__call__&quot;) 结果为 True。</p>
+<p>如果一个对象不存在某个属性，那么会自动到对应的类型对象里面去找。int 的类型是 type，而 type 里面有 __call__，因此 <font color="blue">hasattr(int, &quot;__call__&quot;)</font> 结果为 True。</p>
 <pre><code class="language-python">a1 = int(&quot;123&quot;) 
 a2 = type.__call__(int, &quot;123&quot;) 
 a3 = int.__call__(&quot;123&quot;) 
@@ -234,11 +234,8 @@ print(object.__call__)
 <p>而且我们发现，像 int、str、dict 等内置类对象可以直接使用，这是因为解释器在启动时，会对这些内置类对象进行初始化的动作。这个初始化的动作会动态地在这些类对象对应的 PyTypeObject 中填充一些重要的东西，其中就包括 tp_dict，从而让这些类对象具备生成实例对象的能力。</p>
 <p>而初始化的动作就从函数 PyType_Ready 拉开序幕，虚拟机会调用 PyType_Ready 对内置类对象进行初始化。实际上 PyType_Ready 不仅仅会处理内置类对象，还会处理自定义类对象，并且 PyType_Ready 对内置类对象和自定义类对象的作用还不同。</p>
 <p>内置类对象在底层是已经被静态定义好了的，所以在解释器启动的时候会直接创建。只不过我们说它还不够完善，因为有一部分属性需要在运行时设置，比如 tp_base，所以还需要再打磨一下，而这一步就交给了 PyType_Ready。</p>
-<p>但是对于我们自定义的类就不同了，PyType_Ready 做的工作只是很小的一部分，因为使用 class 自定义的类（假设是 class A），解释器一开始是不知道的。解释器在启动的时候，不可能直接就创建一个 PyA_Type 出来，因此对于我们自定义的类来说，需要在解释执行的时候进行申请内存、创建、初始化等等一系列步骤。</p>
-<p>下一篇我们将从元类 type 入手（当然它也是类型对象），分析类型对象是如何初始化的。</p>
-<blockquote>
-<p>虽然 type 是元类，但它和 int、str、dict、object 等类对象一样，底层都是一个 PyTypeObject 结构体实例。只不过它们的 ob_type，都被设置成了 &amp;PyType_Type。</p>
-</blockquote>
+<p>但是对于我们自定义的类就不同了，PyType_Ready 做的工作只是很小的一部分，因为使用 class 自定义的类（假设是 class A），解释器一开始是不知道的。解释器在启动的时候，不可能直接就创建一个 PyA_Type 出来，因此对于自定义的类来说，需要在解释执行的时候进行内存申请、创建、初始化等等一系列步骤。</p>
+<p>下一篇文章我们来分析类型对象是如何初始化的。</p>
 <hr />
 <p> </p>
 <p><strong>欢迎大家关注我的公众号：古明地觉的编程教室。</strong></p>
