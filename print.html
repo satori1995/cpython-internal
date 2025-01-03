@@ -23235,7 +23235,7 @@ print(object.__call__)
 <p><strong>如果觉得文章对你有所帮助，也可以请作者吃个馒头，Thanks♪(･ω･)ﾉ。</strong></p>
 <p><img src="./images/supports.png" alt="" /></p>
 <div style="break-before: page; page-break-before: always;"></div><h2 id="楔子-60"><a class="header" href="#楔子-60">楔子</a></h2>
-<p>在上一篇文章中我们说道，内置类对象虽然在底层静态定义好了，但还不够完善。解释器在启动之后还要再打磨一下，然后才能得到我们平时使用的类型对象，而这个过程被称为类型对象的初始化。</p>
+<p>在上一篇文章中我们说到，内置类对象虽然在底层静态定义好了，但还不够完善。解释器在启动之后还要再打磨一下，然后才能得到我们平时使用的类型对象，而这个过程被称为类型对象的初始化。</p>
 <p>类型对象的初始化，是通过 Objects/typeobject.c 中的 PyType_Ready 函数实现的，它主要完成以下三个工作：</p>
 <ul>
 <li>给类型对象设置类型和基类信息；</li>
@@ -23244,11 +23244,11 @@ print(object.__call__)
 </ul>
 <p>我们来逐一解释。</p>
 <h2 id="给类型对象设置类型和基类信息"><a class="header" href="#给类型对象设置类型和基类信息">给类型对象设置类型和基类信息</a></h2>
-<p>介绍 type 和 object 之间的恩怨纠葛时，我们说类对象的基类是在初始化的时候设置的，现在可以将谜底揭开了。</p>
+<p>介绍 type 和 object 之间的恩怨纠葛时，我们说类对象的基类是在初始化的时候设置的，来看一下。</p>
 <pre><code class="language-C">int
 PyType_Ready(PyTypeObject *type)
 {
-    // 注意：参数 type 就是一个普通的 C 变量，和 Python 的 &lt;class 'type'&gt; 无关
+    // 注意：参数 type 只是一个普通的 C 变量，和 Python 的 &lt;class 'type'&gt; 无关
     // dict：属性字典，即 __dict__，bases：继承的所有基类，即 __bases__
     PyObject *dict, *bases;
     // 继承的第一个基类，即 __base__
@@ -23268,7 +23268,7 @@ PyType_Ready(PyTypeObject *type)
     // 如果基类不是 NULL，也就是指定了基类，但是基类的属性字典是 NULL
     // 说明该类的基类尚未初始化，那么会先对基类进行初始化
     // 注意这里的 tp_dict，它表示每个类都会有的属性字典
-    // 而属性字典是否为 NULL，是类型对象是否初始化完成的重要标志
+    // 而属性字典不等于 NULL，是类型对象初始化完成的重要标志
     if (base != NULL &amp;&amp; base-&gt;tp_dict == NULL) {
         if (PyType_Ready(base) &lt; 0)
             goto error;
@@ -23306,9 +23306,9 @@ PyType_Ready(PyTypeObject *type)
     // ...
 }
 </code></pre>
-<p>对于指定了 tb_base 的类对象，当然就使用指定的基类，而对于没有指定 tp_base 的类对象，虚拟机将为其指定一个默认的基类：&amp;PyBaseObject_Type ，也就是 Python 的 object。</p>
+<p>对于指定了 tb_base 的类对象，当然就使用指定的基类，而对于没有指定 tp_base 的类对象，虚拟机会为其设置一个默认的基类：&amp;PyBaseObject_Type ，也就是 Python 的 object。</p>
 <p>所以对于 PyType_Type 而言，它的 tp_base 会指向 PyBaseObject_Type，这在 Python 中体现的就是 type 继承 object、或者说 object 是 type 的父类。但是所有的类的 ob_type 又都指向了 PyType_Type，包括 object，因此我们又说 type 是包括 object 在内的所有类对象的类对象（元类）。</p>
-<p>而在获得了基类之后，会判断基类是否被初始化，如果没有，则需要先对基类进行初始化，而判断初始化是否完成的条件是 tp_dict 是否为 NULL。对于内置类对象来说，在解释器启动的时候，就已经作为全局对象存在了，所以它们的初始化不需要做太多工作，只需小小的完善一下即可，比如设置基类、类型、以及对 tp_dict 进行填充。</p>
+<p>而在获得了基类之后，会判断基类是否被初始化，如果没有，则需要先对基类进行初始化，而判断初始化是否完成的条件是 tp_dict 是否不等于 NULL。对于内置类对象来说，在解释器启动的时候，就已经作为全局对象存在了，所以它们的初始化不需要做太多工作，只需小小的完善一下即可，比如设置基类、类型、以及对 tp_dict 进行填充。</p>
 <p>在基类设置完毕后，会继续设置 ob_type，而源码是这么设置的：<font color="blue">Py_TYPE(type) = Py_TYPE(base)</font>，也就是将基类的 ob_type 设置成了当前类的 ob_type，那么这一步的意义何在呢？直接设置成 &lt;class 'type'&gt; 不就完了吗？</p>
 <pre><code class="language-Python">class MyType(type):
     pass
@@ -23329,7 +23329,7 @@ print(type(B))  # &lt;class '__main__.MyType'&gt;
     def __new__(mcs, name, bases, attrs):
         # 关于第一个参数我们需要说一下，对于一般的类来说这里应该是 cls
         # 但这里是元类，所以应该用 mcs，意思就是 metaclass
-        # 我们额外设置一些属性吧，关于元类我们后续会介绍
+        # 我们额外设置一些属性吧，关于元类后续会介绍
         # 虽然目前还没有看底层实现，但至少使用方法应该知道
         attrs.update({&quot;name&quot;: &quot;古明地觉&quot;})
         return super().__new__(mcs, name, bases, attrs)
@@ -23345,7 +23345,7 @@ print(type(Girl))  # &lt;class '__main__.MyType'&gt;
 print(getattr(Girl, &quot;name&quot;))  # 古明地觉
 print(Girl(&quot;123&quot;))  # 123
 </code></pre>
-<p>所以逻辑很清晰了，虚拟机就是将基类的 metaclass 设置为子类的 metaclass。对于当前的 PyType_Type 来说，其 metaclass 就是 object 的 metaclass，也是它自己。而在源码的 PyBaseObject_Type 中也可以看到，其 ob_type 被设置成了 &amp;PyType_Type。</p>
+<p>所以逻辑很清晰了，虚拟机就是将基类的 metaclass 设置为子类的 metaclass。以 PyType_Type 为例，其 metaclass 就是 object 的 metaclass，也是它自己。而在源码的 PyBaseObject_Type 定义中也可以看到，其 ob_type 被设置成了 &amp;PyType_Type。</p>
 <p>tb_base 和 ob_type 设置完毕之后，会设置 tb_bases。tb_base 对应 __base__，tb_bases 对应 __bases__，我们用 Python 演示一下，这两者的区别。</p>
 <pre><code class="language-Python">class A:
     pass
@@ -23367,8 +23367,7 @@ print(C.__bases__)  # (&lt;class 'object'&gt;,)
 print(B.__base__)  # &lt;class '__main__.A'&gt;
 print(B.__bases__)  # (&lt;class '__main__.A'&gt;,)
 </code></pre>
-<p>我们看到 D 同时继承多个类，那么 tp_base 就是先出现的那个基类。而 tp_bases 则是继承的所有基类，但是基类的基类是不会出现的，比如 object。对于 B 而言也是一样的。</p>
-<p>然后我们看看 C，因为 C 没有显式地继承任何类，那么 tp_bases 就是NULL。但是 Python3 里面所有的类都默认继承了object，所以 tp_base 就是object。而 tp_bases，显然是 (object,)。</p>
+<p>我们看到 D 同时继承多个类，那么 tp_base 就是先出现的那个基类。而 tp_bases 则是继承的所有基类，但是基类的基类是不会出现的，比如 object。然后我们看看 C，因为 C 没有显式地继承任何类，那么 tp_bases 就是 NULL。但是 Python3 里面所有的类都默认继承了object，所以 tp_base 就是 object，而 tp_bases 显然是 (object,)。</p>
 <p>以上就是 tp_base、ob_type、tp_bases 的设置，还是比较简单的，它们在设置完毕之后，就要对 tp_dict 进行填充了。而填充 tp_dict 是一个极其繁复的过程，我们继续往下看。</p>
 <h2 id="类对象属性字典tp_dict的填充"><a class="header" href="#类对象属性字典tp_dict的填充">类对象属性字典（tp_dict）的填充</a></h2>
 <p>在给类对象设置完基类、以及类型信息之后，就开始填充属性字典了，这是一个非常复杂的过程。</p>
@@ -23388,7 +23387,7 @@ PyType_Ready(PyTypeObject *type)
         type-&gt;tp_dict = dict;
     }
     // 将与 type 相关的操作加入到 tp_dict 中
-    // 注意：这里的 type 是 PyType_Ready 的参数中的 type
+    // 注意：这里的 type 是 PyType_Ready 的参数 type
     // 它可以是 Python 的 &lt;class 'type'&gt;、也可以是 &lt;class 'int'&gt;
     if (add_operators(type) &lt; 0)
         goto error;
@@ -23396,7 +23395,7 @@ PyType_Ready(PyTypeObject *type)
         if (add_methods(type, type-&gt;tp_methods) &lt; 0)
             goto error;
     }
-    if (type-&gt;tp_members != NULL) {  // 实例对象可以绑定额属性
+    if (type-&gt;tp_members != NULL) {  // 实例对象可以绑定的属性
         if (add_members(type, type-&gt;tp_members) &lt; 0)
             goto error;
     }
@@ -23410,7 +23409,7 @@ PyType_Ready(PyTypeObject *type)
 <p>在这个阶段，完成了将魔法函数的函数名和函数体加入 tp_dict 的过程，里面的 add_operators 、 add_methods 、 add_members 、 add_getset 都是完成填充 tp_dict 的动作。</p>
 <p>那么这时候一个问题就出现了，以整数的 __sub__ 为例，我们知道它会对应底层的 C 函数 long_sub，可虚拟机是如何知道 __sub__ 和 long_sub 之间存在关联的呢？其实这种关联显然是一开始就已经定好了的，存放在一个名为 slotdefs 的数组中。</p>
 <h3 id="slot-与操作排序"><a class="header" href="#slot-与操作排序">slot 与操作排序</a></h3>
-<p>在进入填充 tp_dict 的复杂操作之前，我们先来看一个概念：slot。slot 可以视为表示 PyTypeObject 中定义的操作，一个魔法函数对应一个 slot，比如 __add__、__sub__ 等等，都会对应一个 slot。我们看看 slot 的底层结构，它是由 slotdef 这个结构体来实现的，内部除了函数指针之外，它还包含了其它信息。</p>
+<p>在进入填充 tp_dict 的复杂操作之前，我们先来看一个概念：slot。slot 可以视为 PyTypeObject 中定义的操作，一个魔法函数对应一个 slot，比如 __add__、__sub__ 等等，都会对应一个 slot。我们看看 slot 的底层结构，它是由 slotdef 这个结构体来实现的，内部除了函数指针之外，它还包含了其它信息。</p>
 <pre><code class="language-C">// Objects/typeobject.c
 typedef struct wrapperbase slotdef;
 
@@ -23459,7 +23458,7 @@ typedef struct _heaptypeobject {
 <p>那么这里就产生了一个问题，假设我们定义了一个类继承自 int，根据继承关系，显然自定义的类是具有 PyNumberMethods 这个操作簇的，它可以使用 __add__、__sub__ 之类的魔法函数。</p>
 <p>但操作簇是定义在 PyTypeObject 里面的，而此时的 offset 却是基于 PyHeapTypeObject 得到的偏移量，那么通过这个 offset 显然无法准确找到操作簇里面的函数指针，比如 long_add、long_sub 等等。那我们要这个 offset 还有何用呢？答案非常诡异，这个 offset 是用来对操作进行排序的。排序？我整个人都不好了。</p>
 <p><img src="./images/239.png" alt="" /></p>
-<p>不过在理解为什么需要对操作进行排序之前，需要先看看底层预先定义的 slot 集合 slotdefs。</p>
+<p>不过在理解为什么要对操作进行排序之前，需要先看看底层预定义的 slot 集合 slotdefs。</p>
 <pre><code class="language-C">// Objects/typeobject.c
 #define BINSLOT(NAME, SLOT, FUNCTION, DOC) \
     ETSLOT(NAME, as_number.SLOT, FUNCTION, wrap_binaryfunc_l, \
@@ -23568,10 +23567,10 @@ static slotdef slotdefs[] = {
            &quot;__getitem__($self, key, /)\n--\n\nReturn self[key].&quot;),
 }
 </code></pre>
-<p>在 slotdefs 中可以发现，操作名和操作并不是一一对应的，存在多个操作对应同一个操作名、或者多个操作名对应同一个操作的情况。那么在填充 tp_dict 时，就会出现问题。比如对于 __getitem__，在 tp_dict 中与其对应的是 mp_subscript 还是 sq_item 呢？这两者都是通过 [] 进行操作的，比如字典根据 key 获取 value、列表基于索引获取元素，对应的都是 __getitem__。</p>
-<p>为了解决这个问题，就需要利用 slot 中的 offset 信息对 slot（也就是操作）进行排序。回顾一下前面列出的 PyHeapTypeObject 的定义，与一般的 struct 定义不同，它的各个成员的顺序是非常关键的，在顺序中隐含着操作优先级的问题。</p>
+<p>在 slotdefs 中可以发现，操作名和操作并不是一一对应的，存在多个操作对应同一个操作名、或者多个操作名对应同一个操作的情况。那么在填充 tp_dict 时，就会出现问题，比如 __getitem__，在 tp_dict 中与其对应的是 mp_subscript 还是 sq_item 呢？这两者都是通过 [] 进行操作的，比如字典根据 key 获取 value、列表基于索引获取元素，对应的都是 __getitem__。</p>
+<p>为了解决这个问题，就需要利用 slot 中的 offset 信息对 slot（也就是操作）进行排序。回顾一下 PyHeapTypeObject 的定义，与一般的 struct 定义不同，它的各个字段的顺序是非常关键的，在顺序中隐含着操作优先级的问题。</p>
 <p><img src="./images/240.png" alt="" /></p>
-<p>在PyHeapTypeObject中，PyMappingMethods 的位置在 PySequenceMethods 之前，mp_subscript 是 PyMappingMethods 中的一个函数指针，而 sq_item 又是 PySequenceMethods 中的一个函数指针。那么最终计算出来的偏移量就存在如下关系：</p>
+<p>在 PyHeapTypeObject 中，PyMappingMethods 的位置在 PySequenceMethods 之前，mp_subscript 是 PyMappingMethods 中的一个函数指针，而 sq_item 又是 PySequenceMethods 中的一个函数指针。那么最终计算出来的偏移量就存在如下关系：</p>
 <pre><code class="language-C">offset(mp_subscript) &lt; offset(sq_item)
 </code></pre>
 <p>因此如果在一个 PyTypeObject 中，既定义了 mp_subscript，又定义了 sq_item，那么虚拟机将选择 mp_subscript 与 __getitem__ 建立联系。我们举个栗子：</p>
@@ -23595,7 +23594,7 @@ print(a[&quot;xxx&quot;])  # xxx
 <p>看一下之前的一张图：</p>
 <p><img src="./images/241.png" alt="" /></p>
 <p>当时说 &quot;__sub__&quot; 对应的 value 并不是一个直接指向 long_sub 函数的指针，而是指向一个结构体，至于指向 long_sub 函数的指针则在该结构体内部。那么问题来了，这个结构体是不是上面的 slot 呢？</p>
-<p>我们知道在 slot 中，包含了很多关于一个操作的信息。但是很可惜，在tp_dict中，与 &quot;__sub__&quot; 关联在一起的，一定不会是 slot，因为它不是一个 PyObject，无法将其指针放在字典中。如果再深入思考一下，会发现 slot 也无法被调用。因为它不是一个 PyObject，那么它就没有 ob_type 这个字段，也就无从谈起什么 tp_call 了，所以 slot 是无论如也无法满足 Python 中的可调用（callable）这一条件的。</p>
+<p>我们知道在 slot 中，包含了一个操作的相关信息。但是很可惜，在 tp_dict 中，与 &quot;__sub__&quot; 关联在一起的，一定不会是 slot，因为它不是一个 PyObject，无法将其指针放在字典中。如果再深入思考一下，会发现 slot 也无法被调用。因为它不是一个 PyObject，那么它就没有 ob_type 这个字段，也就无从谈起什么 tp_call 了，所以 slot 是无论如何也无法满足 Python 中可调用（callable）这一条件的。</p>
 <p>前面我们说过，虚拟机在 tp_dict 中找到对应的操作后，会调用该操作，所以 tp_dict 中与 &quot;__sub__&quot; 对应的只能是包装了 slot 的 PyObject（的指针），我们称之为 wrapper descriptor。在 Python 内部存在多种 wrapper descriptor，它在底层对应的结构体为 PyWrapperDescrObject。</p>
 <pre><code class="language-c">// Include/descrobject.h
 typedef struct {
@@ -23764,11 +23763,11 @@ add_operators(PyTypeObject *type)
     return 0;
 }
 </code></pre>
-<p>在 add_operators 中，首先调用 init_slotdefs，然后遍历 slotdefs 数组，通过 slotptr 获得该 slot 对应的操作在 PyTypeObject 中的函数指针。紧接着创建 wrapper descriptor，然后在 tp_dict 中建立从操作名（slotdef.name_strobj）到操作（wrapper descriptor）的映射。</p>
+<p>在 add_operators 中，首先调用 init_slotdefs，然后遍历 slotdefs 数组，通过 slotptr 获取该 slot 对应的操作在 PyTypeObject 中的函数指针。紧接着创建 wrapper descriptor，然后在 tp_dict 中建立从操作名（slotdef.name_strobj）到操作（wrapper descriptor）的映射。</p>
 <p>但需要注意的是，在创建 wrapper descriptor 之前，虚拟机会检查在 tp_dict 中是否存在同名操作，如果存在了，则不会再次建立从操作名到操作的关联。也正是这种检查机制与排序机制相结合，虚拟机才能在拥有相同操作名的多个操作中选择优先级最高的操作。</p>
 <p>add_operators 里面的大部分动作都很简单、直观，而最难的动作隐藏在 slotptr 这个函数当中，它的功能是完成从 <font color="blue">slot</font> 到 <font color="blue">slot 对应操作的真实函数指针</font>的转换。我们知道在 slot 中存放着用来操作的 offset，但不幸的是，对于自定义类的操作簇来说，这个 offset 是相对于 PyHeapTypeObject 的偏移，而操作的真实函数指针却是在 PyTypeObject 中指定的。</p>
 <p>此外 PyTypeObject 和 PyHeapTypeObject 也不是同构的，因为 PyHeapTypeObject 中包含了 PyNumberMethods 结构体，但 PyTypeObject 只包含了 PyNumberMethods * 指针。所以 slot 中存储的关于操作的 offset 对 PyTypeObject 来说，不能直接用，必须先转换。</p>
-<p>举个栗子，假如说有如下调用（slotptr 一会说）：</p>
+<p>举个栗子，假如有以下调用（slotptr 一会说）：</p>
 <pre><code class="language-C">slotptr(&amp;PyLong_Type, offset(PyHeapTypeObject, long_sub))
 </code></pre>
 <p>首先会判断这个偏移量是否大于 <font color="blue">offset(PyHeapTypeObject, as_number)</font>，所以会从 PyHeapTypeObject 对象中获取 as_number 字段的指针 p，然后在 p 的基础上进行偏移就可以得到实际的函数地址。所以偏移量 delta 为：</p>
@@ -23816,10 +23815,10 @@ slotptr(PyTypeObject *type, int ioffset)
     return (void **)ptr;
 }
 </code></pre>
-<p>好了，我想到现在我们应该能够摸清楚虚拟机在改造 PyTypeObject 对象时，对 tp_dict 做了什么了，我们以 PyLong_Type 举例说明：</p>
+<p>好了，到现在我们应该能够摸清楚虚拟机在改造 PyTypeObject 对象时，对 tp_dict 做了什么了，我们以 PyLong_Type 举例说明：</p>
 <p><img src="./images/244.png" alt="" /></p>
 <p>在 add_operators 完成之后，PyLong_Type 如图所示。</p>
-<p>从 PyLong_Type.tp_as_number 中延伸出去的部分是在编译时就已经确定好了的，而从 tp_dict 中延伸出去的部分则是在<font color="blue">Python 运行时环境初始化</font>的时候才建立的。这个运行时环境初始化后面会单独说，现在就把它理解为解释器启动时做的准备工作即可。</p>
+<p>从 PyLong_Type.tp_as_number 中延伸出去的部分是在编译时就已经确定好了的，而从 tp_dict 中延伸出去的部分则是在 <font color="blue">Python 运行时环境初始化</font>的时候才建立的。这个运行时环境初始化后面会单独说，现在就把它理解为解释器启动时做的准备工作即可。</p>
 <p>另外， PyType_Ready 在通过 add_operators 添加了 PyTypeObject 中定义的一些 operator 后，还会通过 add_methods、add_numbers 和 add_getsets 添加 PyTypeObject 中定义的 tp_methods、tp_members 和 tp_getset 函数集。</p>
 <p>这些过程和 add_operators 类似，不过最后添加到 tp_dict 中的就不再是 PyWrapperDescrObject ，而分别是 PyMethodDescrObject、PyMemberDescrObject、PyGetSetDescrObject 。</p>
 <pre><code class="language-Python">print(int.__add__)
@@ -23843,7 +23842,7 @@ print((123).__add__.__class__)
 // 而像 &quot;hello&quot;.__add__、(123).__sub__，它们都是 wrapper method
 // 在底层对应 wrapperobject 结构体实例
 // 但是我们看到 wrapperobject 只是多了一个 self 而已
-// 所以 str.upper(&quot;hello&quot;) 等价于 &quot;hello&quot;.upper()
+// 所以 &quot;hello&quot;.upper() 等价于 str.upper(&quot;hello&quot;)
 typedef struct {
     PyObject_HEAD
     PyWrapperDescrObject *descr;
@@ -23859,10 +23858,10 @@ typedef struct {
 a = A(123)
 print(a - 456)  # (123, 456)
 </code></pre>
-<p>从结果上很容易看出，进行减法操作时，调用的是我们重写的 __sub__。这意味着虚拟机在初始化 A 的时候，对 tp_as_number 中的 nb_subtract 进行了特殊处理。那么为什么虚拟机会知道要对 nb_subtract 进行特殊处理呢？当然肯定有小伙伴会说：这是因为我们重写了 __sub__ 啊，确实如此，但这是 Python 层面上的，如果站在虚拟机层面的话，答案还是在 slot 身上。</p>
+<p>从结果上很容易看出，进行减法操作时，调用的是我们重写的 __sub__。这意味着虚拟机在初始化 A 的时候，对 tp_as_number 中的 nb_subtract 进行了特殊处理。那为什么虚拟机会知道要对 nb_subtract 进行特殊处理呢？当然肯定有小伙伴会说：这是因为我们重写了 __sub__ 啊，确实如此，但这是 Python 层面上的，如果站在虚拟机层面的话，答案还是在 slot 身上。</p>
 <p><img src="./images/245.png" alt="" /></p>
-<p>虚拟机在初始化类对象 A 时，会检查 A 的 tp_dict 中是否存在 __sub__。在后面剖析自定义类对象的创建时会看到，因为在定义 class A 的时候，重写了 __sub__ 这个操作，所以在 A 的 tp_dict 中，__sub__ 一开始就会存在，虚拟机会检测到。</p>
-<p>然后再根据 __sub__ 对应的 slot 顺藤摸瓜，找到 nb_substract，并且将这个函数指针替换为 slot 中指定的 &amp;slot_nb_subtract。所以当后来虚拟机找 A 的 nb_substract 的时候，实际上找的是 slot_nb_subtract。而在 slot_nb_subtract 中，会寻找 __sub__ 对应的描述符，然后找到在 A 中重写的函数（一个 PyFunctionObject *）。这样一来，就完成了对 int 的 __sub__ 行为的替换。</p>
+<p>虚拟机在初始化类对象 A 时，会检测出 A 的 tp_dict 中存在 __sub__。在后面剖析自定义类对象的创建时会看到，因为在定义 class A 的时候，重写了 __sub__ 这个操作，所以在 A 的 tp_dict 中，__sub__ 一开始就会存在，虚拟机会检测到。</p>
+<p>然后再根据 __sub__ 对应的 slot 顺藤摸瓜，找到 nb_substract，并且将这个函数指针替换为 slot 中指定的 &amp;slot_nb_subtract。所以当后来虚拟机找 A 的 nb_substract 的时候，实际上找到的是 slot_nb_subtract。而在 slot_nb_subtract 中，会寻找 __sub__ 对应的描述符，然后找到在 A 中重写的函数（一个 PyFunctionObject *）。这样一来，就完成了对 int 的 __sub__ 行为的替换。</p>
 <p>所以对于 A 来说，内存布局就是下面这样。</p>
 <p><img src="./images/246.png" alt="" /></p>
 <p>当然这仅仅是针对于 __sub__，至于其它操作还是会指向 PyLong_Type 中指定的函数。所以如果某个函数在 A 里面没有重写的话，那么会从 PyLong_Type 中寻找。</p>
@@ -23870,7 +23869,7 @@ print(a - 456)  # (123, 456)
 <h2 id="类对象-mro-的设置与属性继承"><a class="header" href="#类对象-mro-的设置与属性继承">类对象 MRO 的设置与属性继承</a></h2>
 <p>当完成属性字典的设置，就开始确定 MRO 了，即 method resolve order。</p>
 <h3 id="类对象-mro-的设置"><a class="header" href="#类对象-mro-的设置">类对象 MRO 的设置</a></h3>
-<p>MRO 表示类继承之后，属性或方法的查找顺序。如果Python是单继承的话，那么这不是问题，直接一层一层向上找即可。但 Python 是支持多继承的，那么在多继承时，继承的顺序就成为了一个必须考虑的问题。</p>
+<p>MRO 表示类继承之后，属性或方法的查找顺序。如果 Python 是单继承的话，那么这不是问题，直接一层一层向上找即可。但 Python 是支持多继承的，那么在多继承时，继承的顺序就成为了一个必须考虑的问题。</p>
 <pre><code class="language-Python">class A:
     def foo(self):
         print(&quot;A&quot;)
@@ -23900,11 +23899,11 @@ bar D
 </code></pre>
 <p>首先打印的是字符串 &quot;C&quot;，表示调用的是 C 的 foo，说明把 C 写在前面，会先从 C 里面查找。但是下面打印了 &quot;bar D&quot;，这是因为 C 里面的 self 实际上是 D 的实例对象。</p>
 <p>因为 D 在找不到 foo 函数的时候，会到父类里面找，但是同时也会将 self 传递过去。调用 self.bar 的时候，这个 self 是 D 的实例对象，所以还是会先到 D 里面找，如果找不到再去父类里面找。</p>
-<p>而对于虚拟机而言，则是会在 PyType_Ready 中通过 mro_internal 函数确定 mro。虚拟机将创建一个 PyTupleObject 对象，里面存放一组类对象，这些类对象的顺序就是虚拟机确定的 mro 的顺序。而这个元组，最终会被交给 tp_mro 字段保存。</p>
+<p>而对于虚拟机而言，则是会在 PyType_Ready 中通过 mro_internal 函数确定 mro。虚拟机将创建一个 PyTupleObject 对象，里面存放一组类对象，这些类对象的顺序就是虚拟机确定的 mro。而这个元组，最终会被交给 tp_mro 字段保存。</p>
 <p>由于确定 MRO 的 mro_internal 函数非常复杂，这里我们就不看源码了，只要能从概念上理解它即可。另外 Python 早期有经典类和新式类两种，现在则只存在新式类，而经典类和新式类采用的搜索策略是不同的，举个例子：</p>
 <p><img src="./images/247.png" alt="" /></p>
 <p>图中的箭头表示继承关系，比如：A 同时继承 B 和 C、B 继承 D、C 继承 E。</p>
-<p>对于上图来说，经典类和新式类的查找方式是一样的，至于两边是否一样多则不重要。查找方式是先从 A 找到 I，再从 C 查找到 G。我们实际演示一下，由于经典类只在 Python2 中存在，所以下面我们演示只新式类。</p>
+<p>对于上图来说，经典类和新式类的查找方式是一样的，至于两边是否一样多则不重要。查找方式是先从 A 找到 I，再从 C 查找到 G。我们实际演示一下，由于经典类只在 Python2 中存在，所以下面只演示新式类。</p>
 <pre><code class="language-python">I = type(&quot;I&quot;, (), {})
 H = type(&quot;H&quot;, (I,), {})
 F = type(&quot;F&quot;, (H,), {})
@@ -23931,11 +23930,11 @@ for _ in A.__mro__:
 &lt;class 'object'&gt;
 &quot;&quot;&quot;
 </code></pre>
-<p>A 继承两个类，然后这个两个类分别继续继承，如果最终没有继承公共的类（忽略 object），那么经典类和新式类是一样的。像这种泾渭分明、各自继承各自的，都是先一条路找到黑，然后再去另外一条路找。</p>
-<p>但如果是下面这种，最终分久必合、两者最终又继承了同一个类，那么经典类还是跟以前一样，按照每一条路都走到黑的方式。但是对于新式类，则是先从 A 找到 H，而 I 这个两边最终都继承的类不找了，然后从 C 找到 I，也就是在另一条路找到头。</p>
+<p>A 继承两个类，然后这两个类分别继续继承，如果最终没有继承公共的类（忽略 object），那么经典类和新式类是一样的。像这种泾渭分明、各自继承各自的，都是先一条路找到黑，然后再去另外一条路找。</p>
+<p>但如果是下面这种，分久必合、两者最终又继承了同一个类，那么经典类还是跟以前一样，按照每一条路都走到黑的方式。但是对于新式类，则是先从 A 找到 H，而 I 这个两边最终都继承的类不找了，然后从 C 找到 I，也就是在另一条路找到头。</p>
 <p><img src="./images/248.png" alt="" /></p>
 <p>我们测试一下：</p>
-<pre><code class="language-Python"># 新势类
+<pre><code class="language-Python"># 新式类
 I = type(&quot;I&quot;, (), {})
 H = type(&quot;H&quot;, (I,), {})
 F = type(&quot;F&quot;, (H,), {})
@@ -23962,9 +23961,9 @@ for _ in A.__mro__:
 &lt;class 'object'&gt;
 &quot;&quot;&quot;
 </code></pre>
-<p>但是 Python 的多继承比我们想象的要复杂，原因就在于可以任意继承，如果 B 和 C 再分别继承两个类呢？那么我们这里的线路就又要多出两条了。不过既然要追求刺激，就贯彻到底喽，我们就来看一下，如何从混乱不堪的继承关系中，找到正确的继承顺序。</p>
+<p>但是 Python 的多继承比我们想象的要复杂，原因就在于可以任意继承，如果 B 和 C 再分别继承两个类呢？那么我们这里的线路就又要多出两条了。不过既然要追求刺激，就贯彻到底喽，我们来看一下，如何从混乱不堪的继承关系中，找到正确的继承顺序。</p>
 <blockquote>
-<p>由于 Python3 只有新式类，因为下面我们会以介绍新式类为主，经典类了解一下即可。</p>
+<p>由于 Python3 只有新式类，因此下面我们会以介绍新式类为主，经典类了解一下即可。</p>
 </blockquote>
 <p>很多文章可能告诉你经典类采用深度优先算法，新式类采用广度优先算法，真的是这样吗？我们举一个例子：</p>
 <p><img src="./images/249.png" alt="" /></p>
@@ -23981,12 +23980,12 @@ for _ in A.__mro__:
 <li>2）然后 A 继承 B 和 C，由于是两条路，因此我们说 A 这里就是一个分歧点。但由于 B 在前，所以接下来是 B，而现在 MRO 的顺序就是 A B；</li>
 <li>3）但是 B 这里也出现了分歧点，不过不用管，因为我们说会沿着继承链不断往下搜索，现在 MRO 的顺序是A B D；</li>
 <li>4）然后从 D 开始继续寻找，这里注意了，按理说会找到 G 的。但是 G 不止被一个类继承，也就是说沿着当前的继承链查找 G 时，发现 G 还出现在了其它的继承链当中。怎么办？显然要回到最初的分歧点，转向下一条继承链的搜索；</li>
-<li>5）最初的分歧点是 A，那么该去找 C 了, 现在 MRO 的顺序就是 A B D C；</li>
+<li>5）最初的分歧点是 A，那么该去找 C 了，现在 MRO 的顺序就是 A B D C；</li>
 <li>6）注意 C 这里也出现了分歧点，而 A 的两条分支已经结束了，所以现在 C 就是最初的分歧点了。而 C 继承自 E 和 F，显然要搜索 E，那么此时 MRO 的顺序就是 A B D C E；</li>
 <li>7）然后从 E 开始搜索，显然要搜索 G，此时 MRO 顺序变成 A B D C E G；</li>
 <li>8）从 G 要搜索 I，此时 MRO 的顺序是 A B D C E G I；</li>
 <li>9）从 I 开始搜索谁呢？由于 J 出现在了其它的继承链中，那么要回到最初的分歧点，也就是 C。那么下面显然要找 F，此时 MRO 的顺序是 A B D C E G I F；</li>
-<li>10）F 只继承了 H, 那么肯定要找 H, 此时 MRO 的顺序是 A B D C E G I F H；</li>
+<li>10）F 只继承了 H，那么肯定要找 H，此时 MRO 的顺序是 A B D C E G I F H；</li>
 <li>11）H 显然只能找 J 了，因此最终 A 的 MRO 的顺序就是 A B D C E G I F H J object；</li>
 </ul>
 <p>我们实际测试一下：</p>
@@ -24022,12 +24021,12 @@ for _ in A.__mro__:
 <p><img src="./images/251.png" alt="" /></p>
 <ul>
 <li>1）首先是 A，A 继承 B1、B2、B3，会先走 B1，此时 MRO 是 A B1。并且现在 A 是分歧点；</li>
-<li>2）从 B1 处本来应该去找 C1，但是 C1 还被其他类继承，也就是出现在了其它的继承链当中。因此要回到最初的分歧点 A，从下一条继承链开始找，显然要找 B2，此时 MRO 就是 A B1 B2；</li>
+<li>2）从 B1 处本来应该去找 C1，但是 C1 还被其它类继承，也就是出现在了其它的继承链当中。因此要回到最初的分歧点 A，从下一条继承链开始找，显然要找 B2，此时 MRO 就是 A B1 B2；</li>
 <li>3）从 B2 开始，显然要找 C1，此时 MRO 的顺序就是 A B1 B2 C1；</li>
 <li>4）从C1开始，显然要找 D1，因为 D1 只被 C1 继承，也就是说，它没有出现在另一条继承链当中，因此此时 MRO 的顺序是 A B1 B2 C1 D1；</li>
-<li>5）对于 D1 而言，显然接下来是不会去找 E 的，因为 E 还出现在另外的继承链当中。咋办? 回到最初的分歧点，注意这里的分歧点显然还是 A，因为 A 的分支还没有走完。显然此时要走 B3，那么 MRO 的顺序就是 A B1 B2 C1 D1 B3；</li>
-<li>6）从 B3 开始找，显然要找C2，注意：A 的分支已经走完，此时 B3 就成了新的最初分歧点。现在 MRO 的顺序是 A B1 B2 C1 D1 B3 C2；</li>
-<li>7）C2 会找 D2吗？显然不会，因为 D2 还被 C3 继承，所以它出现在了其他的继承链中。于是要回到最初的分歧点，这里是 B3，显然下面要找 C3。另外由于 B3 的分支也已经走完，所以现在 C3 就成了新的最初分歧点。此时 MRO 的顺序是 A B1 B2 C1 D1 B3 C2 C3；</li>
+<li>5）对于 D1 而言，显然接下来是不会去找 E 的，因为 E 还出现在另外的继承链当中。咋办? 回到最初的分歧点，注意这里的分歧点还是 A，因为 A 的分支还没有走完。显然此时要走 B3，那么 MRO 的顺序就是 A B1 B2 C1 D1 B3；</li>
+<li>6）从 B3 开始找，显然要找 C2，注意：A 的分支已经走完，此时 B3 就成了新的最初分歧点。现在 MRO 的顺序是 A B1 B2 C1 D1 B3 C2；</li>
+<li>7）C2 会找 D2吗？显然不会，因为 D2 还被 C3 继承，所以它出现在了其它的继承链中。于是要回到最初的分歧点，这里是 B3，显然下面要找 C3。另外由于 B3 的分支也已经走完，所以现在 C3 就成了新的最初分歧点。此时 MRO 的顺序是 A B1 B2 C1 D1 B3 C2 C3；</li>
 <li>8）从 C3 开始，显然要找 D2，此时 MRO 的顺序是 A B1 B2 C1 D1 B3 C2 C3 D2；</li>
 <li>9）但是 D2 不会找 E，因此回到最初分歧点 C3，下面要找 D3。而 D3 找完之后显然只能再找 E 了，因此最终 MRO 的顺序是 A B1 B2 C1 D1 B3 C2 C3 D2 D3 E object；</li>
 </ul>
@@ -24121,8 +24120,8 @@ except Exception as e:
 # 但如果是 C 的实例调用呢？
 C().foo()  # B: foo
 </code></pre>
-<p>如果是 C() 调用 foo 的话，最终却执行了 B 的 foo，这是什么原因呢？首先 C 里面里面没有 foo，那么会去执行 A 的 foo，但是执行时候的 self 是 C 的实例对象，super 里面的 self 也是 C 里面的 self。</p>
-<p>然后我们知道对于 C 而言，其 MRO 是 C、A、B、object。所以此时的 <font color="blue">super(A, self).foo()</font> 就表示：沿着继承链 C 的 MRO 去找 foo 函数，但是 super 里面有一个 A，表示不要从头开始找，而是从 A 的后面开始找，所以下一个就找到 B 了。</p>
+<p>如果是 C() 调用 foo 的话，最终却执行了 B 的 foo，这是什么原因呢？首先 C 里面没有 foo，那么会去执行 A 的 foo，但是执行时候的 self 是 C 的实例对象，super 里面的 self 也是 C 里面的 self。</p>
+<p>然后我们知道对于 C 而言，其 MRO 是 C、A、B、object。所以此时的 <font color="blue">super(A, self).foo()</font> 就表示：沿着 C 的 MRO 去找 foo 函数，但是 super 里面有一个 A，表示不要从头开始找，而是从 A 的后面开始找，所以下一个就找到 B 了。</p>
 <p><strong>所以说 super 不一定就是父类，而是要看里面的 self 是谁。总之：super(xxx, self) 一定是 type(self) 对应的 MRO 中，xxx 的下一个类。再举个栗子：</strong></p>
 <pre><code class="language-Python">class A:
     def foo(self):
@@ -24153,15 +24152,15 @@ B: foo
 C: foo
 &quot;&quot;&quot;
 </code></pre>
-<p>当 D() 调用 foo 的时候，D 里面没有，那么按照继承关系一定是去 A 里面找。而 self 是 D 的self，那么 <font color="blue">super(A, self)</font> 就是 D 对应的 MRO 中，A 的下一个类，也就是 B；<font color="blue">super(B, self)</font> 就是 D 对应的 MRO 中，B 的下一个类，也就是 C。</p>
+<p>当 D() 调用 foo 的时候，D 里面没有，那么按照继承关系一定是去 A 里面找。而 self 是 D 的 self，那么 <font color="blue">super(A, self)</font> 就是 D 对应的 MRO 中，A 的下一个类，也就是 B；<font color="blue">super(B, self)</font> 就是 D 对应的 MRO 中，B 的下一个类，也就是 C。</p>
 <p><font color="darkblue"><strong>基类冲突</strong></font></p>
 <p>虽然可以继承多个类，但是这些类之间有可能发生冲突，举个栗子：</p>
 <pre><code class="language-Python">class A(int, str):
     pass
 # TypeError: multiple bases have instance lay-out conflict
 </code></pre>
-<p>我们发现执行的时候报错了，这个类虚拟机压根就不会让你创建，原因很简单，它们的实例对象在内存布局上面发生冲突了。</p>
-<p>比如 A(&quot;123&quot;) 这个实例，虚拟机是把它看成整数呢？还是字符串呢？因为 A 同时继承 int 和 str，就意味着其实例既可以像整数一样使用除法，也可以像字符串一样调用 join 方法。但是整数没有 join，字符串也无法使用除法，因此这个类是不合理的。继承的多个基类，在实例对象上面发生了内存布局上的冲突。</p>
+<p>我们发现执行的时候报错了，这个类虚拟机压根就不会让你创建，原因很简单，它们的实例对象在内存布局上发生冲突了。</p>
+<p>比如 A(&quot;123&quot;) 这个实例，虚拟机是把它看成整数呢？还是字符串呢？因为 A 同时继承 int 和 str，就意味着其实例既可以像整数一样使用除法，也可以像字符串一样调用 join 方法。但是整数没有 join，字符串也无法使用除法，因此这个类是不合理的。继承的多个基类，在实例对象的内存布局上产生了冲突。</p>
 <p>虽然上面给出了解释，但如果仔细推敲，会发现这个解释有些站不住脚，因为我们自定义的类没有这个问题。如果是自定义的类，别说继承两个，就算继承十个毫无关系的类，也不会出现冲突，这又是什么原因呢？其实两者的差别，就在于内置类对象的实例对象是没有属性字典的，但是自定义类对象的实例对象有。</p>
 <pre><code class="language-Python">class Base1:
     __slots__ = (&quot;a&quot;,)
@@ -24194,7 +24193,7 @@ class A(Base2, int):
 class B(Base1, int):
     pass
 </code></pre>
-<p>Base1 的实例对象显然可以绑定一个属性叫 a，意味着 Base1 可以接收一个参数；Base2 的实例对象无法绑定任何属性，意味着 Base2 不接收任何参数。</p>
+<p>Base1 的实例对象显然可以绑定一个属性 a，意味着 Base1 可以接收一个参数；Base2 的实例对象无法绑定任何属性，意味着 Base2 不接收任何参数。</p>
 <p>因此 <font color="blue">class A(Base1, int)</font> 是不合法的，因为 Base1 和 int 的实例没有属性字典，但它们都接收参数。同理 <font color="blue">class A (Base1, str)</font>、<font color="blue">class A(Base1, dict)</font> 也一样。但是  <font color="blue">class A(Base2, str)</font> 没有影响，因为 Base2 的实例无法绑定任何属性，因此也就不存在内存布局上的冲突。</p>
 <p><font color="darkblue"><strong>当继承的基类之间存在父子关系时</strong></font></p>
 <p>看个栗子：</p>
@@ -24213,7 +24212,7 @@ TypeError: Cannot create a consistent method resolution
 order (MRO) for bases Base, A
 &quot;&quot;&quot;
 </code></pre>
-<p>这个错误的原因应该不难理解，B 继承了 Base 和 A，但是 Base 和 A 之间又是父子关系。比如 B 在找不到某个方法时，会到 Base 里面找，Base 找不到再去 A 里面找。但如果 A 在找不到，就又回到了 Base，因为 A 继承 Base，那么此时就出现了闭环，这是不允许的。</p>
+<p>这个错误的原因应该不难理解，B 继承了 Base 和 A，但是 Base 和 A 之间又是父子关系。比如 B 在找不到某个方法时，会到 Base 里面找，Base 找不到再去 A 里面找。但如果 A 再找不到，就又回到了 Base，因为 A 继承 Base，那么此时就出现了闭环，这是不允许的。</p>
 <p>但如果把 B 的创建改成 <font color="blue">class B(A, Base)</font> 则没问题，所以当继承的多个类之间也存在继承关系时，子类要在父类的前面。当然啦，最正确的做法应该是只继承子类，比如这里的 class B(A)。因为 A 已经继承了 Base，所以 B 只需继承 A 即可，无需再继承 Base。像 <font color="blue">class B(A, Base)</font> 这种做法虽然不会报错，但明显有些画蛇添足。</p>
 <h3 id="继承基类操作"><a class="header" href="#继承基类操作">继承基类操作</a></h3>
 <p>子类在找不到某个属性或方法时，会去基类里面找，但这背后的原理是什么呢？答案简单到超乎你想象，就是单纯的拷贝。虚拟机在确定 MRO 之后，就会遍历 MRO 顺序列表，里面存储了该类的所有直接基类、间接基类（也就是基类的基类）。而虚拟机会将自身没有、但是基类中存在的操作拷贝到该类当中，从而完成对基类操作的继承动作。</p>
@@ -24314,7 +24313,7 @@ inherit_slots(PyTypeObject *type, PyTypeObject *base)
     // ...
 }    
 </code></pre>
-<p>我们在里面看到了很多熟悉的东西，这些都是在继承时需要拷贝的操作。比如布尔类型，PyBool_Type 中并没有设置 nb_add，但是 PyLong_Type 中设置了 nb_add 操作，而 bool 继承 int。所以布尔值是可以直接进行运算的，当然和整数、浮点数运算也是可以的。因此在 Numpy 中，判断一个数组里面有多少个满足条件的元素，可以使用 Numpy 提供的机制进行比较，会得到一个具有同样长度的数组，里面的每一个元素为是否满足条件所对应的布尔值。然后直接通过 sum 运算即可，因为运算的时候，True 会被解释成 1，False 会被解释成 0。</p>
+<p>我们在里面看到了很多熟悉的东西，这些都是在继承时需要拷贝的操作。比如布尔类型，PyBool_Type 中并没有设置 nb_add，但是 PyLong_Type 中设置了，而 bool 继承 int。所以布尔值是可以直接进行运算的，当然和整数、浮点数运算也是可以的。因此在 Numpy 中，判断一个数组里面有多少个满足条件的元素，可以使用 Numpy 提供的向量化操作进行比较，会得到一个具有相同长度的数组，里面的每一个元素为表示是否满足条件的布尔值。然后直接通过 sum 运算即可，因为运算的时候，True 会被解释成 1，False 会被解释成 0。</p>
 <pre><code class="language-Python">import numpy as np
 
 arr = np.array([2, 4, 7, 3, 5])
@@ -24368,9 +24367,9 @@ PyType_Ready(PyTypeObject *type)
 </code></pre>
 <p>打印会输出非常多的内容，因为 Python 里面所有的类都继承 object，而在创建这些类的时候，都会将自身加入到 object 的 tp_subclasses 里面。</p>
 <h2 id="小结-60"><a class="header" href="#小结-60">小结</a></h2>
-<p>到了这里，我们算是完整地剖析了 PyType_Ready 的动作，我们用了三篇文章将类型对象的初始化介绍完毕。可以看到，虚拟机对类对象进行了多种繁杂的改造工作，主要包括以下几部分：</p>
+<p>到这里，我们算是完整地剖析了 PyType_Ready 的动作，可以看到，虚拟机对类对象进行了多种繁杂的改造工作，主要包括以下几部分：</p>
 <ul>
-<li>设置类型信息，基类及基类列表；</li>
+<li>设置类型信息、基类以及基类列表；</li>
 <li>填充属性字典；</li>
 <li>确定 MRO 顺序列表；</li>
 <li>基于 MRO 顺序列表从基类继承操作；</li>
