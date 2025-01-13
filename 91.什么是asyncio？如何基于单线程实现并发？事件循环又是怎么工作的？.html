@@ -1,0 +1,299 @@
+<!DOCTYPE HTML>
+<html lang="zh-cn" class="sidebar-visible no-js light">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>91. 什么是 asyncio？如何基于单线程实现并发？事件循环又是怎么工作的？ - CPython3.8 源码探秘</title>
+        <!-- Custom HTML head -->
+        <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff" />
+
+        <link rel="icon" href="favicon.svg">
+        <link rel="shortcut icon" href="favicon.png">
+        <link rel="stylesheet" href="css/variables.css">
+        <link rel="stylesheet" href="css/general.css">
+        <link rel="stylesheet" href="css/chrome.css">
+        <link rel="stylesheet" href="css/print.css" media="print">
+        <!-- Fonts -->
+        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="fonts/fonts.css">
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="highlight.css">
+        <link rel="stylesheet" href="tomorrow-night.css">
+        <link rel="stylesheet" href="ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+        <link rel="stylesheet" href="theme/custom.css">
+        <!-- MathJax -->
+        <script async type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    </head>
+    <body>
+        <!-- Provide site root to javascript -->
+        <script type="text/javascript">
+            var path_to_root = "";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script type="text/javascript">
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script type="text/javascript">
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            var html = document.querySelector('html');
+            html.classList.remove('no-js')
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add('js');
+        </script>
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script type="text/javascript">
+            var html = document.querySelector('html');
+            var sidebar = 'hidden';
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            }
+            html.classList.remove('sidebar-visible');
+            html.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li class="chapter-item expanded "><a href="0.序言.html">0. 序言</a></li><li class="chapter-item expanded "><a href="1.CPython源码长什么样子？.html">1. CPython 源码长什么样子？</a></li><li class="chapter-item expanded "><a href="2.变量和对象，它们之间有什么区别和联系呢？.html">2. 变量和对象，它们之间有什么区别和联系呢？</a></li><li class="chapter-item expanded "><a href="3.Python对象有哪几种，我们可以从哪些角度进行分类呢？.html">3. Python 对象有哪几种，我们可以从哪些角度进行分类呢？</a></li><li class="chapter-item expanded "><a href="4.万丈高楼平地起，一切从PyObject开始.html">4. 万丈高楼平地起，一切从 PyObject 开始</a></li><li class="chapter-item expanded "><a href="5.详解PyTypeObject，Python类型对象的载体.html">5. 详解 PyTypeObject，Python 类型对象的载体</a></li><li class="chapter-item expanded "><a href="6.通过type和object之间的关联，进一步分析类型对象.html">6. 通过 type 和 object 之间的关联，进一步分析类型对象</a></li><li class="chapter-item expanded "><a href="7.当创建一个Python对象时，背后都经历了哪些过程？.html">7. 当创建一个 Python 对象时，背后都经历了哪些过程？</a></li><li class="chapter-item expanded "><a href="8.当调用一个Python对象时，背后都经历了哪些过程？.html">8. 当调用一个 Python 对象时，背后都经历了哪些过程？</a></li><li class="chapter-item expanded "><a href="9.再探泛型API，感受Python对象的设计哲学.html">9. 再探泛型 API，感受 Python 对象的设计哲学</a></li><li class="chapter-item expanded "><a href="10.Python对象的行为是怎么区分的？.html">10. Python 对象的行为是怎么区分的？</a></li><li class="chapter-item expanded "><a href="11.一个Python对象会在何时被销毁？.html">11. 一个 Python 对象会在何时被销毁？</a></li><li class="chapter-item expanded "><a href="12.深度解密Python的浮点数是怎么实现的？.html">12. 深度解密 Python 的浮点数是怎么实现的？</a></li><li class="chapter-item expanded "><a href="13.对象被销毁之后所占的内存一定会释放吗？解密浮点数的缓存池机制.html">13. 对象被销毁之后所占的内存一定会释放吗？解密浮点数的缓存池机制</a></li><li class="chapter-item expanded "><a href="14.浮点数支持的操作是怎么实现的？.html">14. 浮点数支持的操作是怎么实现的？</a></li><li class="chapter-item expanded "><a href="15.解密Python的复数是怎么实现的？它有什么用途呢？.html">15. 解密 Python 的复数是怎么实现的？它有什么用途呢？</a></li><li class="chapter-item expanded "><a href="16.Python的整数是怎么设计的，为什么它不会溢出？.html">16. Python 的整数是怎么设计的，为什么它不会溢出？</a></li><li class="chapter-item expanded "><a href="17.解密Python的小整数对象池.html">17. 解密 Python 的小整数对象池</a></li><li class="chapter-item expanded "><a href="18.两个Python整数之间是如何进行大小比较的？过程并不像我们想的那样简单.html">18. 两个 Python 整数之间是如何进行大小比较的？过程并不像我们想的那样简单</a></li><li class="chapter-item expanded "><a href="19.探究Python整数的加减法，感受大整数的运算哲学与魅力.html">19. 探究 Python 整数的加减法，感受大整数的运算哲学与魅力</a></li><li class="chapter-item expanded "><a href="20.Python的布尔值是怎么实现的，你对它的了解有多深呢？.html">20. Python 的布尔值是怎么实现的，你对它的了解有多深呢？</a></li><li class="chapter-item expanded "><a href="21.Python的None是怎么实现的？.html">21. Python 的 None 是怎么实现的？</a></li><li class="chapter-item expanded "><a href="22.深度解密Python切片的实现原理.html">22.深度解密 Python 切片的实现原理</a></li><li class="chapter-item expanded "><a href="23.bytes对象（字节串）是怎么实现的？解密它的内部原理.html">23. bytes 对象（字节串）是怎么实现的？解密它的内部原理</a></li><li class="chapter-item expanded "><a href="24.bytes对象都支持哪些操作，它们是怎么实现的？.html">24. bytes 对象都支持哪些操作，它们是怎么实现的？</a></li><li class="chapter-item expanded "><a href="25.通过bytes对象的合并，探究缓冲区的奥秘.html">25. 通过 bytes 对象的合并，探究缓冲区的奥秘</a></li><li class="chapter-item expanded "><a href="26.解密bytes对象的缓存池.html">26. 解密 bytes 对象的缓存池</a></li><li class="chapter-item expanded "><a href="27.详解bytearray对象的底层实现.html">27. 详解 bytearray 对象的底层实现</a></li><li class="chapter-item expanded "><a href="28.字符集和字符编码.html">28. 字符集和字符编码</a></li><li class="chapter-item expanded "><a href="29.Python是怎么存储字符串的？.html">29. Python 是怎么存储字符串的？</a></li><li class="chapter-item expanded "><a href="30.解密字符串的底层结构，它是怎么实现的？.html">30. 解密字符串的底层结构，它是怎么实现的？</a></li><li class="chapter-item expanded "><a href="31.字符串的intern机制是怎么一回事？.html">31. 字符串的 intern 机制是怎么一回事？</a></li><li class="chapter-item expanded "><a href="32.聊一聊字符串常见操作的源码实现.html">32. 聊一聊字符串常见操作的源码实现</a></li><li class="chapter-item expanded "><a href="33.列表是怎么实现的？解密列表的数据结构.html">33. 列表是怎么实现的？解密列表的数据结构</a></li><li class="chapter-item expanded "><a href="34.列表是怎么扩容的？.html">34. 列表是怎么扩容的？</a></li><li class="chapter-item expanded "><a href="35.解密列表的创建与销毁，以及缓存池长什么样子？.html">35. 解密列表的创建与销毁，以及缓存池长什么样子？</a></li><li class="chapter-item expanded "><a href="36.列表作为序列型对象都支持哪些操作，它们在底层是怎么实现的？.html">36. 列表作为序列型对象都支持哪些操作，它们在底层是怎么实现的？</a></li><li class="chapter-item expanded "><a href="37.列表都有哪些自定义方法，它们是怎么实现的？.html">37. 列表都有哪些自定义方法，它们是怎么实现的？</a></li><li class="chapter-item expanded "><a href="38.解密元组的实现原理.html">38. 解密元组的实现原理</a></li><li class="chapter-item expanded "><a href="39.聊一聊喜闻乐见的哈希表.html">39. 聊一聊喜闻乐见的哈希表</a></li><li class="chapter-item expanded "><a href="40.字典是怎么实现的，它的底层结构长什么样子？.html">40. 字典是怎么实现的，它的底层结构长什么样子？</a></li><li class="chapter-item expanded "><a href="41.什么是可哈希对象，它的哈希值是怎么计算的？.html">41. 什么是可哈希对象，它的哈希值是怎么计算的？</a></li><li class="chapter-item expanded "><a href="42.字典的key是怎么映射成索引的，索引冲突了又该怎么办？.html">42. 字典的 key 是怎么映射成索引的，索引冲突了又该怎么办？</a></li><li class="chapter-item expanded "><a href="43.哈希表是怎么删除元素的，能直接删除吗？.html">43. 哈希表是怎么删除元素的，能直接删除吗？</a></li><li class="chapter-item expanded "><a href="44.字典是怎么创建的，支持的操作又是如何实现的？.html">44. 字典是怎么创建的，支持的操作又是如何实现的？</a></li><li class="chapter-item expanded "><a href="45.字典的自定义方法是怎么实现的？.html">45. 字典的自定义方法是怎么实现的？</a></li><li class="chapter-item expanded "><a href="46.字典是怎么扩容的？它会经历哪些过程？.html">46. 字典是怎么扩容的？它会经历哪些过程？</a></li><li class="chapter-item expanded "><a href="47.身虽死，道未消，解密字典的缓存池.html">47. 身虽死，道未消，解密字典的缓存池</a></li><li class="chapter-item expanded "><a href="48.解密集合的实现原理.html">48. 解密集合的实现原理</a></li><li class="chapter-item expanded "><a href="49.集合支持的操作有哪些，它们是怎么实现的？.html">49. 集合支持的操作有哪些，它们是怎么实现的？</a></li><li class="chapter-item expanded "><a href="50.迭代器是怎么实现的？.html">50. 迭代器是怎么实现的？</a></li><li class="chapter-item expanded "><a href="51.Python源文件编译之后会得到什么，它的结构是怎样的？和字节码又有什么联系？.html">51. Python 源文件编译之后会得到什么，它的结构是怎样的？和字节码又有什么联系？</a></li><li class="chapter-item expanded "><a href="52.PyCodeObject拾遗.html">52. PyCodeObject 拾遗</a></li><li class="chapter-item expanded "><a href="53.一文让你搞懂pyc文件.html">53. 一文让你搞懂 pyc 文件</a></li><li class="chapter-item expanded "><a href="54.深度解密虚拟机的执行环境：栈帧对象.html">54. 深度解密虚拟机的执行环境：栈帧对象</a></li><li class="chapter-item expanded "><a href="55.名字空间：变量的容身之所.html">55. 名字空间：变量的容身之所</a></li><li class="chapter-item expanded "><a href="56.当查找一个变量时，虚拟机会进行哪些动作？.html">56. 当查找一个变量时，虚拟机会进行哪些动作？</a></li><li class="chapter-item expanded "><a href="57.虚拟机是怎么执行字节码的？背后都经历了哪些过程.html">57. 虚拟机是怎么执行字节码的？背后都经历了哪些过程</a></li><li class="chapter-item expanded "><a href="58.深入源码，进一步考察字节码的执行流程.html">58. 深入源码，进一步考察字节码的执行流程</a></li><li class="chapter-item expanded "><a href="59.局部变量是怎么实现静态查找的，它和local名字空间又有什么联系呢？.html">59. 局部变量是怎么实现静态查找的，它和 local 名字空间又有什么联系呢？</a></li><li class="chapter-item expanded "><a href="60.剖析字节码指令，以及Python赋值语句的原理.html">60. 剖析字节码指令，以及 Python 赋值语句的原理</a></li><li class="chapter-item expanded "><a href="61.流程控制语句if是怎么实现的？.html">61. 流程控制语句 if 是怎么实现的？</a></li><li class="chapter-item expanded "><a href="62.流程控制语句for、while是怎么实现的？.html">62. 流程控制语句 for、while 是怎么实现的？</a></li><li class="chapter-item expanded "><a href="63.异常是怎么实现的？虚拟机是如何将异常抛出去的？.html">63. 异常是怎么实现的？虚拟机是如何将异常抛出去的？</a></li><li class="chapter-item expanded "><a href="64.虚拟机是如何捕获异常的？.html">64. 虚拟机是如何捕获异常的？</a></li><li class="chapter-item expanded "><a href="65.函数在底层长什么样子？.html">65. 函数在底层长什么样子？</a></li><li class="chapter-item expanded "><a href="66.函数是怎么创建的，背后经历了哪些过程？.html">66. 函数是怎么创建的，背后经历了哪些过程？</a></li><li class="chapter-item expanded "><a href="67.函数在底层是如何调用的？.html">67. 函数在底层是如何调用的？</a></li><li class="chapter-item expanded "><a href="68.函数是如何解析位置参数的？.html">68. 函数是如何解析位置参数的？</a></li><li class="chapter-item expanded "><a href="69.函数是如何解析关键字参数的？.html">69. 函数是如何解析关键字参数的？</a></li><li class="chapter-item expanded "><a href="70.扩展位置参数和扩展关键字参数是如何解析的？.html">70. 扩展位置参数和扩展关键字参数是如何解析的？</a></li><li class="chapter-item expanded "><a href="71.闭包是怎么实现的？.html">71. 闭包是怎么实现的？</a></li><li class="chapter-item expanded "><a href="72.生成器是做什么的，为什么会有生成器？.html">72. 生成器是做什么的，为什么会有生成器？</a></li><li class="chapter-item expanded "><a href="73.源码解密生成器的实现原理.html">73. 源码解密生成器的实现原理</a></li><li class="chapter-item expanded "><a href="74.回顾Python的对象模型.html">74. 回顾 Python 的对象模型</a></li><li class="chapter-item expanded "><a href="75.class概念解析.html">75. class 概念解析</a></li><li class="chapter-item expanded "><a href="76.类型对象的初始化.html">76. 类型对象的初始化</a></li><li class="chapter-item expanded "><a href="77.自定义类对象的底层实现与metaclass.html">77. 自定义类对象的底层实现与 metaclass</a></li><li class="chapter-item expanded "><a href="78.彻底搞懂描述符.html">78. 彻底搞懂描述符</a></li><li class="chapter-item expanded "><a href="79.实例对象是如何创建的？.html">79. 实例对象是如何创建的？</a></li><li class="chapter-item expanded "><a href="80.实例对象的属性访问.html">80. 实例对象的属性访问</a></li><li class="chapter-item expanded "><a href="81.为什么实例在调用方法时会将自身传给self参数.html">81. 为什么实例在调用方法时会将自身传给 self 参数</a></li><li class="chapter-item expanded "><a href="82.模块是如何导入的？.html">82. 模块是如何导入的？</a></li><li class="chapter-item expanded "><a href="83.import机制的黑盒探测.html">83. import 机制的黑盒探测</a></li><li class="chapter-item expanded "><a href="84.import机制是怎么实现的？.html">84. import 机制是怎么实现的？</a></li><li class="chapter-item expanded "><a href="85.Python运行时环境的初始化，解释器在启动时都做了什么？.html">85. Python 运行时环境的初始化，解释器在启动时都做了什么？</a></li><li class="chapter-item expanded "><a href="86.激活Python虚拟机.html">86. 激活 Python 虚拟机</a></li><li class="chapter-item expanded "><a href="87.初识GIL、以及多个线程之间的调度机制.html">87. 初识 GIL、以及多个线程之间的调度机制</a></li><li class="chapter-item expanded "><a href="88.线程的创建、销毁、调度，以及GIL的实现原理.html">88. 线程的创建、销毁、调度，以及 GIL 的实现原理</a></li><li class="chapter-item expanded "><a href="89.解密map、filter、zip底层实现，对比列表解析式.html">89. 解密 map、filter、zip 底层实现，对比列表解析式</a></li><li class="chapter-item expanded "><a href="90.为什么要有协程，协程是如何实现的？.html">90. 为什么要有协程，协程是如何实现的？</a></li><li class="chapter-item expanded "><a href="91.什么是asyncio？如何基于单线程实现并发？事件循环又是怎么工作的？.html" class="active">91. 什么是 asyncio？如何基于单线程实现并发？事件循环又是怎么工作的？</a></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky bordered">
+                    <div class="left-buttons">
+                        <button id="sidebar-toggle" class="icon-button" type="button" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </button>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light (default)</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">CPython3.8 源码探秘</h1>
+
+                    <div class="right-buttons">
+                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+                        <a href="https://github.com/satori1995/cpython-internal" title="Git repository" aria-label="Git repository">
+                            <i id="git-repository-button" class="fa fa-github"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script type="text/javascript">
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h2 id="楔子"><a class="header" href="#楔子">楔子</a></h2>
+<p>上一篇文章我们介绍了协程，明白了为什么要有协程，以及协程的实现原理。当然协程的出现也不是一蹴而就的，它同样有一个演进的过程。而提到 Python 的协程，那么必然绕不过标准库 asyncio，它最初是在 Python3.4 中引入的，作为除多线程和多进程之外，处理这些高度并发工作负载的另一种方式。</p>
+<p>那么接下来我们将用几篇文章来介绍 asyncio，同时学习 Python 的协程。</p>
+<h2 id="什么是-asyncio"><a class="header" href="#什么是-asyncio">什么是 asyncio？</a></h2>
+<p>许多应用程序，尤其是在当今的 Web 领域，严重依赖 IO 操作，比如下载网页的内容、和微服务进行通信、查询数据库等。而 IO 会阻塞应用程序，那么当有大量的 IO 请求时，会导致严重的性能问题。假设现在要下载 100 个网页，每个网页的下载时间是 1 秒，那么程序就需要 100 秒才能完成，显然我们无法接受这种情况。</p>
+<p>解决这个问题的方案之一是引入并发，而并发意味着允许同时处理多个任务，所以这 100 个网页理论上只需要 1 秒就可以完成。而提到并发 IO，必然绕不开 asyncio，它是 Python3.4 中引入的标准库，允许使用异步编程模型运行代码，这让我们可以一次处理多个 IO 操作，同时仍然允许应用程序保持对外界的响应。</p>
+<p>也就是说，特定的长时间运行的任务可以在后台运行，与主应用程序分开。系统可以自由地执行不依赖于该任务的其它工作，一旦长时间运行的任务完成，那么会收到它已经完成的通知，以便对结果进行处理。</p>
+<p>另外，虽然 asyncio 的名字可能会让我们认为这个库只适用于 IO 操作，但它也可以和多线程、多进程相互操作来处理其他类型的操作。这意味着这个库不仅适用于基于 IO 的并发性，还可以用于 CPU 密集型代码。为更好地理解 asyncio 可以帮助我们处理何种类型的工作负载，以及哪种并发模型最适合，下面介绍一下 IO 密集型和 CPU 密集型操作之间的差异。</p>
+<h2 id="io-密集型和-cpu-密集型"><a class="header" href="#io-密集型和-cpu-密集型">IO 密集型和 CPU 密集型</a></h2>
+<p>将一个操作称为 IO 密集型或 CPU 密集型时，指的是阻止该操作更快地运行的限制因素。这意味着，如果提高操作所绑定的对象的性能，该操作将在更短时间内完成。</p>
+<p>在 CPU 密集型操作的情况下，如果 CPU 更强大，它将更快地完成任务，例如将其时钟速度从 2GHz 提高到 3GHz。在 IO 密集型操作的情况下，如果 IO 设备能在更短的时间内处理更多数据，程序将变得更快，这可通过 ISP 增加网络带宽或升级到更快的网卡来实现。</p>
+<p>CPU 密集型操作通常是 Python 中的计算和处理代码，例如对数组进行求和，或者循环遍历字典的内容。在 IO 密集型操作中，大部分时间将花在等待网络或其它 IO 设备上，例如向 Web 服务器发出请求或从机器的硬盘驱动器读取文件。</p>
+<pre><code class="language-Python">import httpx
+
+res = httpx.get(&quot;http://www.baidu.com&quot;)  # IO 密集型（web 请求）
+
+items = res.headers.items()
+
+headers = [f&quot;{key}: {val}&quot; for key, val in items]  # CPU 密集型（响应处理）
+
+formatted_headers = &quot;\n&quot;.join(headers)  # CPU 密集型（字符串连接）
+
+with open(&quot;headers.txt&quot;, &quot;w&quot;, encoding=&quot;utf-8&quot;) as f:
+    f.write(formatted_headers)  # IO 密集型（磁盘写入）
+</code></pre>
+<p>IO 密集型和 CPU 密集型操作通常并存，我们首先发出一个 IO 密集型请求来下载 http://www.baidu.com 的内容。一旦得到响应，将执行一个 CPU 密集型循环来格式化响应头，并将它们转换为一个由换行符分隔的字符串。然后打开一个文件，并将字符串写入该文件，这也是一个 IO 密集型操作。</p>
+<p>异步 IO 允许在执行 IO 操作时暂停特定程序的执行，可在后台等待初始 IO 完成时运行其它代码。这允许同时执行许多 IO 操作，从而潜在地加快应用程序的运行速度。</p>
+<h2 id="了解并发并行和多任务处理"><a class="header" href="#了解并发并行和多任务处理">了解并发、并行和多任务处理</a></h2>
+<p><font color="darkblue"><strong>并发</strong></font></p>
+<p>当我们说两个任务并发时，是指它们在一个时间段内同时执行。例如一个面包师要烘焙两种不同的蛋糕，要烘焙这些蛋糕，需要预热烤箱。根据烤箱和烘焙温度的不同，预热可能需要几十分钟，但不需要等烤箱完成预热后才开始其它工作，比如把面粉、糖和鸡蛋混合在一起。在烤箱预热过程中可以做其它工作，直到烤箱发出提示音，告诉我们它已经预热完成了。</p>
+<p>此外也不需要限制自己在完成第一个蛋糕之后才开始做第二个蛋糕。比如做蛋糕面糊，将其放进搅拌机，当第一团面糊搅拌完毕，就开始准备第二团面糊。在这个模型中，同时在不同的任务之间切换，这种任务之间的切换（烤箱加热时做其它事情，在两个不同的蛋糕之间切换）是并发行为。</p>
+<p><font color="darkblue"><strong>并行</strong></font></p>
+<p>当我们说两个任务并行时，是指它们在同一个时间点同时执行。回到蛋糕烘焙示例，假设有第二个面包师的帮助，这种情况下，第一个面包师可以制作第 1 个蛋糕，而第二个面包师同时制作第 2 个蛋糕。两个人同时制作面糊属于并行运行，因为有两个不同的任务同时运行。</p>
+<p>一句话总结并发和并行之间的区别：</p>
+<ul>
+<li>并发：有多个任务在运行，但在特定的时间点，只有一个任务在运行；</li>
+<li>并行：有多个任务在运行，但在特定的时间点，仍然有多个任务同时运行；</li>
+</ul>
+<p>回到操作系统和应用程序，想象有两个应用程序在运行。在只有并发的系统中，可以在这些应用程序之间切换，先让一个应用程序运行一会儿，然后让另一个应用程序运行一会儿。如果切换的速度足够快，就会出现两件事同时发生的现象（或者说是假象）。但在一个并行的系统中，两个应用程序同时运行，系统同时全力运行两个任务，而不是在两个任务之间来回切换。</p>
+<p>并发和并行的概念相似，并且经常容易混淆，一定要对它们之间的区别有清楚的认识。</p>
+<p><img src="./images/305.png" alt="" /></p>
+<p>并发关注的是彼此独立发生的多个任务，可以在只有一个内核的 CPU 上实现并发，因为该操作将采用抢占式多任务的方式在任务之间切换。然而并行意味必须同时执行两个或多个任务，如果想实现，那么必须要具备多个 CPU 核心。</p>
+<p><font color="darkblue"><strong>什么是多任务</strong></font></p>
+<p><strong>多任务处理在当今世界无处不在，人们一边做早餐一边看电视，一边接电话一边等水烧开来泡茶。甚至在旅行途中，人们也可以多任务处理，例如在搭乘飞机时读自己喜欢的书。本节讨论两种主要的多任务处理：抢占式多任务处理和协同多任务处理。</strong></p>
+<ul>
+<li>抢占式多任务处理：在这个模型中，由操作系统决定如何通过一个称为时间片的过程，在当前正在执行的任务之间切换。当操作系统在任务之间切换时，我们称之为抢占。这种机制如何在后台工作取决于操作系统本身，它主要是通过使用多个线程或多个进程来实现的。</li>
+<li>协同多任务处理：在这个模型中，不是依赖操作系统来决定何时在当前正在执行的任务之间切换，而是在应用程序中显式地编写代码，来让其它任务先运行。应用程序中的任务会在它们协同的模型中运行，会主动发生切换：&quot;暂停我的任务一段时间，让其它任务先执行&quot;。</li>
+</ul>
+<p>asyncio 使用协同多任务来实现并发性，当应用程序达到可以等待一段时间以返回结果的时间点时，在代码中显式地标记它，并让其它代码执行。一旦标记的任务完成，应用程序就&quot;醒来&quot;并继续执行该任务。这是一种并发形式，因为可同时启动多个任务，但重要的是，这不是并行模式，因为它们不会同时执行代码。</p>
+<h2 id="单线程并发"><a class="header" href="#单线程并发">单线程并发</a></h2>
+<p>提到并发我们首先会想到开启多个线程，但有了 asyncio 之后，我们可以在一个进程和一个线程的范围内完成这一切。因为我们利用了这样一个事实：在系统级别，IO 操作可以并发完成。为更好地理解这一点，我们需要深入研究套接字是如何工作的，特别是非阻塞套接字是如何工作的。</p>
+<p>套接字（socket）是通过网络发送和接收数据的低级抽象，是在服务器之间传输数据的基础，套接字支持两种主要操作：发送字节和接收字节。我们将字节写入套接字，然后将其发送到一个远程地址，通常是某种类型的服务器。一旦发送了这些字节，就等待服务器将其响应写回套接字，然后读取结果。</p>
+<p>套接字是一个低级概念，如果你把它们看作邮箱，就很容易理解了。你可以把信放在邮箱里，然后邮差拿起信，并递送到收件人的邮箱。收件人打开邮箱，打开信，然后根据内容的不同，收件人可能给你回信。在这个类比中，可将信里面的文字看作是要发送的数据或字节，将信件放入邮箱的操作看作是将字节写入套接字，将打开邮箱读取信件的操作看作是从套接字读取字节，将信件载体看作互联网上的传输机制（将数据路由到正确地址）。</p>
+<p>在前面看到的从 baidu.com 获取内容的例子中，会打开一个连接到 baidu.com 服务器的套接字。然后编写一个请求来获取该套接字的内容，并等待服务器返回结果。</p>
+<p><img src="./images/306.png" alt="" /></p>
+<p>套接字在默认情况下是阻塞的，这意味着等待服务器返回数据时，会暂停应用程序或阻塞它，直到获得数据并进行读取。因此表现就是应用程序会停止运行任何其它任务，直到从服务器获取数据、发生错误或出现超时。</p>
+<p>在操作系统级别，不需要使用阻塞，套接字可在非阻塞模式下运行。在非阻塞模式下，当我们向套接字写入字节时，可以直接触发，而不必在意写入或读取操作，应用程序可以继续执行其他任务。之后可让操作系统告知：我们收到了字节，并开始处理它。这使得应用程序可在等待字节返回的同时做其它事情，不再阻塞和等待数据的返回，从而让程序响应更迅速，让操作系统通知何时有数据可供操作。</p>
+<p>在后台，这是由几个不同的事件通知系统执行的，具体取决于运行的操作系统。asyncio 已经足够抽象，可在不同的通知系统之间切换，这取决于操作系统具体支持哪一个。以下是特定操作系统使用的事件通知系统：</p>
+<ul>
+<li>kqueue：FreeBSD 和 macOS</li>
+<li>epoll：Linux</li>
+<li>IOCP（IO完成端口）：Windows</li>
+</ul>
+<p>这些系统会跟踪非阻塞套接字，并在准备好让我们做某事时通知我们。这个通知系统是 asyncio 实现并发的基础，在 asyncio 的并发模型中，只有一个线程在特定时间执行 Python。遇到一个 IO 操作时，将它交给操作系统的事件通知系统来跟踪它，一旦完成这个切换，Python 线程就可以继续自由执行其它代码，或者为操作系统添加更多的非阻塞套接字来跟踪。IO 操作完成时，唤醒正在等待结果的任务，然后继续运行该 IO 操作之后出现的其它代码。下图通过几个单独的操作来可视化这个流程，每个操作都依赖于一个套接字。</p>
+<p><img src="./images/307.png" alt="" /></p>
+<p>发出的非阻塞 IO 请求会立即返回，并告诉 OS 监视套接字中的数据，这允许 execute_other_code() 可以立刻执行，而不是等待 IO 请求完成。等到 IO 请求真正完成时，会收到通知，然后应用程序再去处理即可。</p>
+<p>但这里又产生了一个问题，在跟踪的过程中如何区分哪些是正在等待 IO 的任务，哪些是作为常规 Python 代码运行的任务呢？答案在于一个称为事件循环的构造。</p>
+<h2 id="事件循环的工作原理"><a class="header" href="#事件循环的工作原理">事件循环的工作原理</a></h2>
+<p>事件循环是每个 asyncio 应用程序的核心，事件循环是许多系统中相当常见的设计模式，并且已经存在了相当长的一段时间。如果你曾在浏览器中使用 JavaScript 发送异步 Web 请求，那么你已经在事件循环上创建了一个任务。Windows GUI 应用程序在幕后使用所谓的消息循环作为处理键盘输入等事件的主要机制，同时允许 UI 进行绘制。</p>
+<p>最基本的事件循环非常简单，创建一个包含事件或消息的队列，然后启动循环，在消息进入队列时一次处理一条消息。在 Python 中，一个基本的事件循环可能看起来像下面这样：</p>
+<pre><code class="language-Python">from collections import deque
+
+messages = deque()
+
+while True:
+    if messages:
+        message = messages.pop()
+        process_message(message)
+</code></pre>
+<p>只不过在 asyncio 中，事件循环处理的不是消息，而是任务。任务是协程的包装器，协程可以在遇到 IO 密集型操作时暂停执行，并让事件循环运行其它不等待 IO 操作完成的任务。</p>
+<p>创建一个事件循环时，会创建一个空的任务队列，然后将任务添加到要运行的队列中。事件循环的每次迭代都会检查需要运行的任务，并一次运行一个，直到任务遇到 IO 操作。然后任务将被暂停，指示操作系统监视相应的套接字以完成 IO，并寻找下一个要运行的任务。在事件循环的每次迭代中，会检查是否有 IO 操作已完成的任务，如果有则唤醒，并让它们继续运行。</p>
+<p><img src="./images/308.png" alt="" /></p>
+<p>主线程将任务提交给事件循环，此后事件循环可以运行它们。</p>
+<p>为说明这一点，我们假设有三个任务，每个任务都发出一个异步 Web 请求。想象一下，这些任务有一些代码负责完成一些 CPU 密集型的准备工作，然后它们发出 Web 请求（IO 密集型），之后又是一些 CPU 密集型的后处理代码。现在同时将这些任务提交给事件循环，在伪代码中，可以这样写。</p>
+<pre><code class="language-Python">async def make_request():
+    cpu_bound_setup()
+    await io_bound_web_request()
+    cpu_bound_postprocess()
+    
+task_one = event_loop.create_task(make_request())
+task_two = event_loop.create_task(make_request())
+task_three = event_loop.create_task(make_request())
+</code></pre>
+<p>三个任务都以 CPU 密集型工作开始，并且使用单线程，因此只有第一个任务开始执行代码，其它两个任务则在等待。一旦任务 1 中的 CPU 密集型设置工作完成，则会遇到一个 IO 密集型操作，并会暂停自己：&quot;我正在等待 IO，由于 IO 是操作系统负责的，并且不耗费 CPU，所以我要将执行权交出去，此时其他任何等待运行的任务都可以运行。&quot;</p>
+<blockquote>
+<p>当任务遇见 IO 阻塞的时候，会将执行权交给事件循环，事件循环再去找其他可以运行任务。</p>
+</blockquote>
+<p>一旦发生这种情况，任务 2 就可以开始执行了，任务 2 同样会先执行其 CPU 密集型代码然后暂停，等待 IO。此时任务 1 和任务 2 在同时等待它们的网络请求完成，由于任务 1 和任务 2 都暂停等待 IO，于是开始运行任务 3。任务 3 同样也会暂停以等待其 IO 完成，此时三个任务都处于 IO 等待状态。</p>
+<p>然后某一时刻任务 1 的 Web 请求完成了，那么操作系统的事件通知系统会提醒此 IO 已完成（IO 操作不耗费 CPU，只要 IO 操作发起，剩下的交给操作系统。这时候线程可以去执行其它任务，当 IO 完成之后操作系统会自动通知），可以在任务 2 和任务 3 都在等待 IO 时，继续执行任务 1。</p>
+<blockquote>
+<p>如果 CPU 密集代码的耗时忽略不计，IO 密集代码需要 2 秒钟，那么这三个任务执行完毕也只需要 2 秒钟，因为三个 web 请求是同时发出的。如果是同步代码，那么在返回响应之前，CPU 做不了其它事情，必须等到响应返回之后，才能发送下一个请求，那么整个过程就需要 6 秒钟的时间。</p>
+</blockquote>
+<p><img src="./images/309.png" alt="" /></p>
+<p>当任务一执行 cpu_bound_setup 的时候，任务二和任务三只能处于等待状态。当任务一进入 IO 的时候，任务二也开始执行 cpu_bound_setup，此时任务一和任务三需要处于等待状态。但对于任务一来说，由于它当前正处于 IO，CPU 给它也没法执行，不过也正因为它处于 IO（要 CPU 也没用），才将 CPU 交出去。</p>
+<p>当任务二执行完 cpu_bound_setup 进入 IO 的时候，任务三开始执行 cpu_bound_setup，执行完之后进入 IO。</p>
+<p>可以看到整个过程 CPU 没有处于空闲状态，在任务阻塞的时候立刻切换到其它任务上执行。然后当任务一、任务二、任务三都处于 IO 阻塞时，由于已经没有准备就绪的任务了，那么此时 CPU 就只能处于空闲了。接下来在某一时刻，任务一的 IO 结束了，操作系统会通知我们，然后执行任务一的 cpu_bound_postprocess。</p>
+<p>所以任务之间等待 IO 的重叠部分是 asyncio 真正节省时间的地方。</p>
+<h2 id="小结"><a class="header" href="#小结">小结</a></h2>
+<p>1）CPU 密集型的工作主要使用计算机处理器，而 IO 密集型的工作主要使用网络或其它输入/输出设备。asyncio 可以让 IO 密集型工作并发执行，并且通过和进程、线程搭配，也提供了可以让 CPU 密集型工作并发执行的 API。</p>
+<p>2）进程操作系统资源分配的基本单元，线程是操作系统调度操作 CPU 的基本单元。</p>
+<p>3）在使用非阻塞套接字时，可指示操作系统告诉我们何时有数据传入，而不是在等待数据传入时停止应用程序。这是允许 asyncio 仅使用单个线程实现并发的部分原因。</p>
+<p>4）事件循环是 asyncio 应用程序的核心，事件循环会一直循环下去，寻找 CPU 密集型任务，同时暂停正在等待 IO 的任务。注意：这里的暂停，不是说任务就完全处于静止状态了，而是指不需要在该任务上浪费 CPU 了。因为 IO 操作一旦发起，就由操作系统接管，程序可以去执行其它任务了，但 IO 操作的过程是不会中断的，因为它不耗费 CPU。而当 IO 操作完成后，会收到操作系统通知，然后可以再切换回该任务，继续执行该任务剩余的 CPU 密集代码。这样就保证了 CPU 的利用率，其实说白了核心就一句话：在任务陷入 IO 阻塞的时候，不要傻傻地等待，而是去执行其他的任务。</p>
+<blockquote>
+<p>比如你同时和三个女孩聊天，当给某个女孩发出消息之后，不要一直处于等待状态，而是继续给别的女孩发消息。当女孩回你消息之后，你再切换回来，继续发。</p>
+</blockquote>
+<p>因此操作系统提供的非阻塞 IO + IO 多路复用，是事件循环的核心。</p>
+<hr />
+<p> </p>
+<p><strong>欢迎大家关注我的公众号：古明地觉的编程教室。</strong></p>
+<p><img src="./images/qrcode_for_gh.jpg" alt="" /></p>
+<p><strong>如果觉得文章对你有所帮助，也可以请作者吃个馒头，Thanks♪(･ω･)ﾉ。</strong></p>
+<p><img src="./images/supports.png" alt="" /></p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="90.为什么要有协程，协程是如何实现的？.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="90.为什么要有协程，协程是如何实现的？.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+            </nav>
+
+        </div>
+
+        <script type="text/javascript">
+            window.playground_copyable = true;
+        </script>
+        <script src="elasticlunr.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="mark.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="searcher.js" type="text/javascript" charset="utf-8"></script>
+        <script src="clipboard.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="highlight.js" type="text/javascript" charset="utf-8"></script>
+        <script src="book.js" type="text/javascript" charset="utf-8"></script>
+
+        <!-- Custom JS scripts -->
+        <script type="text/javascript" src="theme/custom.js"></script>
+    </body>
+</html>
