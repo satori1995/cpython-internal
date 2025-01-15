@@ -32355,10 +32355,10 @@ task_three = event_loop.create_task(make_request())
 <p><strong>如果觉得文章对你有所帮助，也可以请作者吃个馒头，Thanks♪(･ω･)ﾉ。</strong></p>
 <p><img src="./images/supports.png" alt="" /></p>
 <div style="break-before: page; page-break-before: always;"></div><h2 id="楔子-75"><a class="header" href="#楔子-75">楔子</a></h2>
-<p>上一篇文章我们讨论了并发，以及如何使用非阻塞 IO 和事件循环来实现只有一个线程的并发，接下来我们将继续讨论在 asyncio 中使用单线程并发模型编写程序的基础知识。比如协程、任务、Future，它们之间的区别是啥，时间循环在 asyncio 中是如何体现的等等，本篇文章会全部说清楚。</p>
+<p>上一篇文章我们讨论了并发，以及如何使用非阻塞 IO 和事件循环来实现只有一个线程的并发，接下来我们将继续讨论在 asyncio 中使用单线程并发模型编写程序的基础知识。比如协程、任务、Future，它们之间的区别是啥，事件循环在 asyncio 中是如何体现的等等，本篇文章会全部说清楚。</p>
 <h2 id="关于协程"><a class="header" href="#关于协程">关于协程</a></h2>
-<p>调用协程函数便可得到协程，协程本质上还是基于生成器实现的，它具备一个超能力：在遇到可能需要一段时间才能完成的操作时，能够暂停执行，当长时间运行的操作完成时，可唤醒暂停的协程，并执行该协程中的其它代码。要定义协程函数，我们需要使用 Python 的 async 关键字，def 定义一个普通函数，调用之后直接执行，而 async def 会定义一个协程函数，调用之后得到协程。当有一个长时间运行的操作时，可以通过 await 关键字暂停协程。</p>
-<pre><code class="language-Python"># async 关键字将函数标记为协程协程函数，而不是普通的 Python 函数
+<p>调用协程函数便可得到协程，协程本质上还是基于生成器实现的，它具备一个超能力：在遇到可能需要一段时间才能完成的操作时，能够暂停执行，当长时间运行的操作完成时，可唤醒暂停的协程，并执行该协程的后续代码。要定义协程函数，我们需要使用 Python 的 async 关键字，def 定义一个普通函数，调用之后直接执行，而 async def 会定义一个协程函数，调用之后得到协程。当有一个长时间运行的操作时，可以通过 await 关键字暂停当前协程，将执行权交出去。</p>
+<pre><code class="language-Python"># async 关键字将函数标记为协程函数，而不是普通的 Python 函数
 async def coroutine():
     print(&quot;hello world&quot;)
 </code></pre>
@@ -32385,8 +32385,8 @@ print(type(coroutine_result))
 &lt;class 'coroutine'&gt;
 &quot;&quot;&quot;
 </code></pre>
-<p>调用普通的 add_one 函数时，它会立即执行并返回我们期望的一个整数。但当调用 coroutine_add_one 时，并不会执行协程中的代码，而是得到一个协程对象。这一点很重要，调用协程函数时，只是创建了一个可以稍后执行的协程对象，要执行协程，需要在事件循环中显式执行它。那么如何创建个事件循环并执行协程呢？</p>
-<p>在 Python3.7 之前的版本中，如果不存在事件循环，必须显式地创建一个事件循环。但从 3.7 开始，asyncio 库添加了几个抽象事件循环管理的函数，其中一个便是 asyncio.run，我们可以使用它来运行协程。</p>
+<p>调用普通的 add_one 函数时，它会立即执行并返回期望的一个整数。但当调用 coroutine_add_one 时，并不会执行协程中的代码，而是得到一个协程对象。这一点很重要，调用协程函数时，只是创建了一个可以稍后执行的协程对象，要执行协程，需要在事件循环中执行。那么如何创建事件循环并执行协程呢？</p>
+<p>在 Python3.7 之前的版本中，如果不存在事件循环，那么必须显式地创建一个事件循环。但从 3.7 开始，asyncio 库添加了几个抽象事件循环管理的函数，其中一个便是 asyncio.run，我们可以使用它来运行协程。</p>
 <pre><code class="language-Python">import asyncio
 
 async def coroutine_add_one(number):
@@ -32395,14 +32395,14 @@ async def coroutine_add_one(number):
 coroutine_result = asyncio.run(coroutine_add_one(1))
 print(coroutine_result)  # 2
 </code></pre>
-<p>正如期望的一样，我们已经正确地将协程放在事件循环中，并且已经执行了它。</p>
-<p>那么 asyncio.run 都做了哪些事情呢？首先创建了一个全新的事件循环，一旦成功创建，就会接收并运行传递给它的任何协程，直到完成，然后返回结果。最后 asyncio.run 还会对主协程完成后可能继续运行的内容进行清理，一切完成后，再关闭并结束事件循环。</p>
-<p>既然 asyncio.run 最后会关闭事件循环，说明它适用于那些一次性的任务。而在实际项目中，我们都会手动创建时间循环，一会儿再说。</p>
-<p>由于上面的例子中没有任何阻塞代码，所以也不一定非要使用协程，定义成普通函数也是可以的。asyncio 的真正优势是能暂停执行，让事件循环在长时间运行的操作期间，运行其它任务。要暂停执行，可以使用 await 关键字。</p>
+<p>正如期望的一样，我们正确地将协程放在了事件循环中，并执行了它。</p>
+<p>那么 asyncio.run 都做了哪些事情呢？首先创建了一个全新的事件循环，一旦成功创建，就会运行传递给它的任何协程，直到完成，然后返回结果。最后 asyncio.run 还会对主协程完成后可能继续运行的内容进行清理，一切完成后，再关闭并结束事件循环。</p>
+<p>既然 asyncio.run 最后会关闭事件循环，说明它适用于那些一次性的任务。而在实际项目中，我们都会手动创建事件循环，具体细节一会儿再说。</p>
+<p>由于上面的例子中没有任何阻塞代码，所以也不一定非要使用协程，定义成普通函数也是可以的。asyncio 的真正优势是能暂停执行，让事件循环在长时间运行的操作期间，运行其它任务。如果要实现这一点，可以使用 await 关键字。</p>
 <blockquote>
 <p>await 关键字之后通常会跟一个协程，更具体地说是一个被称为 awaitable 的对象，我们将在后续学习中了解关于 awaitable 的更多内容。</p>
 </blockquote>
-<p>使用 await 关键字会运行它后面的协程，这与直接调用协程不同，因为直接调用只会产生一个协程对象。await 表达式也会暂停它所在的协程，直到等待的协程完成并返回结果。等待的协程完成时，将访问它返回的结果，并唤醒 await 所在的协程。</p>
+<p>使用 await 关键字会运行它后面的协程，这与直接调用协程不同，因为直接调用只会产生一个协程对象。而 await 表达式会暂停它所在的协程，直到等待的协程完成并返回结果，然后唤醒 await 所在的协程。</p>
 <pre><code class="language-Python">import asyncio
 
 async def add_one(number):
@@ -32425,7 +32425,7 @@ asyncio.run(main())
 </code></pre>
 <p>在上面的代码中，我们两次暂停执行。首先等待对 add_one(1) 的调用，一旦得到结果，主函数将取消暂停并将 add_one(1) 的返回值分配给变量 one_plus_one。然后对 add_one(2) 执行相同的操作，并输出结果。我们将应用程序的执行流程可视化一下，如下图所示。</p>
 <p><img src="./images/310.png" alt="" /></p>
-<p>如果只从代码逻辑来看，目前该段代码的运行方式与正常的顺序代码并没有什么不同，实际上就是在模仿正常的调用堆栈。接下来，让我们看一个简单示例，说明如何通过在等待时引入虚拟休眠操作来运行其他代码。</p>
+<p>如果只从代码逻辑来看，目前该段代码的运行方式与正常的顺序代码并没有什么不同，实际上就是在模仿正常的调用堆栈。接下来，让我们看一个简单示例，说明如何通过在等待时引入虚拟休眠操作来运行其它代码。</p>
 <h2 id="使用-asynciosleep-引入长时间运行的协程"><a class="header" href="#使用-asynciosleep-引入长时间运行的协程">使用 asyncio.sleep 引入长时间运行的协程</a></h2>
 <p>之前的例子没有使用任何长时间运行的操作，但为了充分了解协程的优势，并展示如何同时运行多个任务，需要引入一些长时间运行的操作。当然我们不会立即进行 Web API 或数据库查询，因为它们花费的时间是不确定的，我们会通过指定想要等待的时间来模拟长时间运行的操作。而实现这一点，可以通过 asyncio.sleep 函数，该函数可以让协程休眠指定的秒数，从而模拟对 Web API 或数据库进行长时间运行的调用情况。</p>
 <p>由于 asyncio.sleep 本身是一个协程，所以必须将它与 await 关键字一起使用，如果单独调用它，会得到一个协程对象。既然 asyncio.sleep 是一个协程，这意味着当协程等待它时，其它代码也能够运行。</p>
@@ -32483,7 +32483,7 @@ hello world
 <p>事实上从源代码本身也能够理解，因为代码是一行一行写的，所以自然也要一行一行执行。而 await 后面跟一个协程之后，会驱动协程执行，并等到驱动的协程运行完毕之后才往下执行。因此这个逻辑就决定了，await 是串行的，一个 await 执行完毕之后才能执行下一个 await。如果想摆脱这种顺序模型，同时运行 add_one 和 hello_world，那么需要引入一个被称为 &quot;任务&quot; 的概念。</p>
 <h2 id="通过任务实现并行"><a class="header" href="#通过任务实现并行">通过任务实现并行</a></h2>
 <p>前面我们看到，直接调用协程时，并没有把它放在事件循环中运行，相反会得到一个协程对象。如果想运行，要么通过 asyncio.run，要么在一个协程里面通过 await 关键字进行驱动（在 A 协程里面 await B 协程，如果 A 协程运行了，那么 B 协程也会被驱动）。虽然通过这些工具，可编写异步代码，但无法同时运行协程，要想同时运行，需要将协程包装成任务。</p>
-<p>任务是协程的包装器，它安排协程尽快在事件循环上运行，并提供一系列的方法来获取协程的运行状态和返回值。这种调度和执行以非阻塞方式发生，这意味着一旦创建一个任务，那么任务就会立刻运行。并且由于是非阻塞的，我们可以同时运行多个任务，举个例子。</p>
+<p>任务是协程的包装器，它安排协程尽快在事件循环上运行，并提供一系列的方法来获取协程的运行状态和返回值。这种调度和执行以非阻塞的方式发生，这意味着一旦创建一个任务，那么任务就会立刻运行。并且由于是非阻塞的，我们可以同时运行多个任务。</p>
 <h3 id="创建任务"><a class="header" href="#创建任务">创建任务</a></h3>
 <p>创建任务是通过 asyncio.create_task 函数来实现的，当调用这个函数时，需要给它传递一个协程，然后返回一个任务对象。</p>
 <pre><code class="language-Python">import asyncio
@@ -32495,13 +32495,13 @@ async def delay(seconds):
     return f&quot;睡了 {seconds} 秒&quot;
 
 async def main():
-    # 将 delay(3) 包装成任务，注：包装完之后直接就丢到事件循环里面运行了
+    # 将 delay(3) 包装成任务，注：包装完之后就直接丢到事件循环里面运行了
     # 因此这里会立即返回，而返回值是一个 asyncio.Task 对象
     sleep_for_three = asyncio.create_task(delay(3))
     print(f&quot;sleep_for_three：{sleep_for_three.__class__}&quot;)
     # 至于协程究竟有没有运行完毕，我们可以通过 Task 对象来查看
     # 当协程运行完毕或者报错，都看做是运行完毕了，那么调用 Task 对象的 done 方法会返回 True
-    # 否则返回 False，由于代码是立即执行，还没有到 3 秒钟，因此打印结果为 False
+    # 由于代码是立即执行，还没有到 3 秒钟，因此目前的打印结果为 False
     print(f&quot;协程（任务）是否执行完毕：{sleep_for_three.done()}&quot;)
     # 这里则保证必须等到 Task 对象里面的协程运行完毕后，才能往下执行
     result = await sleep_for_three
@@ -32587,7 +32587,7 @@ asyncio.run(main())
 你好，我每秒钟负责打印一次
 &quot;&quot;&quot;
 </code></pre>
-<p>一旦协程被包装成任务，那么运行就开始了（被丢到事件循环当中），而主程序依旧可以往下执行。然后执行 <font color="blue">await hello_from_second()</font>，此时程序会阻塞在这里，不管 await 后面跟的是协程对象还是基于协程封装的 Task 对象（任务），它都要求 await 后面的对象运行完毕并返回一个值之后，才能继续往下执行。</p>
+<p>一旦协程被包装成任务，那么运行就开始了（被丢到事件循环中），而主程序依旧可以往下执行。然后执行 <font color="blue">await hello_from_second()</font>，此时程序会阻塞在这里，不管 await 后面跟的是协程对象还是基于协程封装的 Task 对象（任务），它都要求 await 后面的对象运行完毕并返回一个值之后，才能继续往下执行。</p>
 <p>最终结果就如打印的那样，但需要注意的是，我们不能这样写。</p>
 <pre><code class="language-Python">async def main():
     await hello_from_second()
@@ -32602,16 +32602,16 @@ asyncio.run(main())
 
     await hello_from_second()
 </code></pre>
-<p>还是那句话，协程被包装成 Task 对象的时候就已经开始运行了，你可以让主程序继续往下执行，也可以使用 await 让主程序等它执行完毕，就像这段代码一样。但很明显，此时就相当于串行了，无法达到并发的效果。</p>
+<p>还是那句话，协程被包装成 Task 对象的时候就已经开始运行了，你可以让主程序继续往下执行，也可以使用 await 让主程序等任务执行完毕，就像这段代码一样。但很明显，此时就相当于串行了，无法达到并发的效果。</p>
 <blockquote>
 <p>最佳实践：在实际工作中，不要直接 await 一个协程，而是将协程包装成任务来让它运行。当你的代码逻辑依赖某个任务的执行结果时，再对该任务执行 await，拿到它的返回值。</p>
 </blockquote>
 <h2 id="取消任务和设置超时"><a class="header" href="#取消任务和设置超时">取消任务和设置超时</a></h2>
-<p>网络连接可能不可靠，用户的连接可能因为网速变慢而中断，或者网络服务器崩溃导致现有的请求无法处理。因此对于发出的请求，需要特别小心，不要无限等待。如果无限等待一个不会出现的结果，可能导致应用程序挂起，从而导致精糕的用户体验。</p>
+<p>网络连接可能不可靠，用户的连接可能因为网速变慢而中断，或者服务器崩溃导致现有的请求无法处理。因此对于发出的请求，需要特别小心，不要无限等待。如果无限等待一个不会出现的结果，可能导致应用程序挂起，从而导致精糕的用户体验。</p>
 <p>在之前的示例中，如果任务一直持续下去，我们将被困在等待 await 语句完成而没有反馈的情况，也没有办法阻止这样的事情发生。因此 asyncio 提供了一个机制，允许我们手动取消任务，或者超时之后自动取消。</p>
 <h3 id="取消任务"><a class="header" href="#取消任务">取消任务</a></h3>
 <p>取消任务很简单，每个任务对象都有一个名为 cancel 的方法，可以在想要停止任务时调用它。取消一个任务将导致该任务在执行 await 时引发 CancelledError，然后再根据需要处理它。</p>
-<p>为说明这一点，假设启动了一个长时间运行的任务，但我们不希望它运行的时间超过 5 秒。如果任务没有在 5 秒内完成，就可以停止该任务，并向用户报告：该任务花费了太长时间，我们正在停止它。我们还希望每秒钟都输出一个状态更新，为用户提供最新信息，这样就可以让用户了解任务的运行状态。</p>
+<p>为说明这一点，假设启动了一个长时间运行的任务，但我们不希望它运行的时间超过 5 秒。如果任务没有在 5 秒内完成，就可以停止该任务，并向用户报告：该任务花费了太长时间，我们正在停止它。另外还可以每秒钟都输出一个状态更新，为用户提供最新信息，这样就可以让用户了解任务的运行状态。</p>
 <pre><code class="language-Python">import asyncio
 
 async def delay(seconds):
@@ -32651,8 +32651,8 @@ asyncio.run(main())
 任务被取消
 &quot;&quot;&quot;
 </code></pre>
-<p>在代码中我们创建了一个任务，它需要花费 10 秒的时间才能运行完成。然后创建一个 while 循环来检查该任务是否已完成，任务的 done 方法在任务完成时返回 True，否则返回 False。每一秒，我们检查任务是否已经完成，并记录到目前为止经历了多少秒。如果任务已经花费了 5 秒，就取消这个任务。然后来到 await long_task，将输出 &quot;任务被取消&quot;，这表明捕获了一个 CancelledError。</p>
-<p>关于取消任务需要注意的是，CancelledError 只能从 await 语句抛出。这意味着如果在任务在执行普通 Python 代码时被取消，那么该代码将一直运行，直到触发下一个 await 语句（如果存在），才能引发 CancelledError。</p>
+<p>在代码中我们创建了一个任务，它需要花费 10 秒的时间才能运行完成。然后创建一个 while 循环来检查该任务是否已完成，任务的 done 方法在任务完成时返回 True，否则返回 False。每一秒，我们检查任务是否已经完成，并记录到目前为止经历了多少秒。如果任务已经花费了 5 秒，就取消这个任务。然后来到 await long_task，输出 &quot;任务被取消&quot;，这表明捕获了一个 CancelledError。</p>
+<p>关于取消任务需要注意的是，CancelledError 只能从 await 语句抛出。这意味着如果任务在执行普通 Python 代码时被取消，那么该代码将一直运行，直到触发下一个 await 语句（如果存在），才能引发 CancelledError。</p>
 <pre><code class="language-Python">import asyncio
 
 async def delay(seconds):
@@ -32664,7 +32664,7 @@ async def main():
     long_task = asyncio.create_task(delay(3))
     # 立刻取消
     long_task.cancel()
-    # 但 CancelledError 只有在 await 取消的协程时才会触发
+    # 但 CancelledError 只有在 await 一个取消的任务时才会触发
     # 所以下面的语句会正常执行
     print(&quot;我会正常执行&quot;)
     print(&quot;Hello World&quot;)
@@ -32713,7 +32713,7 @@ asyncio.run(main())
 </code></pre>
 <p>所以对一个已完成的任务调用 cancel 方法，没有任何影响。</p>
 <h3 id="设置超时并使用-wait_for-执行取消"><a class="header" href="#设置超时并使用-wait_for-执行取消">设置超时并使用 wait_for 执行取消</a></h3>
-<p>每秒（或其它时间间隔）执行检查然后取消任务，并不是处理超时的最简单方法。理想情况下，我们应该有一个辅助函数，它允许指定超时并自动取消任务。asyncio 提供了一个 wait_for 函数实现此功能，该函数接收协程或任务对象，以及以秒为单位的超时时间。如果任务完成所需的时间超过了设定的超时时间，则会引发 TimeoutException，任务将自动取消。</p>
+<p>每秒（或其它时间间隔）执行检查然后取消任务，并不是处理超时的最简单方法。理想情况下，我们应该有一个辅助函数，它允许指定超时时间，当任务在规定时间内没有完成时自动取消。asyncio 提供了一个 wait_for 函数实现此功能，该函数接收协程或任务对象，以及以秒为单位的超时时间。如果任务完成所需的时间超过了设定的超时时间，则会引发 TimeoutError，任务将自动取消。</p>
 <p>为说明 wait_for 的工作原理，我们使用一个案例来说明：有一个任务需要 2 秒才能完成，但我们将它的超时时间设定为 1 秒。当得到一个 TimeoutError 异常时，我们将捕获异常，并检查任务是否被取消。</p>
 <pre><code class="language-python">import asyncio
 
@@ -32744,7 +32744,7 @@ asyncio.run(main())
 <p>应用程序运行 1 秒后，wait_for 语句将引发 TimeoutError，然后我们对其进行处理，并且 delay_task 被取消了。所以当一个任务超时的时候，会被自动取消。</p>
 <p>所以通过 wait_for 语句就很方便，如果直接 await 一个任务，那么必须等到任务完成之后才能继续往下执行。如果任务一直完成不了，那么就会一直陷入阻塞。我们的目的是希望这个任务的执行时间是可控的，那么便可以使用 wait_for 并指定超时时间。注：使用 wait_for 必须要搭配 await，阻塞等待任务完成并拿到返回值、或者达到超时时间引发 TimeoutError 之后，程序才能往下执行。</p>
 <p>因此 <font color="blue">await 任务</font> 和 <font color="blue">await asyncio.wait_for(任务, timeout)</font> 的效果是类似的，都是等待后面的任务完成并拿到它的返回值。但使用 wait_for 可以指定超时时间，在规定时间内如果没有完成，则抛出 TimeoutError，而不会一直陷入阻塞。</p>
-<p>如果任务花费的时间比预期的长，在引发 TimeoutError 之后自动取消任务通常是个好主意，否则可能会有一个无限等待的协程，占用永远不会释放的资源。但在某些情况下，我们可能希望保持协程运行。例如，我们可能想通知用户：某任务花费的时间比预期的要长，但即便超过了规定的超时时间，也不取消该任务。为此，可使用 asyncio.shield 函数包装任务，这个函数将防止传入的协程被取消，会给它一个屏蔽，将取消请求将忽略掉。</p>
+<p>如果任务花费的时间比预期的长，在引发 TimeoutError 之后自动取消任务通常是个好主意，否则可能会有一个无限等待的任务，占用永远不会释放的资源。但在某些情况下，我们可能希望保持任务运行。例如，我们可能想通知用户：某任务花费的时间比预期的要长，但即便超过了规定的超时时间，也不取消该任务。为此，可使用 asyncio.shield 函数包装任务，这个函数将防止传入的任务被取消，会给它一个屏蔽，将取消请求忽略掉。</p>
 <pre><code class="language-Python">import asyncio
 
 async def delay(seconds):
@@ -32780,7 +32780,7 @@ asyncio.run(main())
 <p>取消和屏蔽会让人感到有些棘手，因为有几种值得注意的情况。下面来介绍一些基础但又很核心的知识，并随着讲解的案例越来越复杂，我们将更深入地探讨取消的工作原理。</p>
 <h2 id="任务协程future-和-awaitable"><a class="header" href="#任务协程future-和-awaitable">任务、协程、Future 和 awaitable</a></h2>
 <p>相信你已经了解了协程和任务之间的关系，但任务和协程具体是如何关联的呢？要理解这一点，我们需要先了解 Future 和 awaitable。</p>
-<p>Future 是 asyncio 提供的一个类，它的实例对象（future）我们称之为未来对象，future 包含一个你希望在未来某个时间点获得、但目前还不存在的值。通常当创建 future 时，它内部还没有任何值，在这种状态下，future 被认为是不完整的、未解决的或没有完成的。然后一旦你得到一个结果，就可以设置 future 的值，这将完成 future。那时我们可以认为 future 已经完成，并可从中提取结果。</p>
+<p>Future 是 asyncio 提供的一个类，它的实例对象（future）我们称之为未来对象，future 包含一个你希望在未来某个时间点获得、但目前还不存在的值。通常当创建 future 时，它内部还没有任何值，在这种状态下，future 被认为是不完整的、未解决的或没有完成的。然后一旦得到结果，就可以设置 future 的值，这将完成 future。那时我们可以认为 future 已经完成，并可从中提取结果。</p>
 <p>让我们尝试创建一个 future，设置它的值并提取该值。</p>
 <pre><code class="language-Python">import asyncio
 
@@ -32800,7 +32800,7 @@ print(f&quot;future 是否完成：{future.done()}&quot;)  # future 是否完成
 print(future)  # &lt;Future finished result='古明地觉'&gt;
 print(f&quot;future 的返回值：{future.result()}&quot;)  # future 的返回值：古明地觉
 </code></pre>
-<p>调用类型对象 Future 便可创建一个未来对象 future，此时 future 内部还没有结果集，因此调用其 done 方法将返回 False。此后用 set_result 方法设置 future 的值，这将把 future 标记为已完成。或者还可以调用 set_exception，在 future 中设置一个异常。</p>
+<p>调用类型对象 Future 便可创建一个未来对象 future，此时 future 内部还没有结果集，因此调用其 done 方法将返回 False。之后用 set_result 方法设置 future 的值，这将把 future 标记为已完成。或者还可以调用 set_exception，在 future 中设置一个异常。</p>
 <blockquote>
 <p>必须在调用 set_result（设置结果）之后才能调用 result（获取结果），并且 set_result 只能调用一次，但 result 可以调用多次。</p>
 </blockquote>
@@ -32836,8 +32836,8 @@ print(f&quot;future 的返回值：{future.result()}&quot;)  # future 的返回�
     def result(self):
         # 调用 result 方法相当于获取 future 设置的结果
         # 但如果它的状态为 CANCELLED，表示取消了，那么抛出 CancelledError
-        # 正如同你 await 一个已取消的任务一样，因为 await 会阻塞任务并拿到它的执行结果
-        # 如果任务已取消，同样抛出 CancelledError
+        # 正如你 await 一个已取消的任务一样，因为 await 会阻塞并拿到任务的执行结果
+        # 但如果任务已取消，同样抛出 CancelledError
         # 所以 future 和 task 是很相似的，因为 Task 本身就是 Future 的子类
         # 至于 Future 和 Task 具体的区别，我们一会儿再说
         if self._state == _CANCELLED:
@@ -32891,7 +32891,7 @@ print(f&quot;future 的返回值：{future.result()}&quot;)  # future 的返回�
         # 和 set_result 类似，都表示任务从 PENDING 变成 FINISHED
         if self._state != _PENDING:
             raise exceptions.InvalidStateError(f'{self._state}: {self!r}')
-        # 但 exception 必须是异常，且不能是 StopIteration 异常
+        # 但 set_exception 的参数必须是异常，且不能是 StopIteration 异常
         if isinstance(exception, type):
             exception = exception()
         if type(exception) is StopIteration:
@@ -32932,9 +32932,9 @@ print(future.done())  # True
 print(future._state)  # FINISHED
 print(future.result() == future._result == &quot;我是返回值&quot;)  # True
 </code></pre>
-<p>非常简单，但是我们在设置结果或设置异常的时候，应该通过 set_result() 和 set_exception()，不要通过类似 future._result = &quot;...&quot; 的方式。同理获取返回值或异常时，也要用 future.result() 和 future.exception()，不要直接用 future._result 或 future._exception，因为这背后还涉及状态的维护。</p>
+<p>非常简单，但是我们在设置结果或设置异常的时候，应该通过 set_result() 和 set_exception()，不要通过类似 <font color="blue">future._result = &quot;...&quot;</font> 的方式。同理获取返回值或异常时，也要用 future.result() 和 future.exception()，不要直接用 future._result 或 future._exception，因为这背后还涉及状态的维护。</p>
 <p>然后 future 也可以用在 await 表达式中，如果对一个 future 执行 await 操作，那么会处于阻塞，直到 future 有一个可供使用的值。这和 await 一个任务是类似的，当任务里面的协程 return 之后会解除阻塞，并拿到返回值。而 await future，那么当 future 有了值，await 同样会拿到它，并解除阻塞。</p>
-<p>为理解这一点，让我们考虑一个返回 future 的 Web 请求的示例。发出一个返回 future 的请求应该立即完成，但由于请求需要一些时间，所以 future 还处于 PENDING 状态。然后一旦请求完成，结果将被设置，那么 future 会变成 FINISHED 状态，我们就可以访问它了，这个概念类似于 JavaScript 中的Promise，而在 Java 中这些被称为 completable future。</p>
+<p>为理解这一点，让我们考虑一个返回 future 的 Web 请求的示例。发出一个返回 future 的请求应该立即完成，但由于请求需要一些时间，所以 future 还处于 PENDING 状态。然后一旦请求完成，结果将被设置，那么 future 会变成 FINISHED 状态，我们就可以访问它了，这个概念类似于 JavaScript 中的 Promise，而在 Java 中这些被称为 completable future。</p>
 <pre><code class="language-Python">import asyncio
 
 async def set_future_value(future):
@@ -32967,7 +32967,7 @@ future 是否完成：True
 Hello World
 &quot;&quot;&quot;
 </code></pre>
-<p>在代码中我们定义了一个函数 make_request，该函数里面创建了一个 future 和一个任务，该任务将在 1 秒后异步设置 future 的结果。然后在主函数中调用 make_request，当调用它时，将立即得到一个没有结果的 future，然后 await future 会让主协程陷入等待，并将执行权交出去。一旦当 future 有值了，那么再恢复 main() 协程，拿到返回值进行处理。**</p>
+<p>在代码中我们定义了一个函数 make_request，该函数里面创建了一个 future 和一个任务，该任务将在 1 秒后异步设置 future 的结果。然后在主函数中调用 make_request，当调用它时，将立即得到一个没有结果的 future，然后 await future 会让主协程陷入等待，并将执行权交出去。一旦当 future 有值了，那么再恢复 main() 协程，拿到返回值进行处理。</p>
 <p>但在 asyncio 中，你应该很少主动创建 future。更多时候，你将遇到一些返回 future 的异步 API，并可能需要使用基于回调的代码。举个例子：</p>
 <pre><code class="language-Python">import asyncio
 
@@ -32985,17 +32985,17 @@ asyncio.run(main())
 future 已完成，值为 666
 &quot;&quot;&quot;
 </code></pre>
-<p>asycio API 的实现很大程度上依赖于 future，因此最好对它们的工作原理有基本的了解，后续我们还会深入介绍。</p>
-<p>然后再来说一说 future、任务和协程之间的关系，事实上任务直接继承自 future，准确来说是 asyncio.Task 继承自 asyncio.Future。future 可以被认为代表了暂时不会拥有的值，而一个任务可以被认为是一个协程和一个 future 的组合。创建一个任务时，我们正在创建一个空的 future，并运行协程，然后当协程运行得到结果或出现异常时，我们将设置 future 的结果或异常。</p>
+<p>asyncio API 的实现很大程度上依赖于 future，因此最好对它们的工作原理有基本的了解，后续我们还会深入介绍。</p>
+<p>然后再来说一说 future、任务和协程之间的关系，事实上任务直接继承自 future，准确来说是 asyncio.Task 继承自 asyncio.Future。future 可以被认为代表了暂时不会拥有的值，而一个任务可以被认为是一个协程和一个 future 的组合。创建一个任务时，会创建一个空的 future，并运行协程，然后当协程运行完毕返回结果或出现异常时，再将结果或异常设置在 future 中。</p>
 <p>所以 <font color="blue">await 任务</font> 什么时候结束，显然是当协程执行完毕并将返回值设置在 future 里面的时候。如果直接  <font color="blue">await future</font>，那么需要我们手动调用 future.set_result。如果  <font color="blue">await 任务</font>，那么当协程执行完毕时会自动调用 future.set_result（执行出错则自动调用 future.set_exception），因为任务是基于协程包装得到的，它等价于一个协程加上一个 future。</p>
 <p>但不管 await 后面跟的是任务还是 future，本质上都是等到 future 里面有值之后，通过 future.result() 拿到里面的值。</p>
-<p>所以当 <font color="blue">await 任务</font>的时候，如果任务执行出错了，那么会怎么样呢？首先出错了，那么任务里面的 future 会调用 set_exception 设置异常。而前面在看 future 源码的时候，我们知道：如果没有出现异常，那么调用 result 返回结果，调用 exception 会返回 None。如果出现异常，那么调用 exception 会返回异常，调用 result 会将异常抛出来。而 await 任务，本质上就是在调用内部 future 的 result 方法，显然如果任务执行出错，那么会将出错时产生的异常抛出来。</p>
-<p>再来看看协程，任务、future、协程，这三者都可以跟在 await 关键字后面，那么它们有没有什么共同之处呢？很简单，它们之间的共同点是 awaitable 抽象基类，这个类定义了一个抽象的魔法函数 __await__，任何实现了 __await__ 方法的对象都可以在 await 表达式中使用。协程直接继承自 awaitable，future 也是如此，而任务则是对 future 进行了扩展。</p>
+<p>所以当 <font color="blue">await 任务</font>的时候，如果任务执行出错了，会怎么样呢？首先出错了，那么任务里面的 future 会调用 set_exception 设置异常。而前面在看 future 源码的时候，我们看到：如果没有出现异常，那么调用 result 会返回结果，调用 exception 会返回 None。如果出现异常，那么调用 exception 会返回异常，调用 result 会将异常抛出来。而 await 任务，本质上就是在调用内部 future 的 result 方法，显然如果任务执行出错，那么会将出错时产生的异常抛出来。</p>
+<p>然后协程，任务、future 这三者都可以跟在 await 关键字后面，那么它们有没有什么共同之处呢？很简单，它们之间的共同点是 awaitable 抽象基类，这个类定义了一个抽象的魔法函数 __await__，任何实现了 __await__ 方法的对象都可以在 await 表达式中使用。协程直接继承自 awaitable，future 也是如此，而任务则是对 future 进行了扩展。</p>
 <p><img src="./images/313.png" alt="" /></p>
-<p>我们将可在 await 表达式中使用的对象称为 awaitable 对象，你会经常在 asyncio 文档中看到 awaitable 的术语，因为许多 API 方法并不关心你是否传入协程、任务或 future。</p>
-<p>现在我们了解了任务、协程和 future 的基础知识，那如何评估它们的性能呢？到目前为止，我们只推测了它们运行所需的时间。为了使代码更严谨，让我们添加一些功能来测量执行时间。</p>
+<p>我们将可以在 await 表达式中使用的对象称为 awaitable 对象，你会经常在 asyncio 文档中看到 awaitable 的术语，因为很多 API 并不关心你传的是协程、任务还是 future。</p>
+<p>现在我们了解了任务、协程和 future 的基础知识，那如何评估它们的性能呢？到目前为止，我们只是推测了它们运行所需的时间。为了使代码更严谨，让我们添加一些功能来测量执行时间。</p>
 <h2 id="使用装饰器测量协程执行时间"><a class="header" href="#使用装饰器测量协程执行时间">使用装饰器测量协程执行时间</a></h2>
-<p>到目前为止，我们已经大致讨论了应用程序在不计时的情况下运行需要多长时间。为了真正理解和描述，我们需要引入一些代码来跟踪程序的运行时间，显然可以使用装饰器。</p>
+<p>到目前为止，我们已经大致讨论了应用程序在不计时的情况下需要运行多长时间。为了真正理解和描述，我们需要引入一些代码来跟踪程序的运行时间，显然可以使用装饰器。</p>
 <pre><code class="language-python">from functools import wraps
 import time
 from typing import Callable, Any
@@ -33013,7 +33013,7 @@ def async_timed(func: Callable) -&gt; Callable:
             print(f&quot;协程 {func.__name__} 用 {total} 秒执行完毕&quot;)
     return wrapper
 </code></pre>
-<p>在这个装饰器中，我们创建了一个名为 wrapped 的新协程。这是原始协程的包装器，它接收参数 *args 和 **kwargs，调用 await 语句，然后返回结果。可将此注解放在任何协程上，并且任何时候，都可以看到运行了多长时间。</p>
+<p>在这个装饰器中，我们创建了一个名为 wrapped 的新协程，这是原始协程的包装器，它接收参数 *args 和 **kwargs，调用 await 语句，然后返回结果。可将此注解放在任何协程上，并且任何时候，都可以看到运行了多长时间。</p>
 <p>由于这部分代码还是有点多的，所以为了清晰，我们定义一个 utils.py，然后将这部分代码拷贝到里面。后续在使用的时候，直接从 utils 里面导入即可。</p>
 <pre><code class="language-python">import asyncio
 from utils import async_timed
@@ -33041,7 +33041,7 @@ asyncio.run(main())
 协程 main 用 3.0012566249934025 秒执行完毕
 &quot;&quot;&quot;
 </code></pre>
-<p>可以看到，两个 delay 调用分别需要大约 2 秒和 3 秒内才能完成，总共加起来是 5 秒。但是主协程只花了 3 秒就完成了，原因就是在等待期间使用了并发。</p>
+<p>可以看到，两个 delay 调用分别需要大约 2 秒和 3 秒才能完成，总共加起来是 5 秒。但是主协程只花了 3 秒就完成了，原因就是在等待期间使用了并发。</p>
 <h2 id="协程和任务的陷阱"><a class="header" href="#协程和任务的陷阱">协程和任务的陷阱</a></h2>
 <p>虽然通过将协程包装成任务来并发执行，可以获得一些性能改进，但有些场景下却得不到提升。</p>
 <ul>
@@ -33049,7 +33049,7 @@ asyncio.run(main())
 <li>第二个场景：代码虽然是 IO 密集，但 IO 是阻塞 IO，而不是非阻塞 IO；</li>
 </ul>
 <h3 id="运行-cpu-密集型代码"><a class="header" href="#运行-cpu-密集型代码">运行 CPU 密集型代码</a></h3>
-<p>当有好几个执行大量计算的函数时，你获取会想到包装成任务并发执行。从概念上讲，这是一个好主意，但请记住 asyncio 使用的是单线程并发型，这意味着仍然受到单线程和全局解释器锁的限制。为证明这一点，让我们尝试同时运行多个 CPU 密集型函数。</p>
+<p>当有好几个执行大量计算的函数时，你或许会想到包装成任务并发执行。从概念上讲，这是一个好主意，但请记住 asyncio 使用的是单线程模型，这意味着仍然受到单线程和全局解释器锁的限制。为证明这一点，让我们尝试同时运行多个 CPU 密集型函数。</p>
 <pre><code class="language-python">import asyncio
 from utils import async_timed
 
@@ -33140,9 +33140,9 @@ asyncio.run(main())
 &quot;&quot;&quot;
 </code></pre>
 <p>此时总耗时就是 4 秒了，创建 task_three 的时候，依旧会将协程丢到事件循环里面运行。但由于出现了阻塞，所以会将控制权交出去，事件循环能够继续运行主协程，因此总耗时是 4 秒。</p>
-<p>总之对于 CPU 密集型任务，如果还想放在协程里面，那么应该和进程池搭配使用，后续再聊。</p>
+<p>总之对于 CPU 密集型任务，如果还想放在协程里面，那么应该和进程池搭配使用，具体细节后续再聊。</p>
 <h3 id="运行阻塞-api"><a class="header" href="#运行阻塞-api">运行阻塞 API</a></h3>
-<p>在协程中使用阻塞 IO 密集型操作，会产生和 CPU 密集型操作相同的问题，因为这些 API 会阻塞主线程。所以在协程中运行阻塞 API 调用时，会阻塞事件循环线程本身，这意味其它的任何协程或任务都将暂停。阻塞 API 调用的示例包括使用 requests 发请求或 time.sleep 等，通常执行任何非协程的 IO 操作或执行耗时的 CPU 操作都可视为阻塞。</p>
+<p>在协程中执行阻塞 IO 密集型操作，会产生和 CPU 密集型操作相同的问题，因为这些 API 会阻塞主线程。所以在协程中运行阻塞 API 调用时，会阻塞事件循环线程本身，这意味着其它的任何协程或任务都将暂停。比如使用 requests 发请求或 time.sleep 等，通常执行任何非协程的 IO 操作或执行耗时的 CPU 操作都可视为阻塞。</p>
 <blockquote>
 <p>IO 也分两种：一种是阻塞 IO，比如 requests.get()、time.sleep() 等，这会阻塞整个线程，导致所有任务都得不到执行；另一种是非阻塞 IO，比如协程的 IO 操作，这只会阻塞协程，但线程不阻塞，线程可以执行其它已经准备就绪的任务。</p>
 </blockquote>
@@ -33176,11 +33176,11 @@ asyncio.run(main())
 协程 main 用 0.2068691669992404 秒执行完毕
 &quot;&quot;&quot;
 </code></pre>
-<p>可以看到 main() 协程的耗时，是所有任务的总和。这是因为 requests 库是阻塞的，这意味着它将阻塞运行它的线程。由于 asyncio 只有一个线程，因此 requests 库会阻止事件循环，此时阻塞期间，事件循环无法做其他的任何事情。</p>
-<p>通常，你现在使用的大多数 API 都是阻塞的，且无法与 asyncio 一起使用。如果想和 asyncio 搭配，那么你需要使用支持协程、并利用非阻塞套接字的库，否则就只能进行阻塞调用了，但这样就没办法和 asyncio 一起使用了。</p>
+<p>可以看到 main() 协程的耗时，是所有任务的总和，这是因为 requests 库是阻塞的，这意味着它将阻塞运行它的线程。由于 asyncio 只有一个线程，因此 requests 库会阻止事件循环，此时阻塞期间，事件循环无法做其它的任何事情。</p>
+<p>通常，你现在使用的大多数 API 都是阻塞的，且无法与 asyncio 一起使用。如果想和 asyncio 搭配，那么你需要使用支持协程、并利用非阻塞套接字的库，否则就只能进行阻塞调用了。</p>
 <p>而对于上面这个例子，我们可以将 requests 换成 aiohttp 或 httpx，它们可以使用非阻塞套接字，并返回协程，从而获得适当的并发性。但如果你只能使用同步库，并且还想和 asyncio 搭配使用的话，那么应该要引入线程池，后续再聊。</p>
 <h2 id="手动创建和访问事件循环"><a class="header" href="#手动创建和访问事件循环">手动创建和访问事件循环</a></h2>
-<p>到目前为止，我们一直使用简便的 asyncio.run 来运行应用程序，并在幕后创建事件循环。考虑到易用性，这是创建事件循环的首选方法。但某些情况下，我们希望执行自定义逻辑来完成与 asyncio.run 不同的任务，例如让任何剩余的任务完成而不是停止它们。</p>
+<p>到目前为止，我们一直使用简便的 asyncio.run 来运行应用程序，并在幕后创建事件循环。考虑到易用性，这是创建事件循环的首选方法。但某些情况下，我们希望执行自定义逻辑来完成与 asyncio.run 不同的任务，因此可以手动创建事件循环。</p>
 <p>创建一个事件循环可以通过 asyncio.new_event_loop 方法，这将返回一个事件循环实例。有了这个实例，便可访问事件循环中的所有低级方法。</p>
 <pre><code class="language-python">import asyncio
 
@@ -33193,8 +33193,8 @@ try:
 finally:
     loop.close()
 </code></pre>
-<p>上面代码与我们调用 asyncio.run 时发生的情况相似，但不同之处在于不会取消任何剩余的任务，如果想要任何特殊的清理逻辑，可在 finally 子句中完成。</p>
-<p>有时我们也需要访问当前正在运行的事件循环，asyncio 公开了允许获取当前事件循环的 asyncio.get_running_loop 函数。例如让我们看一下事件循环的 call_soon 方法，它将设定一个函数在事件循环的下一次迭代中运行。</p>
+<p>上面代码与我们调用 asyncio.run 时发生的情况相似，但不同之处在于此时不会取消任何剩余的任务，如果想要特殊的清理逻辑，可在 finally 子句中完成。</p>
+<p>有时我们也需要访问当前正在运行的事件循环，asyncio 公开了允许获取当前事件循环的 asyncio.get_running_loop 函数。比如我们看一下事件循环的 call_soon 方法，它设定一个函数在事件循环的下一次迭代中运行。</p>
 <pre><code class="language-Python">import asyncio
 
 def some_func():
@@ -33238,11 +33238,11 @@ RuntimeError: no running event loop
 &quot;&quot;&quot;
 </code></pre>
 <p>get_running_loop 是获取当前的事件循环，所以它不可以在外面调用，而是要在协程里面调用。因为协程是靠事件循环驱动的，所以当协程运行的时候，事件循环一定创建好了。</p>
-<p>除了 get_running_loop 和 new_event_loop 之外还有 get_event_loop 和 set_event_loop，关于这几个函数的更详细区别，我们就来好好聊一聊，以及深度探讨一下事件循环。</p>
+<p>除了 get_running_loop 和 new_event_loop 之外还有 get_event_loop 和 set_event_loop，关于这几个函数的更详细区别，我们来好好聊一聊，以及深度探讨一下事件循环。</p>
 <h2 id="解密事件循环"><a class="header" href="#解密事件循环">解密事件循环</a></h2>
 <p>asyncio 框架使用事件循环来编排回调函数（callback）和异步任务（asynchronous task），事件循环位于事件循环策略的上下文中，协程、事件循环和策略之间的相互关系如下所示：</p>
 <p><img src="./images/314.png" alt="" /></p>
-<p>按照 Go 语言之父的说法，协程是一种轻量级的并发模型，这是从广义上来讲的。如果从狭义上来讲，协程就是一个可以暂停、后续还能从暂停处恢复执行的函数，至于在什么地方暂停，则通过专门语法标记进行确定。而协程不能直接运行，必须由事件循环负责驱动，而事件循环在驱动协程执行之前，会先将协程包装成任务。</p>
+<p>按照 Go 语言之父的说法，协程是一种轻量级的并发模型，这是从广义上来讲的。如果从狭义上来讲，协程就是一个可以暂停、后续还能从暂停处恢复执行的函数，至于在什么地方暂停，则通过专门的语法标记进行确定。而协程不能直接运行，必须由事件循环负责驱动，而事件循环在驱动协程执行之前，会先将协程包装成任务。</p>
 <p>任务对象可以跟踪协程的状态，并由相应的事件循环进行实例化，事件循环跟踪当前正在运行的任务，并将空闲协程的 CPU 时间片委托给处于挂起（pending）状态的协程。</p>
 <h3 id="定位当前运行的循环"><a class="header" href="#定位当前运行的循环">定位当前运行的循环</a></h3>
 <p>定位当前的事件循环有两种方式，上面已经说了。</p>
@@ -33260,18 +33260,11 @@ except RuntimeError:
 <p>在 Python3.7 以后的版本中有两种方式来获取当前正在运行的事件循环实例，先来看看 asyncio.get_event_loop() 做了什么。</p>
 <ul>
 <li>1）检查在调用函数时是否有循环在运行；</li>
-<li>2）如果有，则返回其 pid 与当前进程 pid 匹配的运行循环；</li>
-<li>3）如果没有，获取存储在 asyncio 模块里的事件循环策略，它以一个全局变量的形式存在；</li>
+<li>2）如果有，则返回其 pid 与当前进程 pid 匹配的循环；</li>
+<li>3）如果没有，获取存储在 asyncio 中的事件循环策略，它以一个全局变量的形式存在；</li>
 <li>4）如果没有设置策略（为 None），则在加锁的情况下以 DefaultEventLoopPolicy 实例化它，需要注意：DefaultEventLoopPolicy 依赖于操作系统，它提供了一个默认的循环实现，称为 get_event_loop。所以通过调用事件循环策略的 get_event_loop 方法，即可创建一个事件循环实例。</li>
 </ul>
-<p>注意：事件循环策略的 get_event_loop 方法只在主线程上实例化一个循环并分配给线程局部变量，如果你不在主线程上并且没有通过其它方法实例化正在运行的循环，那么它将引发一个 RuntimeError。所以：</p>
-<ul>
-<li>get_event_loop 检查是否存在并返回当前运行的循环</li>
-<li>事件循环策略是全局存储的线程，而循环实例是本地的存储线程</li>
-<li>如果你在主线程上，那么 get_event_loop 将实例化该循环并在策略中本地保存实例线程</li>
-<li>如果你不在主线程上，它将引发一个 RuntimeError</li>
-</ul>
-<p>光看文字的话，可能不太好理解，我们看一下源代码。</p>
+<p>注意：事件循环策略的 get_event_loop 方法只在主线程上实例化事件循环并分配给线程局部变量，如果不在主线程上并且没有通过其它方法实例化正在运行的循环，那么将引发一个 RuntimeError。光看文字的话，可能不太好理解，我们看一下源代码。</p>
 <p><img src="./images/315.png" alt="" /></p>
 <p>asyncio.get_event_loop 的逻辑很简单，就是检测当前有没有正在运行的事件循环，有就返回，没有就创建一个。而创建事件循环需要先拿到事件循环策略，策略不为空，那么直接调用它的 get_event_loop 方法。策略为空，那么就实例化 DefaultEventLoopPolicy，创建一个策略，整个过程很好理解。</p>
 <p>而 get_running_loop 就更简单了，它表示获取当前正在运行的事件循环。</p>
@@ -33281,7 +33274,7 @@ except RuntimeError:
         raise RuntimeError('no running event loop')
     return loop
 </code></pre>
-<p>通常来说，get_running_loop 应该放在协程里面调用。因为协程要想执行，需要由事件循环驱动，所以在执行 get_running_loop 的时候，事件循环已经创建好了。</p>
+<p>通常来说，get_running_loop 应该放在协程里面调用，因为协程要想执行，需要由事件循环驱动。</p>
 <h3 id="创建新的循环实例"><a class="header" href="#创建新的循环实例">创建新的循环实例</a></h3>
 <p>如果开启一个子线程，那么在子线程中调用 get_event_loop 是会报错的。</p>
 <pre><code class="language-Python">import asyncio
@@ -33321,7 +33314,7 @@ class BaseDefaultEventLoopPolicy(AbstractEventLoopPolicy):
 
     def get_event_loop(self):
         # 调用策略的 get_event_loop 方法创建事件循环，严格意义上讲，应该是获取事件循环
-        # 从源码中可以看到创建事件循环其实是通过 new_event_loop 实现的
+        # 从源码中可以看到事件循环其实是通过 new_event_loop 实现的
         # 事件循环创建完毕之后，再通过 set_event_loop 设置在策略当中
         # 而创建循环是有条件的，除了循环不存在之外，还有一个就是当前所在线程必须是主线程
         if (self._local._loop is None and
@@ -33349,20 +33342,20 @@ class BaseDefaultEventLoopPolicy(AbstractEventLoopPolicy):
         return self._loop_factory()
 
 </code></pre>
-<p>当然啦，这几个方法也都在 asyncio 模块下以全局函数的形式存在。</p>
+<p>当然啦，这几个方法在 asyncio 模块中都对应同名的全局函数。</p>
 <p><img src="./images/316.png" alt="" /></p>
-<p>如果想创建一个事件循环，可以通过 asyncio.new_event_loop，或者通过 get_event_loop_policy().new_event_loop，两者是一样的。并且在刚才的源码中我们看到，get_event_loop_policy 在调用时，如果发现事件循环策略不为空，那么就不会再创建了（直接返回已存在的策略），否则才会实例化 DefaultEventLoopPolicy。这就说明，不管事件循环有多少个，但是策略只有一个，而这些循环都保存在策略的 _local 属性中。</p>
+<p>如果想创建一个事件循环，可以通过 asyncio.new_event_loop 或 get_event_loop_policy().new_event_loop，两者是一样的。并且在刚才的源码中我们看到，get_event_loop_policy 在调用时，如果发现事件循环策略不为空，那么就不会再创建了（直接返回已存在的策略），否则才会实例化 DefaultEventLoopPolicy。这就说明，不管事件循环有多少个，但是策略只有一个，而这些循环都保存在策略的 _local 属性中。</p>
 <p>所以策略的 _local 里面可以有很多事件循环，而通过 get_event_loop 获取事件循环，本质上就是通过 <code>策略._local._loop</code> 的方式获取。而不同的线程会获取不同的 _loop，因为 _local 里面保存了线程 ID 到事件循环的映射，会根据线程 ID 获取对应的事件循环。至于 set_event_loop 的原理也很简单，就是将 new_event_loop 创建好的事件循环赋值给 <code>策略._local._loop</code> 。</p>
 <pre><code class="language-Python">import asyncio
 import threading
 
 def create_loop():
     # 获取事件循环策略，如果没创建，那么就实例化 DefaultEventLoopPolicy 创建一个
-    # 这个 DefaultEventLoopPolicy 也不是一个具体的类，而是根据操作系统会对应不同的类
+    # 这个 DefaultEventLoopPolicy 也不是一个具体的类，它根据操作系统会对应不同的类
     loop_policy = asyncio.get_event_loop_policy()
     # 通过策略的 new_event_loop 方法创建事件循环
     loop = loop_policy.new_event_loop()
-    # 但以上两步可以直接合成一步，通过 asyncio.new_event_loop
+    # 但以上两步可以通过 asyncio.new_event_loop 直接合成一步
 
     # 设置循环，将循环设置在策略的 _local 中，这样才能通过 get_event_loop 获取
     asyncio.set_event_loop(loop)
@@ -33381,9 +33374,9 @@ threading.Thread(target=create_loop).start()
 <li>策略的 get_event_loop 方法：获取事件循环，会先检测策略的 _local 中是否有当前线程对应的事件循环，有则获取，没有则通过 new_event_loop 创建、set_event_loop 设置，然后返回；</li>
 </ul>
 <p>但是 get_event_loop、set_event_loop、new_event_loop 我们一般不会手动通过策略去调用，而是会通过 asyncio 去调用，比如 asyncio.get_event_loop。当然在 asyncio.get_event_loop 内部，也是先通过 get_event_loop_policy() 获取策略，然后调用策略的 get_event_loop 方法来获取线程对应的循环，两者本质是一样的，因为策略是单例的。</p>
-<p>所以无论主线程还是子线程，毫无疑问都是可以创建事件循环的。只不过主线程既可以手动调用 new_event_loop 和 set_event_loop 来创建，也可以调用 get_event_loop（当循环不存在时内部自动创建）。但对于子线程而言，只能采用第一种方式，也就是手动创建，如果直接调用 get_event_loop 是会报错的，至于原因，源码中写的很清楚了。</p>
+<p>所以无论主线程还是子线程，毫无疑问都是可以创建事件循环的。只不过主线程既可以手动调用 new_event_loop 和 set_event_loop 来创建，也可以调用 get_event_loop（当循环不存在时自动创建）。但对于子线程而言，只能采用第一种方式，也就是手动创建，如果直接调用 get_event_loop 是会报错的，至于原因，源码中写的很清楚了。</p>
 <p><img src="./images/317.png" alt="" /></p>
-<p>当循环不存在时，必须是主线程才会自动创建，而子线程不会。所以结果就是因为循环为空，导致程序报错。*</p>
+<p>当循环不存在时，必须是主线程才会自动创建，而子线程不会。所以结果就是因为循环为空，导致程序报错。</p>
 <blockquote>
 <p>最佳实践：对于主线程，在外部我们会调用 get_event_loop，在协程内部我们会调用 get_running_loop。如果是子线程，那么在外部则需要 new_event_loop + set_event_loop 来实现。</p>
 </blockquote>
@@ -33414,9 +33407,9 @@ if platform.system() != &quot;Windows&quot;:
     watcher = asyncio.get_child_watcher()
     watcher.attach_loop(loop)
 </code></pre>
-<p>这个一般是当子线程创建事件循环时才会用到，所以了解一下即可。</p>
+<p>这个一般在子线程创建事件循环时才会用到，所以了解一下即可。</p>
 <h3 id="运行一个事件循环"><a class="header" href="#运行一个事件循环">运行一个事件循环</a></h3>
-<p>回调函数和协程每次只能在预先设计好、并正在运行的事件循环上被调度，我们需要知道究竟该调用哪个循环 API，以便将事件循环状态机（state machine）转换为运行状态，所以还需要确定正确的位置来调度回调函数和协程。</p>
+<p>回调函数和协程每次只能在预先设计好、并正在运行的事件循环上被调度，我们需要知道究竟该调用哪个循环的 API，以便将事件循环状态机（state machine）转换为运行状态，所以还需要确定正确的位置来调度回调函数和协程。</p>
 <pre><code class="language-Python">import asyncio
 
 async def main():
@@ -33456,7 +33449,7 @@ Hello World
 <blockquote>
 <p>关于 loop.stop() 和 loop.close() 的区别：loop.stop() 之后仍然可以调用 loop.run_* 方法，但 loop.close() 不行，它会直接关闭事件循环。</p>
 </blockquote>
-<p>除了 loop.run_forever，也可以通过 loop.run_until_complete 调度协程来启动事件循环，就像上面的代码那样。并且这么做有一个好处，就是我们不必显式调用 loop.stop()，循环会一直运行直到传递给 run_until_complete 的协程执行结束后停止。</p>
+<p>除了 loop.run_forever，也可以通过 loop.run_until_complete 调度协程来启动事件循环，就像上面的代码那样。并且这么做有一个好处，就是我们不必显式调用 loop.stop()，循环会一直运行直到传递给 run_until_complete 的协程执行结束。</p>
 <pre><code class="language-Python">import asyncio
 
 async def main():
@@ -33469,7 +33462,7 @@ loop.run_until_complete(asyncio.sleep(1))
 </code></pre>
 <p>此时不会有任何输出，因为当 asyncio.sleep(1) 这个协程结束后，事件循环就直接停止了。</p>
 <h3 id="查看事件循环中没有运行完的任务"><a class="header" href="#查看事件循环中没有运行完的任务">查看事件循环中没有运行完的任务</a></h3>
-<p>任务要被添加到事件循环里面，但如果任务还没有运行完，事件循环就结束了该怎么办？就像上面那样，如何才能查看那些没有运行完的任务呢？</p>
+<p>任务被添加到事件循环里面，但如果任务还没有运行完，事件循环就结束了该怎么办？就像上面那样，如何才能查看那些没有运行完的任务呢？</p>
 <pre><code class="language-Python">import asyncio
 
 async def main1():
@@ -33532,7 +33525,7 @@ loop.run_until_complete(contiune_run())
 </code></pre>
 <p>还是很有趣的，由于 Task 是 Future 的子类，所以我们也可以调用任务的 add_done_callback 方法绑定一个回调，当任务执行完毕时自动触发回调。</p>
 <h3 id="asynciorun-源码解析"><a class="header" href="#asynciorun-源码解析">asyncio.run 源码解析</a></h3>
-<p>如果你的需求非常简单，只想运行一个协程直到它完成，那么可以使用 asyncio.run 这个 API。这个 API 之前一直在用，那么它是怎么实现的呢？</p>
+<p>如果你的需求非常简单，只想运行一个协程直到它完成，那么可以使用 asyncio.run。这个 API 之前一直在用，那么它是怎么实现的呢？</p>
 <pre><code class="language-Python">def run(main, *, debug=None):
     
     if events._get_running_loop() is not None:
@@ -33582,12 +33575,11 @@ RuntimeError: There is no current event loop in thread 'MainThread'.
 <h2 id="小结-73"><a class="header" href="#小结-73">小结</a></h2>
 <p>在本篇文章中，我们学习了以下内容：</p>
 <ul>
-<li>使用 async 关键字创建协程，协程可在阻塞操作上暂停执行，并允许其他协程运行。一旦协程暂停的操作完成，协程将唤醒并从中断的地方恢复；</li>
+<li>使用 async 关键字创建协程函数，调用协程函数会得到协程，协程可在阻塞操作上暂停执行，并允许其它协程运行。一旦暂停的操作完成，协程将唤醒并从中断的地方恢复；</li>
 <li>通过 await 来驱动协程执行，此时 await 所在的协程将暂停执行，并等待 await 后面所驱动的协程的结果；</li>
-<li>使用 asyncio.run 来执行单个协程，可使用该函数来运行作为应用程序主要入口点的协程；</li>
-<li>可以使用任务同时运行多个长时间运行的操作，任务是围绕协程的包装器，将通过事件循环运行。创建一个任务时，它会尽快安排在事件循环上运行；</li>
+<li>可以使用任务同时运行多个长时间运行的操作，任务是围绕协程的包装器，创建一个任务时，它会尽快安排在事件循环上运行；</li>
 <li>当一个任务的运行时间可能过长，那么可以为任务添加超时，以防止它们一直占用资源。添加超时的方式是通过 asyncio.wait_for，一旦超时则引发 TimeoutError，同时也会将任务取消掉。当然我们也可以在不超时的情况下，手动取消任务，任务取消后会在 await 处引发 CancelledError；</li>
-<li>避免在使用 asyncio 时遇到的常见问题，第一个是在协程中运行 CPU 密集型代码，由于 asyncio 是单线程的，CPU 密集型的代码将阻止事件循环运行其他协程。第二个是同步阻塞 IO，因为同步阻塞，阻塞的是整个线程而不是协程。</li>
+<li>避免在使用 asyncio 时遇到的常见问题，第一个是在协程中运行 CPU 密集型代码，由于 asyncio 是单线程的，CPU 密集型的代码将阻止事件循环运行其它协程。第二个是同步阻塞 IO，因为同步阻塞，阻塞的是整个线程而不是协程。</li>
 </ul>
 <hr />
 <p> </p>
