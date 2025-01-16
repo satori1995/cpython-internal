@@ -32547,7 +32547,7 @@ asyncio.run(main())
 休眠完成
 &quot;&quot;&quot;
 </code></pre>
-<p>在上面的代码中启动了三个任务，每个任务需要 3 秒才能完成。但由于对 create_task 的每次调用都会立即返回，因此会立即到达 <font color="blue">await sleep_for_three</font> 语句，并且三个任务都丢到了事件循环，开启执行。由于 asyncio.sleep 属于 IO，因此会进行切换，所以三个任务是并发执行的，这也意味着整个程序会在 3 秒钟左右完成，而不是 9 秒钟。</p>
+<p>在上面的代码中启动了三个任务，每个任务需要 3 秒才能完成。但由于对 create_task 的每次调用都会立即返回，因此会立即到达 <font color="blue">await sleep_for_three</font> 函数，并且三个任务都丢到了事件循环，开启执行。由于 asyncio.sleep 属于 IO，因此会进行切换，所以三个任务是并发执行的，这也意味着整个程序会在 3 秒钟左右完成，而不是 9 秒钟。</p>
 <p><img src="./images/312.png" alt="" /></p>
 <p>随着我们添加更多任务，性能提升效果会更明显，比如启动了 10 个这样的任务，仍然只需要大约 3 秒，从而使速度提高 10 倍。我们再看个例子：</p>
 <pre><code class="language-Python">import asyncio
@@ -32741,8 +32741,8 @@ asyncio.run(main())
 任务是否被取消：True
 &quot;&quot;&quot;
 </code></pre>
-<p>应用程序运行 1 秒后，wait_for 语句将引发 TimeoutError，然后我们对其进行处理，并且 delay_task 被取消了。所以当一个任务超时的时候，会被自动取消。</p>
-<p>所以通过 wait_for 语句就很方便，如果直接 await 一个任务，那么必须等到任务完成之后才能继续往下执行。如果任务一直完成不了，那么就会一直陷入阻塞。我们的目的是希望这个任务的执行时间是可控的，那么便可以使用 wait_for 并指定超时时间。注：使用 wait_for 必须要搭配 await，阻塞等待任务完成并拿到返回值、或者达到超时时间引发 TimeoutError 之后，程序才能往下执行。</p>
+<p>应用程序运行 1 秒后，wait_for 函数将引发 TimeoutError，然后我们对其进行处理，并且 delay_task 被取消了。所以当一个任务超时的时候，会被自动取消。</p>
+<p>所以通过 wait_for 函数就很方便，如果直接 await 一个任务，那么必须等到任务完成之后才能继续往下执行。如果任务一直完成不了，那么就会一直陷入阻塞。我们的目的是希望这个任务的执行时间是可控的，那么便可以使用 wait_for 并指定超时时间。注：使用 wait_for 必须要搭配 await，阻塞等待任务完成并拿到返回值、或者达到超时时间引发 TimeoutError 之后，程序才能往下执行。</p>
 <p>因此 <font color="blue">await 任务</font> 和 <font color="blue">await asyncio.wait_for(任务, timeout)</font> 的效果是类似的，都是等待后面的任务完成并拿到它的返回值。但使用 wait_for 可以指定超时时间，在规定时间内如果没有完成，则抛出 TimeoutError，而不会一直陷入阻塞。</p>
 <p>如果任务花费的时间比预期的长，在引发 TimeoutError 之后自动取消任务通常是个好主意，否则可能会有一个无限等待的任务，占用永远不会释放的资源。但在某些情况下，我们可能希望保持任务运行。例如，我们可能想通知用户：某任务花费的时间比预期的要长，但即便超过了规定的超时时间，也不取消该任务。为此，可使用 asyncio.shield 函数包装任务，这个函数将防止传入的任务被取消，会给它一个屏蔽，将取消请求忽略掉。</p>
 <pre><code class="language-Python">import asyncio
@@ -32806,10 +32806,6 @@ print(f&quot;future 的返回值：{future.result()}&quot;)  # future 的返回�
 </blockquote>
 <p>然后我们来看一下 Future 的源码，这里先只展示和当前介绍的内容相关的部分。</p>
 <pre><code class="language-python">class Future:
-    # Future 实例有以下三个属性非常重要
-    # _state：运行状态，有三种，分别是 PENDING（正在运行）、CANCELLED（已取消）、FINISHED（已完成）
-    # _result：future 完成之后设置的结果
-    # _exception：future 报错时设置的异常 
     
     def cancel(self):
         # cancel 方法，负责取消一个 future
@@ -32830,19 +32826,16 @@ print(f&quot;future 的返回值：{future.result()}&quot;)  # future 的返回�
 
     def done(self):
         # 判断 future 是否已经完成，那么检测它的状态是否不是 PENDING 即可
-        # 注意：CANCELLED 和 FINISHED 都表示已完成
+        # 注意：CANCELLED 和 FINISHED 都表示 future 运行结束
         return self._state != _PENDING
 
     def result(self):
         # 调用 result 方法相当于获取 future 设置的结果
         # 但如果它的状态为 CANCELLED，表示取消了，那么抛出 CancelledError
-        # 正如你 await 一个已取消的任务一样，因为 await 会阻塞并拿到任务的执行结果
-        # 但如果任务已取消，同样抛出 CancelledError
-        # 所以 future 和 task 是很相似的，因为 Task 本身就是 Future 的子类
-        # 至于 Future 和 Task 具体的区别，我们一会儿再说
         if self._state == _CANCELLED:
             raise exceptions.CancelledError
-        # 如果状态不是 FINISHED（说明还没有设置结果），那么抛出 asyncio.InvalidStateError 异常
+        # 如果状态不是 FINISHED（说明还没有设置结果）
+        # 那么抛出 asyncio.InvalidStateError 异常
         # 所以我们不能在 set_result 之前调用 result
         if self._state != _FINISHED:
             raise exceptions.InvalidStateError('Result is not ready.')
@@ -32856,9 +32849,9 @@ print(f&quot;future 的返回值：{future.result()}&quot;)  # future 的返回�
         return self._result
 
     def exception(self):
-        # 无论是正常执行结束，还是出现异常，future 的状态都是已完成
-        # 如果是正常执行结束，那么 self._result 就是结果，self._exception 为 None
-        # 如果是出现异常，那么 self._result 为 None，self._exception 就是异常对象本身
+        # 无论是调用 set_result 还是 set_exception，都会将 future 的状态标记为 FINISHED
+        # 如果是前者，那么 self._result 就是结果，self._exception 为 None
+        # 如果是后者，那么 self._result 为 None，self._exception 就是异常本身
         
         # 因此调用 result 和 exception 都要求 future 的状态为 FINISHED
         # 如果为 CANCELLED，那么同样抛出 CancelledError
@@ -32869,29 +32862,29 @@ print(f&quot;future 的返回值：{future.result()}&quot;)  # future 的返回�
             raise exceptions.InvalidStateError('Exception is not set.')
         self.__log_traceback = False
         # 返回异常本身
-        # 因此如果你不确定 future 到底是正常执行结束，还是抛了异常
-        # 那么可以先调用 future.exception()，如果为 None，说明正常执行，再通过 future.result() 获取结果
-        # 如果 future.exception() 不为 None，那么拿到的就是异常本身
+        # 因此如果你不确定 future 内部到底是普通的结果值，还是异常
+        # 那么可以先调用 future.exception()，看它是否为 None
+        # 如果 future.exception() 不为 None，那么内部就是异常，否则是结果值
         return self._exception
 
     def set_result(self, result):
-        # 当 future 正常执行结束时，会通过 set_result 设置结果
+        # 通过 set_result 设置结果
         # 显然在设置结果的时候，future 的状态应该为 PENDING 
         if self._state != _PENDING:
             raise exceptions.InvalidStateError(f'{self._state}: {self!r}')
         # 然后设置 self._result，当程序调用 future.result() 时会返回 self._result
         self._result = result
-        # 并将状态标记为 FINISHED，表示一个任务从 PENDING 变成了 FINISHED
+        # 并将状态标记为 FINISHED，表示一个 future 从 PENDING 变成了 FINISHED
         # 所以我们不能对一个已完成的 future 再次调用 set_result
         # 因为第二次调用 set_result 的时候，状态已经不是 PENDING 了
         self._state = _FINISHED
         self.__schedule_callbacks()
 
     def set_exception(self, exception):
-        # 和 set_result 类似，都表示任务从 PENDING 变成 FINISHED
+        # 和 set_result 类似，调用时 future 的状态必须为 PENDING
         if self._state != _PENDING:
             raise exceptions.InvalidStateError(f'{self._state}: {self!r}')
-        # 但 set_exception 的参数必须是异常，且不能是 StopIteration 异常
+        # exception 必须是异常，且不能是 StopIteration 异常
         if isinstance(exception, type):
             exception = exception()
         if type(exception) is StopIteration:
@@ -34553,7 +34546,7 @@ future 内部的值为: Some Value
 &quot;&quot;&quot;
 </code></pre>
 <p>future 的概念应该还是很好理解的，你就把它想象成一个容器，容器里面就是你所需要的值，只不过目前还没有。一旦有了，就会通过 set_result() 方法放到容器里，然后再通过 result() 方法拿到它。</p>
-<p>但是注意：我们只能调用一次 set_result，但是 result 可以多次调用。</p>
+<p>注意：我们只能调用一次 set_result，但是 result 可以多次调用。</p>
 <pre><code class="language-Python">from asyncio import Future
 from asyncio import InvalidStateError
 
@@ -34711,11 +34704,11 @@ print(&quot;是否被取消:&quot;, future.cancelled())
 &quot;&quot;&quot;
 是否被取消: True
 &quot;&quot;&quot;
-# 一旦被取消，就不再调用 set_result 和 set_exception 了
+# 一旦被取消，就不能再调用 set_result 和 set_exception 了
 </code></pre>
 <p>在 asyncio 中，你很少会直接创建 Future 对象，但 asyncio API 的实现在很大程度上依赖于它，比如锁、事件等等，都依赖 Future，所以我们必须要理解它。</p>
 <h2 id="源码解密-future"><a class="header" href="#源码解密-future">源码解密 Future</a></h2>
-<p>前面说了，Future 这个类是 C 实现的，但在 asyncio.futures 中也有着相应的纯 Python 实现，两者功能是一样的。下面我们就通过 Python 源码，看一下 Future 的实现过程（代码略有删减）。</p>
+<p>前面说了，Future 这个类是 C 实现的，但在 asyncio 中也有相应的纯 Python 实现，两者功能是一样的。下面我们就通过 Python 源码，看一下 Future 的实现过程（代码略有删减）。</p>
 <p>首先 Future 实例有三个非常重要的属性：_state、_result、_exception，含义如下。</p>
 <ul>
 <li>_state 表示运行状态，总共三种，分别是：PENDING（正在运行）、CANCELLED（已取消）、FINISHED（已完成）。</li>
@@ -34767,7 +34760,7 @@ print(&quot;是否被取消:&quot;, future.cancelled())
         return self._result
 
     def exception(self):
-        # 无论是 set_result，还是 set_exception，future 的状态都是已完成
+        # 无论是调用 set_result 还是 set_exception，都会将 future 的状态标记为 FINISHED
         # 如果是前者，那么 self._result 就是结果，self._exception 为 None
         # 如果是后者，那么 self._result 为 None，self._exception 就是异常本身
         
@@ -34782,7 +34775,7 @@ print(&quot;是否被取消:&quot;, future.cancelled())
         # 返回异常本身
         # 因此如果你不确定 future 内部到底是普通的结果值，还是异常
         # 那么可以先调用 future.exception()，看它是否为 None
-        # 如果 future.exception() 不为 None，那么拿到的就是异常
+        # 如果 future.exception() 不为 None，那么内部就是异常，否则是结果值
         return self._exception
 
     def set_result(self, result):
@@ -34792,17 +34785,17 @@ print(&quot;是否被取消:&quot;, future.cancelled())
             raise exceptions.InvalidStateError(f'{self._state}: {self!r}')
         # 然后设置 self._result，当程序调用 future.result() 时会返回 self._result
         self._result = result
-        # 并将状态标记为 FINISHED，表示一个任务从 PENDING 变成了 FINISHED
+        # 并将状态标记为 FINISHED，表示一个 future 从 PENDING 变成了 FINISHED
         # 所以我们不能对一个已完成的 future 再次调用 set_result
         # 因为第二次调用 set_result 的时候，状态已经不是 PENDING 了
         self._state = _FINISHED
         self.__schedule_callbacks()
 
     def set_exception(self, exception):
-        # 和 set_result 类似，都表示任务从 PENDING 变成 FINISHED
+        # 和 set_result 类似，调用时 future 的状态必须为 PENDING
         if self._state != _PENDING:
             raise exceptions.InvalidStateError(f'{self._state}: {self!r}')
-        # 但 exception 必须是异常，且不能是 StopIteration 异常
+        # exception 必须是异常，且不能是 StopIteration 异常
         if isinstance(exception, type):
             exception = exception()
         if type(exception) is StopIteration:
@@ -34868,7 +34861,7 @@ True
 <h2 id="task"><a class="header" href="#task">Task</a></h2>
 <p>在 asyncio 中，如果协程想要并发运行，那么它必须被包装为 Task 对象，也就是任务。那么任务 task 和未来对象 future 之间有什么关系呢？首先在源码中，Task 是 Future 的子类，而一个任务可以看做是一个 future 和一个协程的组合。</p>
 <p><img src="./images/330.png" alt="" /></p>
-<p>future 可以被认为代表了我们暂时不会拥有的值，而一个任务可以被认为是一个协程和一个 future 的组合。创建一个任务时，我们正在创建一个空的 future，并运行协程。然后当协程运行得到结果或出现异常时，我们将其设置给 future。当然任务也可以使用 await 表达式，await 一个任务时同样会陷入阻塞，那么什么时候解除阻塞呢？显然是当协程执行完毕并将返回值设置在 future 里面的时候。</p>
+<p>future 可以被认为代表了我们暂时不会拥有的值，而一个任务可以被认为是一个协程和一个 future 的组合。创建一个任务时，我们正在创建一个空的 future，并运行协程，然后当协程运行得到结果或出现异常时，将其设置给 future。当然任务也可以使用 await 表达式，await 一个任务时同样会陷入阻塞，那什么时候解除阻塞呢？显然是当协程执行完毕并将返回值设置在 future 里面的时候。</p>
 <p>如果 await future，那么需要我们手动调用 future.set_result()。如果 await 任务，那么当协程执行完毕时会自动调用 future.set_result（执行出错则自动调用 future.set_exception），因为任务是基于协程包装得到的，它等价于一个协程加上一个 future。</p>
 <p>但不管 await 后面跟的是任务还是 future，本质上都是等到 future 里面有值之后，通过 future.result() 拿到里面的值。</p>
 <pre><code class="language-python">import asyncio
@@ -34893,7 +34886,7 @@ asyncio.run(main())
 返回值: Some Value
 &quot;&quot;&quot;
 </code></pre>
-<p>问题来了，当 await 任务的时候，如果协程执行出错了，那么会怎么样呢？首先出错了，那么任务里面的 future 会调用 set_exception 设置异常。而前面在看 future 源码的时候，我们知道：如果没有出现异常，那么调用 result 返回结果，调用 exception 会返回 None；如果出现异常，那么调用 exception 会返回异常，调用 result 会将异常抛出来。</p>
+<p>问题来了，当 await 任务的时候，如果协程执行出错了，会怎么样呢？首先出错了，那么任务里面的 future 会调用 set_exception 设置异常。而前面在看 future 源码的时候，我们看到：如果没有出现异常，那么调用 result 会返回结果，调用 exception 会返回 None；如果出现异常，那么调用 exception 会返回异常，调用 result 会将异常抛出来。</p>
 <p>而 await 任务，本质上就是在调用内部 future 的 result 方法，显然如果任务内部的协程执行出错，那么会将出错时产生的异常抛出来。</p>
 <pre><code class="language-python">import asyncio
 
@@ -34902,7 +34895,7 @@ async def coro():
 
 async def main():
     task = asyncio.create_task(coro())
-    # Task 继承 Future，那么 await task 和 await future 的表现是一致的
+    # Task 继承 Future，所以 await task 和 await future 的表现是一致的
     # 协程在执行完毕时会调用 task.set_result() 设置结果值
     # 如果协程执行出错，会调用 task.set_exception() 设置异常
     # 而 await task 等价于 &quot;阻塞等待 + task.result()&quot;
@@ -34932,8 +34925,8 @@ else:
     print(&quot;非协程函数&quot;)
 # 无论是协程函数还是普通函数，它们都是函数
 # 通过 type 查看类型得到的都是 &lt;class 'function'&gt;
-# 因此我们需要 co_flags 进行判断，解释器在编译时会设置不同的标识
-# 同理如果 co_flags &amp; 0x20 如果为真，那么就是生成器函数
+# 因此我们需要通过 co_flags 进行判断，解释器在编译时会设置不同的标识
+# 同理如果 co_flags &amp; 0x20 为真，那么就是生成器函数
 
 # 调用协程函数，会得到协程对象
 c = coro()
@@ -34944,8 +34937,8 @@ print(c.__class__)
 sys:1: RuntimeWarning: coroutine 'coro' was never awaited
 &quot;&quot;&quot;
 </code></pre>
-<p>然后我们看到它抛出了一个警告，意思是协程没有被 await。因为协程没有办法直接运行，需要扔到事件循环中运行。或者在一个协程里面通过 await 关键字进行驱动（在 A 协程里面 await B 协程，如果 A 协程运行了，那么 B 协程也会被驱动）。</p>
-<p>虽然通过这些工具，可编写异步代码，但不能同时运行，要想同时运行协程，需要将它包装成任务。上面说了，任务是协程的包装器，它安排协程尽快在事件循环上运行，并提供一系列的方法来获取协程的运行状态和返回值。这种调度和执行以非阻塞方式发生，这意味着一旦创建一个任务，那么任务就会立刻运行。</p>
+<p>然后我们看到它抛出了一个警告，意思是协程没有被 await。因为协程需要扔到事件循环中运行，或者在一个协程里面通过 await 关键字进行驱动（在 A 协程里面 await B 协程，如果 A 协程运行了，那么 B 协程也会被驱动）。</p>
+<p>虽然通过这些工具，可编写异步代码，但不能同时运行，要想同时运行协程，需要将它包装成任务。上面说了，任务是协程的包装器，它会安排协程尽快在事件循环中运行，并提供一系列的方法来获取协程的运行状态和返回值。这种调度和执行以非阻塞方式发生，这意味着一旦创建一个任务，那么任务就会立刻运行。</p>
 <pre><code class="language-Python">import asyncio
 
 async def get_html(n):
@@ -35020,7 +35013,7 @@ get_html(3)
 2 秒后，页面被下载
 &quot;&quot;&quot;
 </code></pre>
-<p>不难看出，get_html(2) 要先运行完毕，但我们先 await task1，所以在这个过程中，task2 已经运行完毕了。只不过代码是串行执行的，必须等待 await task1 结束之后才能 await task2。但 task2 先 task1 结束，所以 await task1 之后，await task2 会立即得到结果。</p>
+<p>不难看出，get_html(2) 会先运行完毕，但我们先 await task1，所以在这个过程中，task2 已经运行完毕了。只不过代码是串行执行的，必须等待 await task1 结束之后才能 await task2。但 task2 先 task1 结束，所以 await task1 之后，await task2 会立即得到结果。</p>
 <p>但如果先 await task2，那么 await task1 的时候则需要再等待 1 秒，才能拿到结果，非常好理解。当然不管是哪一种方式，两个任务运行结束所花费的总时间都是 3 秒，但如果我们直接运行协程就不一样了。</p>
 <pre><code class="language-Python">import time
 import asyncio
@@ -35035,8 +35028,7 @@ async def main():
     c1 = get_html(3)
     c2 = get_html(2)
     # 协程如果想运行，需要扔到事件循环中进行调度
-    # 而包装成任务的时候，会被扔到事件循环中
-    # 或者在协程内部通过 await 进行驱动
+    # 可以包装成任务，或者在协程内部通过 await 进行驱动
     result1 = await c1
     result2 = await c2
     print(result1)
@@ -35056,10 +35048,10 @@ get_html(2)
 <p>我们发现总耗时需要 5 秒，因为不管 await 后面跟的是 future、任务还是协程，都会产生阻塞。但很明显 await c1 的时候 c2 并没有开始运行，它必须在 await c1 之后才会进入事件循环，所以它们是串行的。</p>
 <p>因此我们不要直接 await 一个协程，而是将它包装成任务，一旦包装成任务后，就自动进入事件循环开始运行了。如果你希望程序必须等到某个任务完成之后才能继续，那么再 await 它即可。</p>
 <h2 id="取消任务-1"><a class="header" href="#取消任务-1">取消任务</a></h2>
-<p>网络连接可能不可靠，用户的连接可能因为网速变慢而中断，或者网络服务器崩溃导致现有的请求无法处理。因此对于用户发出的请求，需要特别小心，不要无限期地等待。如果无限期等待一个不会出现的结果，可能导致应用程序挂起，从而导致精糕的用户体验。</p>
+<p>网络连接可能不可靠，用户的连接可能因为网速变慢而中断，或者网络服务器崩溃导致现有的请求无法处理。因此对于用户发出的请求，需要特别小心，不要无限等待。如果无限等待一个不会出现的结果，可能导致应用程序挂起，从而导致精糕的用户体验。</p>
 <p>在之前的示例中，如果任务一直持续下去，我们将被困在等待 await 语句完成而没有反馈的情况，也没有办法阻止这样的事情发生。因此 asyncio 提供了一个机制，允许我们手动取消任务，或者超时之后自动取消。</p>
 <p>取消任务很简单，每个任务对象都有一个名为 cancel 的方法，可以在想要停止任务时调用它。取消一个任务将导致该任务被 await 时引发 CancelledError，然后再根据需要处理它。</p>
-<p>为说明这一点，我们启动一个长时间运行的任务，但我们不希望它运行的时间超过 5 秒。如果任务没有在 5 秒内完成，就停止该任务。</p>
+<p>为说明这一点，我们启动一个长时间运行的任务，但不希望它运行的时间超过 5 秒。如果任务没有在 5 秒内完成，就停止该任务。</p>
 <pre><code class="language-Python">import asyncio
 
 async def get_html(seconds):
@@ -35099,8 +35091,8 @@ asyncio.run(main())
 任务被取消
 &quot;&quot;&quot;
 </code></pre>
-<p>在代码中我们创建了一个任务，它需要花费 10 秒的时间才能运行完成。然后创建一个 while 循环来检查该任务是否已完成，任务的 done 方法在任务完成时返回 True，否则返回 False。每一秒，我们检查任务是否已经完成，并记录到目前为止经历了多少秒。如果任务已经花费了 5 秒，就取消这个任务。然后来到 await long_task，将输出 &quot;任务被取消&quot;，这表明捕获了一个 CancelledError。</p>
-<p>关于取消任务需要注意的是，CancelledError 只能从 await 语句抛出。这意味着如果在任务在执行普通 Python 代码时被取消，那么该代码将一直运行，直到触发下一个 await 语句（如果存在），才能引发 CancelledError。</p>
+<p>在代码中我们创建了一个任务，它需要花费 10 秒的时间才能运行完成。然后创建一个 while 循环来检查该任务是否已完成，任务的 done 方法在任务完成时返回 True，否则返回 False。每一秒，我们检查任务是否已经完成，并记录到目前为止经历了多少秒，如果任务已经花费了 5 秒，就取消这个任务。然后来到 await long_task，将输出 &quot;任务被取消&quot;，这表明捕获了一个 CancelledError。</p>
+<p>关于取消任务需要注意的是，CancelledError 只能从 await 语句抛出。这意味着如果任务是在执行普通 Python 代码时被取消，那么该代码将一直运行，直到触发下一个 await 语句（如果存在），才能引发 CancelledError。</p>
 <pre><code class="language-Python">import asyncio
 
 async def get_html(seconds):
@@ -35161,7 +35153,7 @@ asyncio.run(main())
 <p>所以对一个已完成的任务调用 cancel 方法，没有任何影响。</p>
 <h2 id="给任务设置超时时间"><a class="header" href="#给任务设置超时时间">给任务设置超时时间</a></h2>
 <p>我们上面判断任务是否超时，是通过不断地循环来进行检测的，但显然这种做法是很笨的。我们应该有一个辅助函数，它允许指定超时时间，并在超时后自动取消任务。</p>
-<p>asyncio 通过名为 asyncio.wait_for 的函数提供此功能，该函数接收协程或任务，以及以秒为单位的超时时间。如果任务完成所需的时间超过了设定的超时时间，则会引发 TimeoutError，任务将自动取消。</p>
+<p>asyncio 通过名为 wait_for 的函数提供此功能，该函数接收协程或任务，以及以秒为单位的超时时间。如果任务完成所需的时间超过了设定的超时时间，则会引发 TimeoutError，任务将自动取消。</p>
 <pre><code class="language-Python">import asyncio
 
 async def get_html(seconds):
@@ -35188,11 +35180,10 @@ asyncio.run(main())
 任务是否被取消: True
 &quot;&quot;&quot;
 </code></pre>
-<p>应用程序运行 1 秒后，wait_for 语句将引发 TimeoutError，然后我们对其进行处理，并且 task 被取消了。所以当一个任务超时的时候，会被自动取消。</p>
-<p>所以通过 wait_for 语句就很方便，如果直接 await 一个任务，那么必须等到任务完成之后才能继续往下执行。如果任务一直完成不了，那么就会一直陷入阻塞。我们的目的是希望这个任务的执行时间是可控的，那么便可以使用 wait_for 并指定超时时间。注：使用 wait_for 必须要搭配 await，阻塞等待任务完成并拿到返回值、或者达到超时时间引发 TimeoutError 之后，程序才能往下执行。</p>
+<p>应用程序运行 1 秒后，wait_for 函数将引发 TimeoutError，然后我们对其进行处理，并且 task 被取消了。所以当一个任务超时的时候，会被自动取消。</p>
+<p>因此通过 wait_for 函数就很方便，如果直接 await 一个任务，那么必须等到任务完成之后才能继续往下执行。如果任务一直完成不了，那么就会一直陷入阻塞。我们的目的是希望这个任务的执行时间是可控的，那么便可以使用 wait_for 并指定超时时间。注：使用 wait_for 必须要搭配 await，阻塞等待任务完成并拿到返回值、或者达到超时时间引发 TimeoutError 之后，程序才能往下执行。</p>
 <p>因此 <font color="blue">await 任务</font>和 <font color="blue">await asyncio.wait_for(任务, timeout)</font> 的效果是类似的，都是等待后面的任务完成并拿到它的返回值。但使用 wait_for 可以指定超时时间，在规定时间内如果没有完成，则抛出 TimeoutError，而不会一直陷入阻塞。</p>
-<p>如果任务花费的时间比预期的长，在引发 TimeoutError 之后自动取消任务通常是个好主意。否则，可能有一个协程无限期地等待，占用永远不会释放的资源。但在某些情况下，我们可能希望保持协程运行。</p>
-<p>例如我们可能想通知用户：某任务花费的时间比预期的要长，但即便超过了规定的超时时间，也不取消该任务。为此，可使用 asyncio.shield 函数进行保护，这个函数将防止传入的任务被取消，会给它一个屏蔽，将取消请求将忽略掉。</p>
+<p>如果任务花费的时间比预期的长，在引发 TimeoutError 之后自动取消任务通常是个好主意，否则可能会有一个无限等待的任务，占用永远不会释放的资源。但在某些情况下，我们可能希望保持任务运行。例如，我们可能想通知用户：某任务花费的时间比预期的要长，但即便超过了规定的超时时间，也不取消该任务。为此，可使用 asyncio.shield 函数包装任务，这个函数将防止传入的任务被取消，会给它一个屏蔽，将取消请求忽略掉。</p>
 <pre><code class="language-python">import asyncio
 
 async def get_html(seconds):
@@ -35226,7 +35217,7 @@ asyncio.run(main())
 </code></pre>
 <p>以上就是任务的超时。</p>
 <h2 id="awaitable"><a class="header" href="#awaitable">awaitable</a></h2>
-<p>我们说 Task 继承 Future，因此任务的很多方法都来自 future，而一个任务可以看做是一个 future 加上一个协程对象。然后协程、future 和任务，都可以使用 await 表达式，那么它们有没有什么共同之处呢？</p>
+<p>我们说 Task 继承 Future，因此任务的很多方法都来自 future，而一个任务可以看做是一个 future 和一个协程的组合。然后协程、future 和任务，都可以使用 await 表达式，那么它们有没有什么共同之处呢？</p>
 <p>很简单，它们之间的共同点是 awaitable 抽象基类，这个类定义了一个抽象的魔法函数 __await__，任何实现了 __await__ 方法的对象都可以在 await 表达式中使用。</p>
 <p><img src="./images/331.png" alt="" /></p>
 <p>协程、future 和任务，它们的内部都实现了 __await__，当然我们自己定义的类也可以。</p>
@@ -35256,9 +35247,9 @@ print(result)
 name: 古明地觉, address: 地灵殿
 &quot;&quot;&quot;
 </code></pre>
-<p>我们将可在 await 表达式中使用的对象称为 awaitable 对象，你会经常在 asyncio 文档中看到 awaitable 的术语，因为许多 API 方法并不关心你传入的是协程还是任务。但最佳实践应该是将协程包装成任务，然后将任务传给内置的 API 方法。</p>
+<p>我们将可在 await 表达式中使用的对象称为 awaitable 对象，你会经常在 asyncio 文档中看到 awaitable 的术语，因为许多 API 并不关心你传入的是协程还是任务。但最佳实践应该是将协程包装成任务，然后将任务传给内置的 API 方法。</p>
 <h2 id="协程和任务的陷阱-1"><a class="header" href="#协程和任务的陷阱-1">协程和任务的陷阱</a></h2>
-<p>虽然通过将协程包装成任务来并发执行，可以获得一些性能改进，但有些场景下却得不到提升。</p>
+<p>虽然通过将协程包装成任务来并发执行，可以获得一些性能改进，但面对以下场景却得不到提升。</p>
 <ul>
 <li>第一个场景：代码是 CPU 密集；</li>
 <li>第二个场景：代码虽然是 IO 密集，但 IO 是同步阻塞 IO，而不是异步非阻塞 IO；</li>
@@ -35304,10 +35295,10 @@ asyncio.run(main())
 协程 main 用 3.401072 秒执行完毕
 &quot;&quot;&quot;
 </code></pre>
-<p>尽管创建了两个任务，代码仍然是串行执行。首先运行任务 1，然后运行任务 2，这意味着总运行时间将是对 cpu_bound_work 的两次调用的总和。对于 CPU 密集型任务，如果还想放在协程里面，那么应该和进程池搭配使用，后续再聊。</p>
-<p>然后在协程中使用阻塞 IO 密集型操作，会产生和 CPU 密集型操作相同的问题，因为这些 API 会阻塞主线程。所以在协程中运行阻塞 API 调用时，会阻塞事件循环线程本身，这意味其它的任何协程或任务都将暂停。阻塞 API 调用的示例包括使用 requests 发请求或 time.sleep 等，通常执行任何非协程的 IO 操作或执行耗时的 CPU 操作都可视为阻塞。</p>
+<p>尽管创建了两个任务，但代码仍然是串行执行。首先运行任务 1，然后运行任务 2，这意味着总运行时间将是对 cpu_bound_work 的两次调用的总和。对于 CPU 密集型任务，如果还想放在协程里面，那么应该和进程池搭配使用，后续再聊。</p>
+<p>然后在协程中使用阻塞 IO 密集型操作，会产生和 CPU 密集型操作相同的问题，因为这些 API 会阻塞线程。所以在协程中运行阻塞 API 调用时，会阻塞事件循环线程本身，这意味其它的任何协程或任务都将暂停。阻塞 API 调用的示例包括使用 requests 发请求、使用 time.sleep 休眠等，通常执行任何非协程的 IO 操作或执行耗时的 CPU 操作都可视为阻塞。</p>
 <blockquote>
-<p>同步阻塞 IO，比如 requests.get()、time.sleep() 等，这会阻塞整个线程，导致所有任务都得不到执行；异步非阻塞 IO，比如协程的 IO 操作，这只会阻塞协程，但线程不阻塞，线程可以执行其它已经准备就绪的任务。</p>
+<p>同步阻塞 IO：比如 requests.get()、time.sleep() 等，这会阻塞整个线程，导致所有任务都得不到执行；异步非阻塞 IO：比如协程的 IO 操作，这只会阻塞协程，但线程不阻塞，线程可以执行其它已经准备就绪的任务。</p>
 </blockquote>
 <p>我们举个例子：</p>
 <pre><code class="language-Python">@async_timed
@@ -35331,11 +35322,11 @@ asyncio.run(main())
 协程 main 用 0.3180584 秒执行完毕
 &quot;&quot;&quot;
 </code></pre>
-<p>可以看到 main() 协程的耗时，是所有任务的总和。这是因为 requests 库是同步阻塞的，这意味着它将阻塞运行它的线程。由于 asyncio 只有一个线程，因此 requests 库会阻塞事件循环，此时阻塞期间，事件循环无法做其他的任何事情。</p>
-<p>通常，你现在使用的大多数 API 都是同步阻塞的，且无法与 asyncio 一起使用。如果想和 asyncio 搭配，那么你需要使用支持协程、并利用非阻塞套接字的库，否则就只能进行阻塞调用了，但这样就没办法和 asyncio 一起使用了。</p>
+<p>可以看到 main() 协程的耗时，是所有任务的总和。这是因为 requests 库是同步阻塞的，这意味着它将阻塞运行它的线程。由于 asyncio 是单线程，因此 requests 库会阻塞事件循环，而阻塞期间事件循环无法做其它任何事情。</p>
+<p>通常，你现在使用的大多数 API 都是同步阻塞的，且无法与 asyncio 一起使用。如果想和 asyncio 搭配，那么你需要使用支持协程、并利用非阻塞套接字的库，否则就只能进行阻塞调用了。</p>
 <p>而对于上面这个例子，我们可以将 requests 换成 aiohttp 或 httpx，它们可以使用非阻塞套接字，并返回协程，从而获得适当的并发性。如果你只能使用同步库，并且还想和 asyncio 搭配使用的话，那么应该要引入线程池，后续再聊。</p>
 <h2 id="小结-75"><a class="header" href="#小结-75">小结</a></h2>
-<p>到目前为止，我们就简单的剖析了 Future 和 Task，并介绍了它们的区别。Future 和 asyncio 的实现密切相关，比如锁和事件都是基于 Future 实现的，但在工作中我们很少会直接使用 Future。都是定义协程，然后将协程包装成任务。</p>
+<p>到目前为止，我们就简单地剖析了 Future 和 Task，并介绍了它们的区别。Future 和 asyncio 的实现密切相关，比如锁和事件都是基于 Future 实现的，但在工作中我们很少会直接使用 Future，都是定义协程，然后将协程包装成任务。</p>
 <p>当然关于任务，还有很多东西没有介绍，比如如何同时等待一组任务？如何给一组任务指定超时时间？以及如何优先处理已经完成的任务等等？关于这些内容，我们之后再说。</p>
 <hr />
 <p> </p>
