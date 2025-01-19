@@ -93,6 +93,11 @@ h2:target::before, h3:target::before {
   content: "";
 }
 
+/* h2 和 h3 标签，鼠标放上去变颜色 */
+h2:hover, h3:hover {
+  color: rgb(217, 33, 66);  /* 鼠标悬停时的颜色 */
+}
+
 /* 设置内容区域左右边距 */
 .content main {
     margin-left: auto;
