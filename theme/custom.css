@@ -90,7 +90,7 @@ h2::before {
 
 /* h2 和 h3 标签点击之后不显示 >> */
 h2:target::before, h3:target::before {
-  display: none;
+  content: "";
 }
 
 /* 设置内容区域左右边距 */
