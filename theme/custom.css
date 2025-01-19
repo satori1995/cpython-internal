@@ -67,7 +67,12 @@
 body, .hljs {
     font-size: 17px;
 }
-
+.h2 {
+    font-size: 35px;
+}
+.h3 {
+    font-size: 25px;
+}
 
 /* 设置内容区域左右边距 */
 .content main {
@@ -81,52 +86,52 @@ body, .hljs {
 
 /*代码高亮*/
 .hljs-keyword{  /*关键字*/
-    color:#EC099C;
-    font-weight:bold;
+    color: #EC099C;
+    font-weight: bold;
 }
 
 .hljs-quote{  /*引号*/
-    color:#017BCD;
-    /* font-weight:bold; */
+    color: #017BCD;
+    /* font-weight: bold; */
 }
 
 .hljs-number{ /*数值*/
-    color:#9808F1;
-    /* font-weight:bold; */
+    color: #9808F1;
+    /* font-weight: bold; */
 }
 
 .hljs-string{ /*字符串*/
-    color:#1812EF;
-    /*font-weight:bold;*/
+    color: #1812EF;
+    /*font-weight: bold;*/
 }
 
 .hljs-built_in{ /*内置函数*/
-    color:#D74907;
-    /* font-weight:bold; */
+    color: #D74907;
+    /* font-weight: bold; */
 }
 
 .hljs-comment{  /*注释*/
-    color:#008000;
+    color: #008000;
 }
 
 .hljs-params {  /*参数*/
-  color:#ae08c1;
-  /* font-weight:bold; */
+  color: #ae08c1;
+  /* font-weight: bold; */
 }
 
 .hljs-class{  /*类冒号*/
-   color:#03654D;
-   /* font-weight:bold; */
+   color: #03654D;
+   /* font-weight: bold; */
 }
 
 .hljs-title{  /*类、方法函数*/
   color: #0783e8;
-  /* font-weight:bold; */
+  /* font-weight: bold; */
 }
 
 .hljs-literal{  /*常量*/
-  color:#8B0324;
-  /* font-weight:bold; */
+  color: #8B0324;
+  /* font-weight: bold; */
 }
 
 .hljs-string-interpolation, /* 用于 f-string */
