@@ -87,6 +87,17 @@ h2::before {
   margin-right: 8px;
   vertical-align: middle;
 }
+h3::before {
+  content: "";
+  display: inline-block;
+  width: 30px;
+  height: 70px;
+  background-image: url('https://raw.githubusercontent.com/satori1995/cpython-internal/refs/heads/main/src/images/h3.png');
+  background-size: contain;
+  background-repeat: no-repeat;
+  margin-right: 8px;
+  vertical-align: middle;
+}
 
 /* h2 和 h3 标签点击之后不显示 >> */
 h2:target::before, h3:target::before {
