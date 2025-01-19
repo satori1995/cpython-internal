@@ -68,10 +68,8 @@ body, .hljs {
     font-size: 17px;
 }
 h2 {
-    background: #E1FFAF;
-    /*border-radius: 6px 6px 6px 6px;*/
-    box-shadow: 0 0 0 1px #5F5A4B, 1px 1px 6px 1px rgba(10, 10, 0, 0.5);
-    color: #1A6069;
+    background: #B2E8DF;
+    box-shadow: 0 0 0 1px #90DFDD, 1px 1px 6px 1px rgba(10, 10, 0, 0.5);
     font-family: "微软雅黑" , "宋体" , "黑体" ,Arial;
     text-align: center;
     font-size: 30px;
@@ -80,21 +78,16 @@ h2 {
     line-height: 25px;
     margin: 18px 0 !important;
     padding: 8px 0 5px 5px;
-    /*text-shadow: 2px 2px 3px #222222;*/
 }
 h3 {
-    background: #026890;
-    /*border-radius: 6px 6px 6px 6px;*/
-    /*box-shadow: 0 0 0 1px #5F5A4B, 1px 1px 6px 1px rgba(10, 10, 0, 0.5);*/
-    color: #FFFFFF;
-    font-family: "微软雅黑" , "宋体" , "黑体" ,Arial;
+    background: #EFDFA9;
+    font-family: "微软雅黑", "宋体", "黑体", Arial;
     font-size: 24px;
     font-weight: bold;
     height: 30px;
     line-height: 25px;
     margin: 18px 0 !important;
     padding: 8px 0 5px 5px;
-    text-shadow: 2px 2px 3px #222222;
 }
 
 /* 设置内容区域左右边距 */
