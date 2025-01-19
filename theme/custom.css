@@ -128,3 +128,8 @@ body, .hljs {
   color:#8B0324;
   /* font-weight:bold; */
 }
+
+.hljs-string-interpolation, /* 用于 f-string */
+.hljs-subst { /* 用于字符串插值 */
+    color: #CB4D0E;
+}
