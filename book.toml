@@ -10,7 +10,6 @@ mathjax-support = true
 no-section-label = true
 git-repository-url = "https://github.com/satori1995/cpython-internal"
 site-url = "/cpython-internal/"
-git-repository-icon = "fa-github"
 
 fold.enable = false
 toc = { enable = true, levels = [2, 3] }
