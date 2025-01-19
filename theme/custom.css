@@ -68,26 +68,13 @@ body, .hljs {
     font-size: 17px;
 }
 h2 {
-    background: #B2E8DF;
-    box-shadow: 0 0 0 1px #90DFDD, 1px 1px 6px 1px rgba(10, 10, 0, 0.5);
-    font-family: "微软雅黑" , "宋体" , "黑体" ,Arial;
     text-align: center;
-    font-size: 30px;
+    font-size: 33px;
     font-weight: bold;
-    height: 30px;
-    line-height: 25px;
-    margin: 18px 0 !important;
-    padding: 8px 0 5px 5px;
 }
 h3 {
-    background: #EFDFA9;
-    font-family: "微软雅黑", "宋体", "黑体", Arial;
-    font-size: 24px;
+    font-size: 25px;
     font-weight: bold;
-    height: 30px;
-    line-height: 25px;
-    margin: 18px 0 !important;
-    padding: 8px 0 5px 5px;
 }
 
 /* 设置内容区域左右边距 */
