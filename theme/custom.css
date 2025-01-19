@@ -69,8 +69,19 @@ body, .hljs {
 }
 h2 {
     text-align: center;
-    font-size: 33px;
+    font-size: 30px;
     font-weight: bold;
+}
+h2::before {
+  content: "";
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  background-image: url('../src/images/h2.webp');
+  background-size: contain;
+  background-repeat: no-repeat;
+  margin-right: 8px;
+  vertical-align: middle;
 }
 h3 {
     font-size: 25px;
