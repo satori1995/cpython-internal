@@ -81,7 +81,7 @@ h2::before {
   display: inline-block;
   width: 30px;
   height: 70px;
-  background-image: url('https://raw.githubusercontent.com/satori1995/cpython-internal/refs/heads/main/src/images/h2.webp');
+  background-image: url('/cpython-internal/images/h2.webp');
   background-size: contain;
   background-repeat: no-repeat;
   margin-right: 8px;
@@ -92,7 +92,7 @@ h3::before {
   display: inline-block;
   width: 30px;
   height: 30px;
-  background-image: url('https://raw.githubusercontent.com/satori1995/cpython-internal/refs/heads/main/src/images/h3.png');
+  background-image: url('/cpython-internal/images/h3.png');
   background-size: contain;
   background-repeat: no-repeat;
   margin-right: 5px;
