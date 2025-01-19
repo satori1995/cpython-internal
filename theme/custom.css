@@ -69,11 +69,11 @@ body, .hljs {
 }
 h2 {
     text-align: center;
-    font-size: 30px;
+    font-size: 27px;
     font-weight: bold;
 }
 h3 {
-    font-size: 25px;
+    font-size: 22px;
     font-weight: bold;
 }
 h2::before {
