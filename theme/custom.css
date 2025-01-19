@@ -87,6 +87,9 @@ h3 {
     font-size: 25px;
     font-weight: bold;
 }
+h2::after, h3::after {
+  display: none;
+}
 
 /* 设置内容区域左右边距 */
 .content main {
