@@ -573,11 +573,12 @@ pymalloc_free(void *ctx, void *p)
 <p>显然一个 arena 的大小默认是 256 kb，也就是 64 个 pool 的大小，我们来看看 arena 的底层结构体定义。</p>
 <pre><code class="language-C">// Objects/obmalloc.c
 struct arena_object {
-    // 通过 malloc 分配的内存区域（arena）的地址
-    // 如果值为 0，表示这个 arena_object 当前没有对应到一个已分配的 arena
+    // 通过 malloc 分配的内存区域的首地址，用于存储 pool 集合
     uintptr_t address;
 
-    // 池对齐指针，指向下一个待分配的 pool 指针
+    // address 按照 4KB 对齐之后的地址，即 pool 集合中第一个 pool 的首地址
+    // 如果 address 本身恰好就是 4KB 对齐的，那么这两个字段的值就是一样的
+    // 否则 pool_address 会大于 address，差值就是对齐的偏移量
     block* pool_address;
 
     // 该 arena 中可用 pool 的数量，包括空闲的 pool 和从未被分配过的 pool
@@ -587,7 +588,7 @@ struct arena_object {
     uint ntotalpools;
 
     // 在介绍 pool 的时候说过，pool 之间也会形成一个链表
-    // 而这里 freepools 指的就是第一个可用的 pool
+    // 而这里的 freepools 会指向第一个可用 pool
     struct pool_header* freepools;
 
     // 从名字上也能看出这两这个字段是干啥的
@@ -607,7 +608,8 @@ struct arena_object {
 <li>arena_object 和其管理的内存则是分离的。</li>
 </ul>
 <p><img src="./images/366.png" alt="" /></p>
-<p>乍一看，貌似没啥区别，不过一个是连着的，一个是分开的。但是这背后隐藏了一个事实：当 pool_header 被申请时，它所管理的 block 的内存也一定被申请了；但是当 arena_object 被申请时，它所管理的 pool 集合的内存则没有被申请。换句话说，arena_object 和 pool 集合需要在某一时刻建立联系。</p>
+<p>乍一看，貌似没啥区别，不过一个是连着的，一个是分开的。但是这背后隐藏了一个事实：当 pool_header 被申请时，它所管理的 block 的内存一定也被申请了；但是当 arena_object 被申请时，它所管理的 pool 集合的内存则没有被申请，此时 arena_object 的 address 字段为 0。</p>
+<p>之后 arena_object 和 pool 集合会在某一时刻建立联系，所谓建立联系，其实就是为 pool 集合申请内存空间，然后让 address 字段保存这片空间的起始地址。</p>
 <p>当一个 arena 的 arena_object 没有与 pool 集合建立联系的时候，这时的 arena 就处于<font color="blue">未使用</font>状态；一旦建立了联系，这时 arena 就变成了<font color="blue">可用</font>状态。这两种状态，都会分别对应一个 arena 链表。</p>
 <ul>
 <li>对于未使用的 arena，会通过 nextarena 链接成一个单向链表，prevarena 在这种情况下不使用。</li>
@@ -620,17 +622,155 @@ struct arena_object {
 <p>总结一下就是：arena 的 arena_object 是通过数组进行组织的，这个数组（arenas）就是所谓的内存池。然后 arena 又分为未使用和可用，未使用的 arena 里面的 arena_object 会用单向链表组织起来，可用的 arena 里面的 arena_object 会用双向链表组织起来。</p>
 <h3 id="申请-arena"><a class="header" href="#申请-arena">申请 arena</a></h3>
 <p>在运行期间，虚拟机使用 new_arena 函数来创建一个arena_object，我们来看看它是如何被创建的。</p>
-<pre><code class="language-C">// arenas，指向多个 arena_object 组成的数组的首元素
+<pre><code class="language-C">// arenas，指向 arena_object 数组的首元素
 static struct arena_object* arenas = NULL;
-// arena 数组中所有 arena_object 的个数
+// arena 数组中一共有多少个 arena_object
 static uint maxarenas = 0;
 // 指向未使用的 arena 链表的头结点
 static struct arena_object* unused_arena_objects = NULL;
 // 指向可用的 arena 链表的头结点
 static struct arena_object* usable_arenas = NULL;
-// 初始化需要申请的 arena_object 的个数
+// 初始时需要申请的 arena_object 的个数
 #define INITIAL_ARENA_OBJECTS 16
+
+static struct arena_object*
+new_arena(void)
+{
+    // 指向 arena_object 实例
+    struct arena_object* arenaobj;
+    // address 指向申请的内存空间，这片空间用于存储 pool 集合
+    // 但 address 不一定是 4KB 对齐的，所以计算 address &amp; POOL_SIZE_MASK 得到 excess
+    // 那么 POOL_SIZE - excess 便是 address 距离下一个 4KB 对齐还差多少字节
+    // 而 address + POOL_SIZE - excess 显然就是 pool_address
+    uint excess;
+    void *address;
+    // 调试标志，-1 表示未初始化
+    static int debug_stats = -1;
+    // 检查环境变量来决定是否输出调试信息
+    if (debug_stats == -1) {
+        const char *opt = Py_GETENV(&quot;PYTHONMALLOCSTATS&quot;);
+        debug_stats = (opt != NULL &amp;&amp; *opt != '\0');
+    }
+    if (debug_stats)
+        _PyObject_DebugMallocStats(stderr);
+    
+    // 如果未使用的 arena 链表为空
+    if (unused_arena_objects == NULL) {
+        uint i;
+        uint numarenas;
+        size_t nbytes;
+        // 计算要申请的 arena 数量，如果 maxarenas 不为 0，那么翻倍扩容
+        // 如果 maxarenas 为 0，说明第一次申请，那么默认申请 16 个
+        numarenas = maxarenas ? maxarenas &lt;&lt; 1 : INITIAL_ARENA_OBJECTS;
+        // maxarenas 的类型是 uint，说明最多申请 2 ** 32 - 1 个 arena
+        // 如果 numarenas &lt;= maxarenas，说明发生了溢出
+        if (numarenas &lt;= maxarenas)
+            return NULL;                /* overflow */
+        // 在 32 位系统上的额外溢出检查
+#if SIZEOF_SIZE_T &lt;= SIZEOF_INT
+        if (numarenas &gt; SIZE_MAX / sizeof(*arenas))
+            return NULL;                /* overflow */
+#endif
+        // 计算需要的总字节数并重新分配内存
+        nbytes = numarenas * sizeof(*arenas);
+        // arenaobj 指向了包含 numarenas 个 arena_object 实例的数组的首元素
+        arenaobj = (struct arena_object *)PyMem_RawRealloc(arenas, nbytes);
+        if (arenaobj == NULL)
+            return NULL;
+        // 赋值给 arenas
+        // 这个 arenas 数组就是我们说的内存池，它里面包含了 N 个 arena_object
+        // 每个 arena_object 的 address 会关联一片用于存储 pool 的内存区域
+        arenas = arenaobj;
+        
+        assert(usable_arenas == NULL);
+        assert(unused_arena_objects == NULL);
+
+        // 初始化新的 arena_objects 并将它们链接起来
+        for (i = maxarenas; i &lt; numarenas; ++i) {
+            // 标记为未关联，即当前的每个 arena_object 尚未关联对应的内存区域
+            arenas[i].address = 0;
+            // 未使用的 arena 之间会通过 nextarena 字段组成一个单向链表
+            // 所以这些 arena 对应的 arena_object 不仅在一个数组中，它们之间还构成了一个链表 
+            arenas[i].nextarena = i &lt; numarenas - 1 ?
+                                   &amp;arenas[i+1] : NULL;
+        }
+
+        // 让 unused_arena_objects 指向未使用 arena 链表的头结点
+        unused_arena_objects = &amp;arenas[maxarenas];
+        // 更新 arena 数组的实际元素个数，显然第一次申请的话，maxarenas 为 16
+        // 如果后续未使用 arena 用完了，那么会再次申请，然后 maxarenas 会变成 32
+        // 至于 unused_arena_objects 则会 &amp;arenas[16]，因为它始终指向未使用 arena 链表的头结点
+        maxarenas = numarenas;
+    }
+
+    // 到这里说明未使用 arena 链表不为空
+    assert(unused_arena_objects != NULL);
+    // 那么从未使用 arena 链表的头部取出一个 arena，或者说 arena_object，我们理解就好
+    arenaobj = unused_arena_objects;
+    // 取出之后，还要更新 unused_arena_objects，让它指向链表中下一个未使用 arena 的 arena_object
+    unused_arena_objects = arenaobj-&gt;nextarena;
+    // 对于未使用 arena，它还没有关联到某片内存区域，所以 address 一定是 0
+    assert(arenaobj-&gt;address == 0);
+    // 申请内存空间，大小为 256KB，用于存储 pool 集合
+    address = _PyObject_Arena.alloc(_PyObject_Arena.ctx, ARENA_SIZE);
+    // 如果 address 为 NULL，说明分配失败，那么将 arena_object 放回未使用列表
+    if (address == NULL) {
+        arenaobj-&gt;nextarena = unused_arena_objects;
+        unused_arena_objects = arenaobj;
+        return NULL;
+    }
+    // 保存分配的内存地址
+    arenaobj-&gt;address = (uintptr_t)address;
+    // 更新统计信息
+    ++narenas_currently_allocated;
+    ++ntimes_arena_allocated;
+    if (narenas_currently_allocated &gt; narenas_highwater)
+        narenas_highwater = narenas_currently_allocated;
+    // 设置属性
+    // freepools 初始为 NULL
+    arenaobj-&gt;freepools = NULL;
+    // 先将 arenaobj-&gt;address 赋值为 arenaobj-&gt;pool_address
+    arenaobj-&gt;pool_address = (block*)arenaobj-&gt;address;
+    // 对于未使用 arena，它在申请空间之后，里面的所有 pool 都是可用的
+    // 所以空闲 pool 的数量为 MAX_POOLS_IN_ARENA，即 64
+    // #define MAX_POOLS_IN_ARENA  (ARENA_SIZE / POOL_SIZE)
+    arenaobj-&gt;nfreepools = MAX_POOLS_IN_ARENA;
+    // 将 address 按照 4KB 对齐，这里的 excess 是距离上一个 4KB 对齐的偏移量
+    /*
+       上一个 4KB 对齐        address        下一个 4KB 对齐
+    */
+    // 但很明显我们不能要上一个 4KB 对齐的地址，因为 address 是内存区域的首地址
+    // 如果是上一个 4KB 对齐，那么就越界了，所以应该要下一个 4KB 对齐的地址
+    excess = (uint)(arenaobj-&gt;address &amp; POOL_SIZE_MASK);
+    // 虽然 address 指向的内存区域是 256KB，能容纳 64 个 pool
+    // 但 address 按照 4KB 对齐之后的地址，才是用于存储 pool 集合的首地址
+    if (excess != 0) {
+        // 如果 excess != 0，说明为了 4KB 对齐，需要向后跳 POOL_SIZE - excess 个字节
+        // 这样留给 pool 集合的空间就会小于 256KB，因此可用 pool 的数量要减 1
+        --arenaobj-&gt;nfreepools;  // 此时能存储的 pool 的数量是 63
+        // pool_address 应该等于 address + POOL_SIZE - excess
+        // 这才是用于 pool 集合的首地址
+        arenaobj-&gt;pool_address += POOL_SIZE - excess;
+    }
+    // 如果 excess == 0，那么不用做额外处理
+    // nfreepools 就是 64，pool_address 就是 address
+  
+    // 初始状态下 ntotalpools 等于 nfreepools
+    arenaobj-&gt;ntotalpools = arenaobj-&gt;nfreepools;
+    
+    // 返回 arenaobj，即未使用 arena 链表中的首个 arena_object
+    // 当然一旦返回，它的状态就变成了可用
+    return arenaobj;
+}
 </code></pre>
+<p>我们再描述一下上面代码所做的事情，Python 首先会检查<font color="blue">未使用 arena 链表</font>中是否还有未使用的 arena，检查的结果将决定后续的动作。</p>
+<p>如果<font color="blue">未使用 arena 链表</font>中还存在未使用的 arena，那么会从头取走一个 arena，准确的说是 arena_object。接着调整未使用 arena 链表，让它和抽取的 arena_object 断绝一切联系。</p>
+<p>然后 Python 申请了一块 256kb 大小的内存，并将内存的首地址赋给了取出来的 arena_object 的 address，显然这块 256kb 的内存就是 pool 的容身之处，这时候 arena_object 就已经和 pool 集合建立联系了。既然建立了联系，那么这个 arena 已经具备了成为可用的条件，该 arena 和<font color="blue">未使用 arena 链表</font>便脱离了关系，就等着被<font color="red">可用 arena 链表</font>接收了，不过什么时候接收呢？先别急。</p>
+<p>随后 Python 设置了一些 arena 用于维护 pool 集合的信息，需要注意的是，Python 将申请到的 256kb 内存进行了处理，主要是放弃了一些内存，并将可使用的内存边界（pool_address）调整到了与系统页对齐。</p>
+<p>接着通过 <code>arenaobj-&gt;freepools = NULL</code> 将 freepools 设置为NULL，这不奇怪，基于对 freeblock 的了解，我们知道要等到释放一个 pool 时，这个 freepools 才会有用。最后我们看到，pool 集合占用的 256kb 内存在进行边界对齐后，实际是交给 pool_address 来维护的。</p>
+<p>以上是<font color="blue">未使用 arena 链表</font>中还存在未使用 arena 的情况，但如果 unused_arena_objects 为 NULL，则表明目前系统中已经没有未使用的 arena 了，那么首先会扩大系统的 arenas 数组（内存池）。Python 在内部通过一个 maxarenas 变量维护了数组的元素个数，然后将待申请的 arena_object 的个数设置为 maxarenas 的 2 倍，当然首次初始化的时候因为 maxarenas 为 0，所以会申请 16 个。</p>
+<p>在获得了新的 maxarenas 后，Python 会检查它是否溢出，即是否超过了 uint 的最大值。如果检查顺利通过，Python 会通过 realloc 扩大 arenas 指向的数组，并对新申请的 arena_object 进行设置，特别是那个不起眼的 address，要将新申请的 address 一律设置为 0。因为 address 负责标识 arena 是处于<font color="blue">未使用状态</font>还是<font color="red">可用状态</font>，一旦 arena（内部的 arena_object）和 pool 集合建立了联系，这个 address 就变成了非 0。</p>
+<h2 id="内存池"><a class="header" href="#内存池">内存池</a></h2>
 
                     </main>
 
