@@ -38550,7 +38550,7 @@ PyMem_Free(void *ptr)
 }
 </code></pre>
 <p>我们看到在第一层，Python 提供了类似于 C 的 malloc、realloc、free 函数的语义。比如 PyMem_Malloc 负责分配内存，首先会检测申请的内存大小，如果超过了 PY_SSIZE_T_MAX 则直接返回 NULL，否则调用 _PyMem.malloc 申请内存。这个 _PyMem.malloc 和 C 的库函数 malloc 几乎没啥区别，但是会对特殊值进行一些处理。</p>
-<p>到目前为止，仅仅是分配了 raw memory 而已。当然在第一层，Python 还提供了面向对象中类型对象的内存分配器。</p>
+<p>到目前为止，仅仅是分配了 raw memory 而已。当然在第一层，Python 还提供了基于类型的内存分配器。</p>
 <pre><code class="language-C">// Include/pymem.h
 #define PyMem_New(type, n) \
   ( ((size_t)(n) &gt; PY_SSIZE_T_MAX / sizeof(type)) ? NULL :      \
@@ -38568,28 +38568,29 @@ PyMem_Free(void *ptr)
 </code></pre>
 <p>很明显，在 PyMem_Malloc 中需要程序员自行提供申请的空间大小。然而在 PyMem_New 中，只需要提供类型和数量，Python 会自动侦测其所需的内存空间大小。</p>
 <p><font color="darkblue"><strong>第 2 层：在第 1 层提供的通用 PyMem_* 接口的基础上，实现统一的对象内存分配（tp_alloc）。</strong></font></p>
-<p>第 1 层所提供的内存管理接口的功能是非常有限的，如果创建一个 PyLongObject 对象，还需要做很多额外的工作，比如设置对象的类型参数、初始化对象的引用计数值等等。</p>
-<p>因此为了简化 Python 自身的开发，Python 在第 1 层的基础上抽象出了第 2 层内存管理接口。在这一层，是一组以 PyObject_* 为前缀的函数簇，主要提供了创建对象的接口。这一套函数簇又被称为 Pymalloc 机制，因此在第 2 层的内存管理机制上，Python 对于一些内置对象构建了更高抽象层次的内存管理策略。</p>
+<p>第 1 层所提供的内存管理接口的功能是非常有限的，如果创建一个 PyLongObject 对象，还需要做很多额外的工作，比如设置对象的类型、初始化对象的引用计数等等。</p>
+<p>因此为了简化自身的开发，Python 在第 1 层的基础上抽象出了第 2 层内存管理接口。在这一层，是一组以 PyObject_* 为前缀的函数簇，主要提供了创建对象的接口。这一套函数簇又被称为 Pymalloc 机制，因此在第 2 层的内存管理机制上，Python 对一些内置对象构建了更高抽象层次的内存管理策略。</p>
 <p><font color="darkblue"><strong>第 3 层：为特定对象服务。</strong></font></p>
 <p>这一层主要是用于对象的缓存机制，比如：小整数对象池，浮点数缓存池等等。</p>
 <p>那么问题来了，Python 的 GC 是隐藏在哪一层呢？不用想，肯定是第二层，也是在 Python 的内存管理中发挥巨大作用的一层，我们后面也会基于第二层进行剖析。</p>
 <h2 id="为什么要有内存池"><a class="header" href="#为什么要有内存池">为什么要有内存池</a></h2>
 <p>在 Python 中，很多时候申请的内存都是小块的内存，这些小块的内存在申请后很快又被释放，并且这些内存的申请并不是为了创建对象，所以并没有对象一级的缓存机制。这就意味着 Python 在运行期间需要大量地执行底层的 malloc 和 free 操作，导致操作系统在用户态和内核态之间进行切换，这将严重影响效率。</p>
 <p>所以为了提高执行效率，Python 引入了内存池机制，用于管理对小块内存的申请和释放，并且提供了 pymalloc_alloc，pymalloc_realloc，pymalloc_free 三个接口。可以认为 Python 会向操作系统预申请一部分内存，专门用于那些占用内存小的对象，这就是所谓的内存池机制。</p>
-<p>另外要注意这里的内存池和前面介绍对象时提到的缓存池不同，缓存池可以理解为是数组或者链表，目的是在对象不用的时候缓存起来，需要的时候再拿来用。也就是说，对象自始至终对象都存在于内存当中。而内存池是用来申请和释放内存的，一申请，对象就横空出世了；一释放，对象就会归于湮灭。</p>
-<p>而整个内存池也可以视为一个层次结构，从下至上分别是：block、pool、arena。当然内存池只是一个概念上的东西，表示 Python 对小块内存分配和释放行为的内存管理机制。</p>
+<p>另外要注意这里的内存池和前面介绍对象时提到的缓存池不同，缓存池可以理解为是数组或者链表，目的是在对象不用的时候缓存起来，需要的时候再拿来用。也就是说，对象自始至终都存在于内存当中。而内存池是用来申请和释放内存的，一申请，对象就横空出世了，一释放，对象就会归于湮灭。</p>
+<p>而整个内存池也可以视为一个层次结构，从下至上分别是：block、pool、arena。当然内存池只是一个概念上的东西，表示 Python 对小块内存的分配和释放行为的内存管理机制。</p>
 <h2 id="block"><a class="header" href="#block">block</a></h2>
 <p>在最底层，block 是一个确定大小的内存块。并且 block 有很多种，不同种类的 block 拥有不同的内存大小。为了在当前主流的 32 位平台和 64 位平台都能获得最佳性能，所有 block 的大小都是 8 字节对齐的。</p>
 <pre><code class="language-C">// Objects/obmalloc.c
 #define ALIGNMENT              8
 </code></pre>
 <p>那么问题来了，为什么会有这么多种类的 block 呢？答案是为了优化内存使用，避免内存碎片。</p>
-<p>如果申请的内存小于等于 512 字节，会从内存池中分配一个相应规格的 block 给它。但如果申请的内存超过了 512 字节，那么会将申请内存的请求转交给第一层的内存管理机制，即 PyMem 函数簇来处理（进而调用 malloc）。所以从内存池中申请的内存大小是有上限的，只有不超过 512 字节的对象才会使用内存池，如果超过了这个值还是要经过操作系统临时申请的。</p>
+<p>如果申请的内存小于等于 512 字节，会从内存池中分配一个相应规格的 block 给它。但如果申请的内存超过了 512 字节，那么会将申请内存的请求转交给第一层的内存管理机制，即 PyMem 函数簇来处理（进而调用 malloc）。所以从内存池中申请的内存大小是有上限的，只有不超过 512 字节的时候才会使用内存池，如果超过了这个值还是要经过操作系统临时申请的。</p>
 <ul>
 <li>1 ~ 512：由专门的内存池负责分配；</li>
 <li>512 以上：临时从系统堆上申请；</li>
 </ul>
 <pre><code class="language-C">// Objects/obmalloc.c
+
 #define SMALL_REQUEST_THRESHOLD 512
 // SMALL_REQUEST_THRESHOLD 为 512，ALIGNMENT 为 8
 // 所以 NB_SMALL_SIZE_CLASSES 等于 64
@@ -38600,14 +38601,14 @@ PyMem_Free(void *ptr)
 <p><img src="./images/361.png" alt="" /></p>
 <ul>
 <li>里面的 Size class idx 指的就是 block 的种类，总共 64 种，分别用 0 ~ 63 表示；</li>
-<li>里面的 Size of allocated block 指定的就是 block 对应的大小；</li>
+<li>里面的 Size of allocated block 指的就是 block 对应的大小；</li>
 </ul>
 <p>当然 Python 也提供了一个宏，来描述这两者的关系，事实上我们也能看出来。</p>
 <pre><code class="language-C">// Objects/obmalloc.c
 #define ALIGNMENT_SHIFT         3
 #define INDEX2SIZE(I) (((uint)(I) + 1) &lt;&lt; ALIGNMENT_SHIFT)
 </code></pre>
-<p>索引为 0 的话，就是 1 &lt;&lt; 3，显然结果为 8。索引为 1 的话，就是 2 &lt;&lt; 3，显然结果为16，以此类推。因此当申请一个 44 字节的内存时，pymalloc_alloc 会从内存池中划分一个 48 字节的 block 给我们。</p>
+<p>索引为 0 的话，就是 1 &lt;&lt; 3，显然结果为 8。索引为 1 的话，就是 2 &lt;&lt; 3，显然结果为 16，以此类推。因此当申请一个 44 字节的内存时，pymalloc_alloc 会从内存池中划分一个 48 字节的 block 给我们。</p>
 <p>另外在 Python 底层，block 其实只是一个概念，源码中没有与之对应的实体存在。和对象不同，对象在源码中有对应的 PyObject，但这里的 block 仅仅是概念上的东西，我们知道它具有一定大小的内存，但它并不与 Python 源码里面的某个结构相对应。不过 Python 提供了一个管理 block 的东西，也就是下面要介绍的 pool。</p>
 <h2 id="pool"><a class="header" href="#pool">pool</a></h2>
 <p>内存池由多个内存页组成，这里的 pool 便可理解为内存页，然后每个内存页又划分为多个具有相同规格的内存块（block）。因此一组 block 的集合就是一个 pool，换句话说，一个 pool 管理着一堆具有固定大小的内存块（block），而一个 pool 的大小通常为一个系统内存页，也就是 4kb。</p>
@@ -38621,7 +38622,8 @@ PyMem_Free(void *ptr)
 <p>虽然 Python 没有为 block 提供对应的结构，但是提供了和 pool 相关的结构，因为 Python 是将内存页看成由一个个内存块（block）组成的池子（pool），我们来看看 pool 的结构。</p>
 <pre><code class="language-c">// Objects/obmalloc.c
 struct pool_header {
-    // 当前 pool 里面已经分配出去的 block 的数量 
+    // ref._padding 用于内存对齐，不用关注
+    // ref.count 表示当前 pool 里面已经分配出去的 block 的数量 
     union { block *_padding;
             uint count; } ref;
     // 指向第一个可用的 block
@@ -38645,7 +38647,7 @@ struct pool_header {
 </code></pre>
 <p>一个 pool 管理着一组相同规格的 block，也就是说，一个 pool 可以管理 8 字节的 block，可以管理 16 字节的 block 等等。但同一个 pool 不可能同时既管理 8 字节 block、又管理 16 字节 block，每个 pool 里面的 block 的内存大小一定是相同的。至于 pool 管理的 block 究竟是多大，则通过 szidx 字段体现。</p>
 <p>然后是里面的 nextpool 和 prevpool，它们指向的 pool 和当前 pool 一定具有相同的 szindex。换句话说，如果一个 pool 管理的 block 是 24 字节，那么它的 nextpool 字段和 prevpool 字段指向的 pool 管理的 block 一定也是 24 字节。</p>
-<p>前面说了，一个 pool 的大小是 4KB，但从当前的这个 pool 的结构体来看，用鼻子想也知道吃不完 4KB 的内存，事实上这个结构体只占 48 字节。所以这个结构体叫做 struct pool_header，它仅仅是一个 pool 的头部，除去这个 pool_header，剩下的就是所有 block 占用的内存。</p>
+<p>前面说了，一个 pool 的大小是 4KB，但从当前的这个结构体来看，用鼻子想也知道吃不完 4KB 的内存，事实上这个结构体只占 48 字节。所以这个结构体叫做 struct pool_header，它仅仅是一个 pool 的头部，除去这个 pool_header，剩下的就是所有 block 占用的内存。</p>
 <p>我们以 16 字节（szidx=1）的 block 为例，看看 Python 如何将一块 4KB 的内存改造成管理 16 字节 block 的 pool。</p>
 <pre><code class="language-C">// Objects/obmalloc.c
 typedef uint8_t block;
@@ -38661,7 +38663,7 @@ pymalloc_alloc(void *ctx, size_t nbytes)
     block *bp;  // 指向内存块
     poolp pool;  // 指向 struct pool_header
     poolp next;  // 指向 struct pool_header
-    uint size;  // pool 的 Size class idx
+    uint size;  // pool 的 szidx
 
 // 这段代码不用关注，它的逻辑是如果编译时启用了 Valgrind 支持
 // 并且程序运行在 Valgrind 下，那么禁用 Python 的内存池
@@ -38675,7 +38677,7 @@ pymalloc_alloc(void *ctx, size_t nbytes)
     }
 #endif
     
-    // 如果申请的内存大小为 0，那么深情失败
+    // 如果申请的内存大小为 0，那么申请失败
     if (nbytes == 0) {
         return NULL;
     }
@@ -38686,17 +38688,17 @@ pymalloc_alloc(void *ctx, size_t nbytes)
 
     // 根据申请的内存大小计算对应 block 的规格
     size = (uint)(nbytes - 1) &gt;&gt; ALIGNMENT_SHIFT;
-    // usedpools 是一个长度为 64 数组，负责管理 64 条双向链表，具体细节之后说
+    // usedpools 是一个长度为 64 的数组，负责管理 64 条双向链表，具体细节之后说
     // 总之通过 usedpools[size + size] 拿到了相应的 pool
     pool = usedpools[size + size];
     // 如果 pool == pool-&gt;nextpool，说明没有可用 pool
     // 那么要创建新的 pool，然后插入到链表中，并使用新的 pool 进行内存分配
     // 如果 pool != pool-&gt;nextpool，说明当前的 pool 可用
-    // 至于背后的细节，等后续介绍 usedpools 之后再说
+    // 至于背后的细节，等稍后介绍 usedpools 时再说
     if (pool != pool-&gt;nextpool) {
         // ...
         // 到这里说明获取了一个可用 pool，显然它之前就已经申请好了
-        // 这部分逻辑后续再聊，我们要观察 pool 如何创建的
+        // 这部分逻辑后续再聊，我们要观察 pool 是如何创建的
     }
 
     // 到这里说明没有找到管理符合规格的 block 的可用 pool，那么要新创建一个
@@ -38755,7 +38757,7 @@ failed:
     return NULL;
 }
 </code></pre>
-<p>再来简单描述一下，首先是里面的 freeblock，它指向第一块可用的 block。由于新内存页（pool）总是伴随内存的申请触发，所以第一个 block 一定会被分配出去（不可用），第二个 block 才是可用的。而 bp 指向 pool 中的第一块 block，那么 freeblock 显然就等于 <font color="blue">bp + size</font>。</p>
+<p>再来简单描述一下，首先是里面的 freeblock，它指向第一块可用的 block。由于新内存页（pool）总是伴随着内存的申请触发，所以第一个 block 一定会被分配出去（不可用），第二个 block 才是可用的。而 bp 指向 pool 中的第一块 block，那么 freeblock 显然就等于 <font color="blue">bp + size</font>。</p>
 <p>从 ref.count 也可以看出端倪，它记录了当前已经被分配的 block 的数量，但初始化的时候不是 0，而是 1，也证明了这一点。而 freeblock 指向第一个可用的 block，所以它在源码中被设置成了 bp + size，也就是第二个 block。</p>
 <p>然后是 nextoffset 字段，它表示<font color="blue">下一个可用 block</font> 的偏移量。对于新创建的内存页来说，第一个可用的 block 是第二个 block，那么下一个可用的 block 指的就是第三个 block。所以它应该等于 POOL_OVERHEAD 加上两个 block 的大小，因此在源码中被设置成了 <font color="blue">48 + (size &lt;&lt; 1)</font>。</p>
 <blockquote>
@@ -38772,9 +38774,9 @@ pymalloc_alloc(void *ctx, size_t nbytes)
 {
     // ...
     // 还记得这行代码吗？如果 pool != pool-&gt;nextpool，说明当前的 pool 可用
-    // 因为刚才已经创建完了 pool 了，所以当再次获取 block 时，这里的 if 条件成立
+    // 因为刚才已经创建完 pool 了，所以当再次获取 block 时，这里的 if 条件成立
     if (pool != pool-&gt;nextpool) {
-        // pool 中已分配的 block 数自增 1
+        // pool 中已分配的 block 数量自增 1
         ++pool-&gt;ref.count;
         // freeblock 指向第一块可用的 block
         bp = pool-&gt;freeblock;
@@ -38786,7 +38788,7 @@ pymalloc_alloc(void *ctx, size_t nbytes)
 
         // 由于 freeblock 本身就指向可用的 block
         // 因此当再次申请 16 字节的 block 时，返回 freeblock 即可
-        // 但还要修改 freeblock，让它指向下一块可用的 block
+        // 但返回之前还要更新 freeblock，让它指向下一块可用的 block
         // 分配之前，第一块可用 block 是第二块 block，被 freeblock 指向
         // 分配之后，第二块 block 就不可用了
         // 所以 freeblock 要指向第三块 block（作为新的第一块可用 block）
@@ -38794,7 +38796,7 @@ pymalloc_alloc(void *ctx, size_t nbytes)
         if (pool-&gt;nextoffset &lt;= pool-&gt;maxnextoffset) {
             // 显然要依赖于 nextoffset，它保存的正是下一块可用 block 的偏移量（分配前的第三块）
             // 所以 pool + nextoffset 就是下一块可用 block 的偏移量了
-            // 将它赋值给freeblock即可
+            // 将它赋值给 freeblock 即可
             pool-&gt;freeblock = (block*)pool +
                               pool-&gt;nextoffset;
             // 同理，nextoffset 也要向前移动一个 block 的距离
@@ -38802,7 +38804,7 @@ pymalloc_alloc(void *ctx, size_t nbytes)
             // 那么下一个可用 block 就应该是第四块 block
             pool-&gt;nextoffset += INDEX2SIZE(size);
             // 不断重复这个过程，即可对所有的 block 进行遍历
-            // 而 maxnextoffset 指明了该 pool 中最后一个可用 block 的偏移量
+            // 而 maxnextoffset 记录了该 pool 中最后一个可用 block 的偏移量
             // 当 pool-&gt;nextoffset &gt; pool-&gt;maxnextoffset
             // 也就是上面的 if 条件不满足时，就说明遍历完 pool 中所有的 block 了
             *(block **)(pool-&gt;freeblock) = NULL;
@@ -38822,10 +38824,10 @@ pymalloc_alloc(void *ctx, size_t nbytes)
 </code></pre>
 <p>所以当我们再申请 1 个 16 字节的内存块时，pool 的结构图就变成了这样。</p>
 <p><img src="./images/363.png" alt="" /></p>
-<p>freeblock 指向了第三块 block，当然它仍是第一块可用 block。nextoffset 表示下一块可用 block 的偏移量，显然下一块的可用 block 在分配之后就变成了第四块，因此是 96。至于 maxnextoffset 仍然是 4080，它是不变的。</p>
-<p>随着内存分配的请求不断发起，可用的内存块（block）也将不断地分配出去。而 freeblock 则是不断指向新的第一个可用内存块，当然 nextoffset 也在不断前进、偏移量每次增加内存块的大小，也就是保存新的下一个可用内存块的偏移量，直到所有的空闲内存块被消耗完。</p>
+<p>freeblock 指向了第三块 block，当然它仍是第一块可用 block。nextoffset 表示下一块可用 block 的偏移量，显然下一块的可用 block 在分配之后就变成了第四块，因此偏移量是 96。至于 maxnextoffset 仍然是 4080，它是不变的。</p>
+<p>随着内存分配请求不断发起，可用的内存块（block）也将不断地分配出去。而 freeblock 则是不断指向新的第一个可用内存块，当然 nextoffset 也在不断前进、偏移量每次增加内存块的大小，也就是保存新的下一个可用内存块的偏移量，直到所有的空闲内存块被消耗完。</p>
 <p>所以，申请、前进、申请、前进，一直重复着相同的动作，整个过程非常自然，也很容易理解。但 pool 的大小是固定的，这就使得一个 pool 只能满足 <font color="blue">(POOL_SIZE - 48) / size</font> 次对 block 的申请，这就存在一个问题。我们知道内存块不可能一直被使用，肯定有释放的那一天。假设分配了两个内存块，理论上讲下一次应该申请第三个内存块，但某一时刻第一个内存块被释放了，那么下一次申请的时候，是申请第一个内存块、还是第三个内存块呢？</p>
-<p>显然为了 pool 的使用效率，最好分配第一个 block。因此可以想象，一旦 Python 运转起来，内存的释放动作将导致 pool 中出现大量的离散可用 block。而 Python 为了知道哪些 block 是被使用之后再次释放（离散可用）的，必须建立一种机制，将这些离散可用的 block 组合起来，再次使用。这个机制就是 block 链表，这个链表的关键就在 pool_header 里面的 freeblock 字段身上。</p>
+<p>显然为了 pool 的使用效率，最好分配第一个 block。因此可以想象，一旦 Python 运转起来，内存的释放动作将导致 pool 中出现大量的离散可用 block。而 Python 为了知道哪些 block 是被使用之后再次释放（离散可用）的，必须建立一种机制，将这些离散可用的 block 组合起来，后续优先使用。这个机制就是 block 链表，这个链表的关键就在 pool_header 里面的 freeblock 字段身上。</p>
 <p>再来回顾一下 pool_header 的定义：</p>
 <pre><code class="language-C">// Objects/obmalloc.c
 struct pool_header {
@@ -38886,24 +38888,23 @@ pymalloc_free(void *ctx, void *p)
     // ...
 }
 </code></pre>
-<p>在释放 block 时，神秘的 freeblock 惊鸿一瞥，显然覆盖在 freeblock 身上的那层面纱就要被揭开了。假设这时候 Python 释放的是 block 1，那么 block 1 被设置成了当前 freeblock 的值，然后 freeblock 的值被更新了，指向了 block 1 的首地址。就是这两个步骤，一个 block 被插入到了离散可用的 block 链表中。</p>
-<p>简单点，说人话就是：原来 freeblock 指向 block 3，而 block 1 在被释放之后就变成了 block 1 指向 block 3，而 freeblock 则指向了 block 1，此时就形成了一个 block 链表，里面的每一个块都指向下一个可用的块。这时再回过头来看一下 pymalloc_alloc 函数，里面有一行代码刚才没有解释：</p>
+<p>假设这时候 Python 释放的是 block 1，那么 block 1 被设置成了当前 freeblock 的值，然后 freeblock 的值被更新了，指向了 block 1 的首地址。就是这两个步骤，一个 block 被插入到了离散可用的 block 链表中。说人话就是：原来 freeblock 指向 block 3，而 block 1 在被释放之后就变成了 block 1 指向 block 3，而 freeblock 则指向了 block 1，此时就形成了一个 block 链表，里面的每一个块都指向下一个可用的块。这时再回过头来看一下 pymalloc_alloc 函数，里面有一行代码刚才没有解释：</p>
 <p><img src="./images/364.png" alt="" /></p>
-<p>首先 bp 表示当前可用的 block，但在返回它之前，还要将 freeblock 设置为新的第一个可用 block。如果 bp 是申请之后又被回收的 block，那么 <font color="blue">*(block **)bp</font> 就是离散可用 block 链表中的下一个可用 block，即新的可用 block。因此当 <font color="blue">*(block **)bp</font> 不为空时，那么直接返回当前 block，即 bp，并且此时返回的 block 一定是申请之后又被回收的 block。</p>
-<p>如果始终没有 block 被回收，或者说离散可用 block 链表中的 block 都用完了，那么这个 if 不会成立，而是继续向下执行，从 pool 的未使用空间中获取 block。通过这种方式可以优先复用已回收的内存，减少内存碎片，并提高内存使用效率。</p>
-<p>所以在第一个 block 释放之后，pool 的结构图变化如下：</p>
+<p>首先 bp 表示当前可用的 block，但在返回它之前，还要将 freeblock 设置为新的第一个可用 block。如果 bp 是申请之后又被释放的 block，那么 <font color="blue">*(block **)bp</font> 就是离散可用 block 链表中的下一个可用 block，即新的可用 block。因此当 <font color="blue">*(block **)bp</font> 不为空时，那么直接返回当前 block，即 bp，并且此时返回的 block 一定是申请之后又被释放的 block。</p>
+<p>如果始终没有 block 被释放，或者说离散可用 block 链表中的 block 都用完了，那么上面的 if 不会成立，而是继续向下执行，从 pool 的未使用空间中获取 block。通过这种方式可以优先复用已回收的内存，减少内存碎片，并提高内存使用效率。</p>
+<p>所以当释放一个 block 之后，pool 的结构图变化如下（假设释放的是第一个 block）：</p>
 <p><img src="./images/365.png" alt="" /></p>
-<p>后续再分配内存的时候，会返回第一个 block，由于它保存了第三个 block 的地址，所以返回之前还会让 freeblock 指向第三个 block。到此这条实现方式非常奇特的 block 链表就被我们挖掘出来了，从 freeblock 开始，我们可以很容易地以 freeblock = *freeblock 的方式遍历这条链表。而当发现 *freeblock 为 NULL 时，则表明到达了该链表（可用的 block 链表）的尾部了，那么下次就需要从 pool 的未使用空间中申请新的 block 了。</p>
-<p>逻辑还是很好理解的，因此我们可以得出，一个 pool 在其声明周期内，可以处于以下三种状态：</p>
+<p>后续再分配内存的时候，会返回第一个 block，由于它保存了第三个 block 的地址，所以返回之前还会让 freeblock 指向第三个 block。到此这条实现方式非常奇特的 block 链表就被我们挖掘出来了，从 freeblock 开始，我们可以很容易地以 <font color="blue">freeblock = *freeblock</font> 的方式遍历这条链表。而当发现 *freeblock 为 NULL 时，则表明到达该链表（可用 block 链表）的尾部了，那么下次就需要从 pool 的未使用空间中申请新的 block 了。</p>
+<p>逻辑还是很好理解的，另外我们也可以得出，一个 pool 在其生命周期内，可以处于以下三种状态：</p>
 <ul>
 <li>empty：所有内存块（block）均可用，ref.count == 0。</li>
 <li>used：内存块部分可用，ref.count != 0 &amp;&amp; freeblock != NULL。</li>
 <li>full：内存块均不可用，freeblock == NULL。</li>
 </ul>
-<p>值得一提的是 empty 状态，此时内存块全部都是可用的，而可用有两种情况，第一种是从未被使用过，第二种是使用完之后又被释放了。而我们知道内存页一旦创建，第一个块肯定会分配出去，所以 empty 状态的内存页，至少有一个块是分配之后又被释放了的。当然不管怎么样，此时它们都是可用的。</p>
+<p>值得一提的是 empty 状态，此时内存块全部都是可用的，而可用有两种情况，第一种是从未被使用过，第二种是使用完之后又被释放了。我们知道内存页一旦创建，第一个块肯定会分配出去，所以 empty 状态的内存页，至少有一个块是分配之后又被释放了的。当然不管怎么样，此时它们都是可用的。</p>
 <p>然后再来考虑一个新的问题，在上面的代码中可以看到，如果离散可用的 block 链表中不存在可用的 block 时，会从 pool 中申请。而这是有条件的，必须满足：<font color="blue">nextoffset &lt;= maxnextoffset</font>。但如果连这个条件都不成立了呢？说明 pool 中已经没有可用的 block 了，因为 pool 是有大小限制的。</p>
 <p>那这个时候如果想再申请一个 block 要怎么做呢？答案很简单，再来一个 pool，然后从新的 pool 里面申请不就好了。</p>
-<p>所以 block 组合起来可以成为一个 pool，那么同理多个 pool 也是可以组合起来的，而多个 pool 组合起来会得到什么呢。我们说内存池是分层次的，从下至上分别是：block、pool、arena，显然多个 pool 组合起来，就是 arena。</p>
+<p>所以多个 block 组合起来可以成为一个 pool，那么同理多个 pool 也是可以组合起来的，而多个 pool 组合起来会得到什么呢。我们说内存池是分层次的，从下至上分别是：block、pool、arena，显然多个 pool 组合起来，就是 arena。</p>
 <h2 id="arena"><a class="header" href="#arena">arena</a></h2>
 <p>arena 是对多个 pool 聚合之后的结果，pool 的大小默认是 4kb，那么同样 arena 的大小也有一个默认值。</p>
 <pre><code class="language-c">// Objects/obmalloc.c
