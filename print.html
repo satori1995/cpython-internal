@@ -38846,7 +38846,7 @@ struct pool_header {
 <p>目前我们看到的 freeblock 只是在机械地前进，因为它在等待一个特殊的时刻。在这个特殊的时刻，你会发现 freeblock 开始成为一个苏醒的精灵，在这 4kb 的内存上灵活地舞动，而这个特殊的时刻就是一个 block 被释放的时刻。</p>
 <pre><code class="language-C">// Objects/obmalloc.c
 
-// 将地址 P 向下对齐到 POOL_SIZE 的整数倍，比如 POOL_SIZE 是 4096，即 4K
+// 将 block 的地址 P 向后对齐到 POOL_SIZE 的整数倍，比如 POOL_SIZE 是 4096，即 4K
 // 那么 POOL_ADDR(4156) 就是 4096，POOL_ADDR(8234) 就是 8192
 #define POOL_ADDR(P) ((poolp)_Py_ALIGN_DOWN((P), POOL_SIZE))
 /*
@@ -38920,14 +38920,15 @@ struct arena_object {
     // 否则 pool_address 会大于 address，差值就是对齐的偏移量
     block* pool_address;
 
-    // 该 arena 中可用 pool 的数量，包括空闲的 pool 和从未被分配过的 pool
+    // pool 有三种状态：empty（内存块全部可用）、used（内存块部分可用）、full（内存块均不可用）
+    // 而 nfreepools 维护的便是 arena 中 empty 状态的 pool 的数量
     uint nfreepools;
 
-    // 该 arena 中所有 pool 的数量，不管 pool 是否可用
+    // 该 arena 中所有 pool 的数量
     uint ntotalpools;
 
-    // 在介绍 pool 的时候说过，pool 之间也会形成一个链表
-    // 而这里的 freepools 会指向第一个可用 pool
+    // 如果 pool 里的内存块都是可用的，那么这样的 pool 会组成一个单向链表
+    // 而 freepools 会指向这个链表的头结点，具体细节后续聊
     struct pool_header* freepools;
 
     // 从名字上也能看出这两这个字段是干啥的
@@ -39166,7 +39167,371 @@ new_arena(void)
 <p>所以这个设计就很巧妙，主要也和 pool_header 结构体有关。</p>
 <p><img src="./images/376.png" alt="" /></p>
 <p>在 pool_header 中，nextpool 和 prevpool 加起来是 16 字节，而它们之前的字段和之后的字段加起来仍都是 16 字节，所以 nextpool 向上偏移 16 个字节之后正好是对应 pool_header 的起始位置。</p>
-<p>因此 Python 的做法不是向上借 32 字节，也不会是向下借 32 字节，而是向上借 16 字节、向下借 16 字节，就是因为这种做法和 pool_header 结构体本身是完美契合的。以后再分配 block 的时候，只需要通过 <code>usedpools[szidx + szidx]-&gt;nextpool</code> 便可快速地从众多的 pool 中寻找到一个最适合当前内存需求的 pool，并从中分配一块block。当然，也可以很方便地将一个 pool 加入到 usedpools 中。</p>
+<p>因此 Python 的做法不是向上借 32 字节，也不会是向下借 32 字节，而是向上借 16 字节、向下借 16 字节，就是因为这种做法和 pool_header 结构体本身是完美契合的。以后再分配 block 的时候，只需要通过 <code>usedpools[szidx + szidx]-&gt;nextpool</code> 便可快速地从众多的 pool 中寻找到一个最适合当前内存需求的 pool，并从中分配一块 block。当然，也可以很方便地将一个 pool 加入到 usedpools 中。</p>
+<pre><code class="language-C">// 快速查找表，可以根据空闲 pool 的数量快速找到对应的 arena
+// 比如想找有 5 个空闲 pool 的 arena，就可以直接查找 nfp2lasta[5]
+static struct arena_object* nfp2lasta[MAX_POOLS_IN_ARENA + 1] = { NULL };
+
+static void*
+pymalloc_alloc(void *ctx, size_t nbytes)
+{
+    block *bp;
+    poolp pool;
+    poolp next;
+    uint size;
+    // ...
+    // 获取 Size class index
+    size = (uint)(nbytes - 1) &gt;&gt; ALIGNMENT_SHIFT;
+    // 通过 usedpools[size + size] 获取对应的 pool 链表的 dummyHead
+    pool = usedpools[size + size];
+    // 如果 pool != pool-&gt;nextpool，说明有可用 pool，否则 nextpool 会指向它自身
+    if (pool != pool-&gt;nextpool) {
+        // ...
+        // 这部分逻辑前面介绍过
+    }
+
+    // 可用的 arena 关联的 pool 集合中至少有一个可用 pool
+    // 而 usable_arenas 维护可用 arena 组成的链表
+    // 如果 usable_arenas 为空，说明没有可用的 arena
+    if (usable_arenas == NULL) {
+        // 如果启用了内存限制，会检查已分配的 arena 数量是否达到上限
+#ifdef WITH_MEMORY_LIMITS
+        if (narenas_currently_allocated &gt;= MAX_ARENAS) {
+            goto failed;
+        }
+#endif
+        // 调用 new_arena 申请 arena，这个函数上面已经介绍了
+        usable_arenas = new_arena();
+        if (usable_arenas == NULL) {
+            goto failed;
+        }
+        // 因为是链表中的第一个 arena，将其前后指针都设置为 NULL
+        usable_arenas-&gt;nextarena =
+            usable_arenas-&gt;prevarena = NULL;
+        assert(nfp2lasta[usable_arenas-&gt;nfreepools] == NULL);
+        // 将新的 arena 记录到 nfp2lasta 数组中
+        // 这个数组用于根据空闲 pool 数量索引到对应的 arena
+        nfp2lasta[usable_arenas-&gt;nfreepools] = usable_arenas;
+    }
+    assert(usable_arenas-&gt;address != 0);
+    assert(usable_arenas-&gt;nfreepools &gt; 0);
+    // 到这里说明有可用 arena，但如果当前 arena 是具有该数量空闲 pool 的最后一个
+    if (nfp2lasta[usable_arenas-&gt;nfreepools] == usable_arenas) {
+        // 就将在 nfp2lasta 数组的值设置为 NULL。
+        nfp2lasta[usable_arenas-&gt;nfreepools] = NULL;
+    }
+    // 如果剩余的空闲 pool 数量大于 1，将这个 arena 记录为具有更少空闲 pool 的最后一个
+    if (usable_arenas-&gt;nfreepools &gt; 1) {
+        assert(nfp2lasta[usable_arenas-&gt;nfreepools - 1] == NULL);
+        nfp2lasta[usable_arenas-&gt;nfreepools - 1] = usable_arenas;
+    }
+
+    // 获取并处理空闲 pool
+    pool = usable_arenas-&gt;freepools;
+    if (pool != NULL) {
+        // 从链表中移除这个 pool
+        usable_arenas-&gt;freepools = pool-&gt;nextpool;
+        // 空闲 pool 的个数减 1
+        --usable_arenas-&gt;nfreepools;
+        // 完全分配满了，需要从可用 arena 链表中移除
+        if (usable_arenas-&gt;nfreepools == 0) {
+            /* Wholly allocated:  remove. */
+            assert(usable_arenas-&gt;freepools == NULL);
+            assert(usable_arenas-&gt;nextarena == NULL ||
+                   usable_arenas-&gt;nextarena-&gt;prevarena ==
+                   usable_arenas);
+            usable_arenas = usable_arenas-&gt;nextarena;
+            if (usable_arenas != NULL) {
+                usable_arenas-&gt;prevarena = NULL;
+                assert(usable_arenas-&gt;address != 0);
+            }
+        }
+        else {
+            // nfreepools &gt; 0 的情况
+            // 说明要么还有空闲池，要么是第一次从 arena 中分配池
+            assert(usable_arenas-&gt;freepools != NULL ||
+                   usable_arenas-&gt;pool_address &lt;=
+                   (block*)usable_arenas-&gt;address +
+                       ARENA_SIZE - POOL_SIZE);
+        }
+
+    init_pool:
+        // ...
+        // 需要重新重建一个 pool
+    }
+
+    /* Carve off a new pool. */
+    assert(usable_arenas-&gt;nfreepools &gt; 0);
+    assert(usable_arenas-&gt;freepools == NULL);
+    // 从当前可用 arena 中获取一个新的池，并转换为 pool 指针类型
+    pool = (poolp)usable_arenas-&gt;pool_address;
+    // 断言：确保这个 pool 的地址在 arena 的合法地址范围内
+    assert((block*)pool &lt;= (block*)usable_arenas-&gt;address +
+                             ARENA_SIZE - POOL_SIZE);
+    // 设置 pool 的 arenaindex，即这个池所属的 arena 在 arenas 数组中的索引
+    pool-&gt;arenaindex = (uint)(usable_arenas - arenas);
+    // 断言：通过计算出的索引反向验证确实能找到正确的 arena
+    assert(&amp;arenas[pool-&gt;arenaindex] == usable_arenas);
+    // 初始化池的 Size class index 为一个虚拟值
+    pool-&gt;szidx = DUMMY_SIZE_IDX;
+    // 将 arena 的 pool_address 向前移动一个池的大小，为下次分配做准备
+    usable_arenas-&gt;pool_address += POOL_SIZE;
+    // 减少该 arena 的空闲池计数
+    --usable_arenas-&gt;nfreepools;
+    // 如果这个 arena 没有空闲池了
+    if (usable_arenas-&gt;nfreepools == 0) {
+        assert(usable_arenas-&gt;nextarena == NULL ||
+               usable_arenas-&gt;nextarena-&gt;prevarena ==
+               usable_arenas);
+        // 将这个已经完全分配的 arena 从可用链表中移除
+        usable_arenas = usable_arenas-&gt;nextarena;
+        if (usable_arenas != NULL) {
+            usable_arenas-&gt;prevarena = NULL;
+            assert(usable_arenas-&gt;address != 0);
+        }
+    }
+
+    goto init_pool;
+
+success:
+    assert(bp != NULL);
+    return (void *)bp;
+
+failed:
+    return NULL;
+}
+</code></pre>
+<p>到此我们就将 pymalloc_alloc 中关于 arena 的部分说完了，当然整个 pymalloc_alloc 函数也说完了，它和内存池分配内存息息相关。当申请的内存不超过 512 字节时，会从内存池中分配内存，而这个过程就由 pymalloc_alloc 函数负责。而关于函数里面查找 arena、pool 的逻辑可能不是很好理解，不过没关系，其实不必深究，只需要理解 usedpools 即可。可以认为 usedpools 里面存储了 64 个 dummyHead，分配 8 字节内存块，就去找索引为 0 的 dummyHead；分配 64 字节内存块，就去找索引为 7 的 dummyHead。</p>
+<p>整个 usedpools 全貌如下：</p>
+<p><img src="./images/377.png" alt="" /></p>
+<p>当然啦，每个链表上的 pool 的个数是不同的，这里为了画图方便，就假设每个链表上面都挂了三个 pool。</p>
+<h3 id="block-的释放"><a class="header" href="#block-的释放">block 的释放</a></h3>
+<p>最后看看 block 的释放，释放 block 实际上就是将它归还给pool。我们知道 pool 存在 3 种状态，这 3 种状态的区别也说的很清楚了，总之状态不同，所在的位置也不同。</p>
+<p>而当我们释放一个block 时，可能会引起 pool 状态的转变，这种转变分为两种情况：</p>
+<ul>
+<li>used 状态转变为 empty 状态；</li>
+<li>full 状态转变为 used 状态；</li>
+</ul>
+<p>释放 block 由 pymalloc_free 函数负责。</p>
+<pre><code class="language-C">static int
+pymalloc_free(void *ctx, void *p)
+{
+    // 指向 pool_header 的指针，直接理解为 pool 即可
+    poolp pool;
+    // 为了提高性能和减少内存碎片，会维护一个已释放 block 的单向链表
+    // 这个链表就是之前说的离散可用 block 链表
+    // 当一个内存块被释放时，它会被加入到这个链表中
+    // 而 lastfree 会指向链表中最后被释放的那个块，这么做有以下几个目的
+    /* 1）快速插入：新释放的块可以直接插入到 lastfree 之后
+     * 2）保持局部性：通过将新释放的块放在链表尾部，可以让最近释放的块相邻
+     * 3）内存重用：当需要分配新的内存块时，可以优先使用最近释放的块，从而保证内存访问的局部性
+     */
+    block *lastfree;
+    // 指向链表中下一个 pool 和上一个 pool 的指针
+    poolp next, prev;
+    // szidx
+    uint size;
+
+    assert(p != NULL);
+// 如果编译时启用了 Valgrind 支持，并且程序运行在 Valgrind 下
+// 那么禁用 Python 的内存池，这里我们不用关注
+#ifdef WITH_VALGRIND
+    if (UNLIKELY(running_on_valgrind &gt; 0)) {
+        return 0;
+    }
+#endif
+    // POOL_ADDR 上面已经介绍了，它的作用是获取 block 所属的 pool
+    pool = POOL_ADDR(p);
+    // 检查内存块地址 p 是否在这个 pool 的合法地址范围内
+    if (!address_in_range(p, pool)) {
+        return 0;
+    }
+    // 因为要释放 block，所以 pool 中已分配出去的 block 数量一定大于 0
+    assert(pool-&gt;ref.count &gt; 0);
+    // 将被释放的 block 插入到离散可用 block 链表的头部
+    *(block **)p = lastfree = pool-&gt;freeblock;
+    pool-&gt;freeblock = (block *)p;
+    // 如果之前没有空闲块，说明 pool 是满的
+    if (!lastfree) {
+        // 分配出去的 block 的数量减 1，然后 pool 变成 used 态
+        --pool-&gt;ref.count;
+        // ref.count 减 1 之后依旧大于 0
+        assert(pool-&gt;ref.count &gt; 0);
+        // 获取 block 的 Size class idx
+        size = pool-&gt;szidx;
+        // 从 usedpools 中获取 szidx 等于 size 的 pool 链表的 dummyHead
+        next = usedpools[size + size];
+        // 将 used 态的 pool 插入到链表中
+        prev = next-&gt;prevpool;
+        pool-&gt;nextpool = next;
+        pool-&gt;prevpool = prev;
+        next-&gt;prevpool = pool;
+        prev-&gt;nextpool = pool;
+        goto success;
+    }
+    // 到这里说明 pool 不是满的，即 pool 的状态为 used
+    struct arena_object* ao;
+    uint nf;
+    // 如果 ref.count 减 1 后不为 0，说明池中还有其它块在使用
+    // 那么 pool 仍是 used 态，此时直接跳转即可
+    if (--pool-&gt;ref.count != 0) {
+        goto success;
+    }
+    // 到这里说明 ref.count 减 1 之后等于 0，那么 pool 会变成 empty 态
+    // 那么同样要将它从链表中移除，因为这个链表是 used 态的 pool 组成的链表（双向链表）
+    // 至于 empty 的 pool，会有另外的链表管理它
+    next = pool-&gt;nextpool;
+    prev = pool-&gt;prevpool;
+    next-&gt;prevpool = prev;
+    prev-&gt;nextpool = next;
+
+    // 获取 pool 所属的 arena
+    ao = &amp;arenas[pool-&gt;arenaindex];
+    // 采用头插法，将该 pool 插入到 freepools 链表中
+    pool-&gt;nextpool = ao-&gt;freepools;
+    ao-&gt;freepools = pool;
+    // 获取当前空闲 pool 数量，这里的空闲指的就是 empty
+    nf = ao-&gt;nfreepools;
+    struct arena_object* lastnf = nfp2lasta[nf];
+    assert((nf == 0 &amp;&amp; lastnf == NULL) ||
+           (nf &gt; 0 &amp;&amp;
+            lastnf != NULL &amp;&amp;
+            lastnf-&gt;nfreepools == nf &amp;&amp;
+            (lastnf-&gt;nextarena == NULL ||
+             nf &lt; lastnf-&gt;nextarena-&gt;nfreepools)));
+    // 如果当前 arena 是最右边的
+    if (lastnf == ao) {
+        // 更新为前一个具有相同空闲 pool 数量的 arena，或者 NULL
+        struct arena_object* p = ao-&gt;prevarena;
+        nfp2lasta[nf] = (p != NULL &amp;&amp; p-&gt;nfreepools == nf) ? p : NULL;
+    }
+    ao-&gt;nfreepools = ++nf;
+
+    // 以下是 block 被释放后的 arena 处理，一共有四种情况
+    // 1）当 arena 中所有的 pool 都空闲时
+    if (nf == ao-&gt;ntotalpools) {
+        assert(ao-&gt;prevarena == NULL ||
+               ao-&gt;prevarena-&gt;address != 0);
+        assert(ao -&gt;nextarena == NULL ||
+               ao-&gt;nextarena-&gt;address != 0);
+
+        // 从 usable_arenas 链表中移除该 arena
+        if (ao-&gt;prevarena == NULL) {
+            usable_arenas = ao-&gt;nextarena;
+            assert(usable_arenas == NULL ||
+                   usable_arenas-&gt;address != 0);
+        }
+        else {
+            assert(ao-&gt;prevarena-&gt;nextarena == ao);
+            ao-&gt;prevarena-&gt;nextarena =
+                ao-&gt;nextarena;
+        }
+        /* Fix the pointer in the nextarena. */
+        if (ao-&gt;nextarena != NULL) {
+            assert(ao-&gt;nextarena-&gt;prevarena == ao);
+            ao-&gt;nextarena-&gt;prevarena =
+                ao-&gt;prevarena;
+        }
+        // 将 arena 对象放入 unused_arena_objects 链表中以便重用
+        ao-&gt;nextarena = unused_arena_objects;
+        unused_arena_objects = ao;
+        // 释放整个 arena 的内存
+        _PyObject_Arena.free(_PyObject_Arena.ctx,
+                             (void *)ao-&gt;address, ARENA_SIZE);
+        // 状态变成未使用，所以 address 字段要修改为 0，表示不再和指定的内存相关联
+        ao-&gt;address = 0;                        /* mark unassociated */
+        --narenas_currently_allocated;
+
+        goto success;
+    }
+    
+    // 2）如果该 pool 是 arena 中唯一的空闲 pool
+    if (nf == 1) {
+        // 将 arena 放到 usable_arenas 链表的头部
+        ao-&gt;nextarena = usable_arenas;
+        ao-&gt;prevarena = NULL;
+        if (usable_arenas)
+            usable_arenas-&gt;prevarena = ao;
+        usable_arenas = ao;
+        assert(usable_arenas-&gt;address != 0);
+        // 更新 nfp2lasta[1]，如果需要的话
+        if (nfp2lasta[1] == NULL) {
+            nfp2lasta[1] = ao;
+        }
+
+        goto success;
+    }
+
+    if (nfp2lasta[nf] == NULL) {
+        nfp2lasta[nf] = ao;
+    } /* else the rightmost with nf doesn't change */
+    
+    // 4）其它情况，不做处理
+    if (ao == lastnf) {
+        goto success;
+    }
+    /* If ao were the only arena in the list, the last block would have
+     * gotten us out.
+     */
+    assert(ao-&gt;nextarena != NULL);
+
+    // 3）如果右边的 arena 有更少的空闲 pools
+    if (ao-&gt;prevarena != NULL) {
+        /* ao isn't at the head of the list */
+        assert(ao-&gt;prevarena-&gt;nextarena == ao);
+        ao-&gt;prevarena-&gt;nextarena = ao-&gt;nextarena;
+    }
+    else {
+        /* ao is at the head of the list */
+        assert(usable_arenas == ao);
+        usable_arenas = ao-&gt;nextarena;
+    }
+    // 需要将当前 arena 向右移动以保持 usable_arenas 按 nfreepools 排序
+    ao-&gt;nextarena-&gt;prevarena = ao-&gt;prevarena;
+    /* And insert after lastnf. */
+    ao-&gt;prevarena = lastnf;
+    ao-&gt;nextarena = lastnf-&gt;nextarena;
+    if (ao-&gt;nextarena != NULL) {
+        ao-&gt;nextarena-&gt;prevarena = ao;
+    }
+    lastnf-&gt;nextarena = ao;
+    /* Verify that the swaps worked. */
+    assert(ao-&gt;nextarena == NULL || nf &lt;= ao-&gt;nextarena-&gt;nfreepools);
+    assert(ao-&gt;prevarena == NULL || nf &gt; ao-&gt;prevarena-&gt;nfreepools);
+    assert(ao-&gt;nextarena == NULL || ao-&gt;nextarena-&gt;prevarena == ao);
+    assert((usable_arenas == ao &amp;&amp; ao-&gt;prevarena == NULL)
+           || ao-&gt;prevarena-&gt;nextarena == ao);
+
+    goto success;
+
+success:
+    return 1;
+}
+</code></pre>
+<p>释放 block 的逻辑很简单，关键在于 block 释放之后的 arena 处理，一共四种情况。</p>
+<ul>
+<li>1）如果 arena 中所有的 pool 都是 empty 状态，则释放 pool 集合所占用的内存。而一旦 pool 集合释放，那么 arena_object 就和管理的 pool 集合失去了联系，因此状态就从<font color="blue">可用</font>变成了<font color="blue">未使用</font>。</li>
+<li>2）如果之前 arena 中没有 empty 状态的 pool，那么在<font color="blue">可用</font>链表中就找不到该 arena，但由于现在 arena 中有了一个空闲 pool，所以需要将这个 arena 链入到可用 arena 链表的表头。</li>
+<li>3）如果 arena 中 empty 状态的 pool 的个数为 n，那么会从可用 arena 链表中开始寻找可以插入该 arena 的位置，并将 arena 插入到可用链表。然后我们说可用 arena 链表实际上是一个有序的链表，从表头开始往后，空闲 pool（empty 状态的 pool）的个数、即 nfreepools，是依次递增的。保持这样的有序性是因为分配 block 时，会从可用链表的表头开始寻找可用 arena，因此一个 arena 的 empty pool 的数量越多，它被使用的机会就越少，最终释放维护的 pool 集合的内存的机会就越大，这样就能保证多余的内存会被归还给操作系统。</li>
+<li>4）其它情况，则不对 arena 进行任何处理；</li>
+</ul>
+<p>实际上在 Python2.4 之前，arena 是不会释放pool的，这样的话就会引起内存泄漏。比如我们申请 10 * 1024 * 1024 个 16 字节的小内存，这就意味着必须使用 160MB 的内存。</p>
+<p>由于 Python 默认会使用全部的 arena 来满足你的需求（这一点前面没有提到），那么当后续将所有的 16 字节内存全部释放了，这些内存也会回到 arena 的控制之中，这都没有问题。但关键的是，这些内存是被 arena 控制的，并没有交还给操作系统，所以这 160MB 的内存始终会被 Python 占用，即使后面程序不再需要这 160MB 的内存，那么这就不就相当于浪费了吗？</p>
+<p>由于这种情况必须在大量持续申请小内存对象时才会出现，因为大的话会自动交给操作系统，小的才会由 arena 控制，而持续申请大量小内存的情况几乎不会碰到，所以这个问题在 2.4 之前一直没有人发现，因此也就留在了 Python 中。但直到某一天，国外一个工程师在跑任务的时候发现即使是在低峰期，内存占用率仍然居高不下，这才挖出了这个隐藏的问题并进行了反馈，于是在 Python2.5 的时候得到了解决。</p>
+<p>而早期的 Python 之所以不将内存归还给操作系统，是因为当时 arena 还没有区分未使用和可用两种状态。但到了 Python2.5，arena 已经可以将自己维护的 pool 集合释放，交给操作系统了，然后状态也从<font color="blue">可用</font>变成了<font color="blue">未使用</font>。而当 Python 处理完 pool，就开始处理 arena 了，而处理逻辑就是上面说的那四种情况。</p>
+<h2 id="小结-80"><a class="header" href="#小结-80">小结</a></h2>
+<p>对于一个用 C 开发的庞大的软件（虽然 Python 是一门高级语言，但是执行对应代码的解释器则可以看成是 C 的一个软件），其中的内存管理可谓是最复杂、最繁琐的地方了。不同尺度的内存会有不同的抽象，这些抽象在各种情况下会组成各式各样的链表，非常复杂。</p>
+<p>不过我们还是能从一个整体的尺度把握整个内存池，尽管不同的链表变幻无常，但只需记住，所有的内存都在 arenas（或者说那个存放多个 arena_object 的数组）的掌握之中。</p>
+<p>整个内存池全景如下：</p>
+<p><img src="./images/378.png" alt="" /></p>
+<p>以上就是 Python 管理内存的全部秘密，包括内存池的实现细节等等。总之凡是和内存管理相关的都不简单，更详细的内容可以自己进入 Objects/obmalloc.c 中查看对应的源码。</p>
+<p>关于内存管理和内存池我们就说到这里，下一篇介绍 Python 的垃圾回收机制。</p>
+<hr />
+<p> </p>
+<p><strong>欢迎大家关注我的公众号：古明地觉的编程教室。</strong></p>
+<p><img src="./images/qrcode_for_gh.jpg" alt="" /></p>
+<p><strong>如果觉得文章对你有所帮助，也可以请作者吃个馒头，Thanks♪(･ω･)ﾉ。</strong></p>
+<p><img src="./images/supports.png" alt="" /></p>
 
                     </main>
 
