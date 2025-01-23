@@ -591,7 +591,7 @@ struct arena_object {
     // 而 freepools 会指向这个链表的头结点，具体细节后续聊
     struct pool_header* freepools;
 
-    // 从名字上也能看出这两这个字段是干啥的
+    // 从名字上也能看出这两个字段是干啥的
     // nextarena 指向下一个 arena，prevarena 指向上一个 arena
     struct arena_object* nextarena;
     struct arena_object* prevarena;
@@ -600,7 +600,7 @@ struct arena_object {
 <p>一个概念上的 arena 在源码中对应一个 arena_object 结构体实例，确切的说，arena_object 实例仅仅是 arena 的一部分，就像 pool_header 仅仅是 pool 的一部分一样。</p>
 <p>一个完整的 pool 包括一个 pool_header 实例和透过这个 pool_header 实例管理的 block 集合，同理一个完整的 arena 也包括一个 arena_object 实例和透过这个 arena_object 实例管理的 pool 集合。</p>
 <h3 id="未使用的-arena-和可用的-arena"><a class="header" href="#未使用的-arena-和可用的-arena">未使用的 arena 和可用的 arena</a></h3>
-<p>在 arena_object 结构体的定义中，我们看到了 nextarena 和 prevarena，这似乎意味着会有一个或多个 arena 构成的链表。呃，这种猜测实际上只对了一半，实际上确实会存在多个 arena_object 构成的集合，但是这个集合不构成链表，而是一个数组。</p>
+<p>在 arena_object 结构体的定义中，我们看到了 nextarena 和 prevarena，这似乎意味着会有一个或多个 arena 构成的链表。呃，这种猜测实际上只对了一半，实际上多个 arena_object 确实会组织在一起，但构成的不是链表，而是数组。</p>
 <p>数组的首地址由全局变量 arenas 来维护，这个数组就是 Python 中通用小块内存的内存池，所以现在我们算是知道这个内存池究竟是啥了。另一方面，nextarea 和 prevarena 也确实是用来连接 arena_object 组成链表的，咦，不是已经构成数组了吗？为啥又要来一个链表。</p>
 <p>首先 arena 负责管理一组 pool 集合，pool 负责管理一组 block 集合，所以 arena_object 的实现看上去和 pool_header 有点类似。但实际上，arena_object 管理的内存（pool 使用）和 pool_header 管理的内存（block 使用）有一点细微的差别。</p>
 <ul>
@@ -610,7 +610,7 @@ struct arena_object {
 <p><img src="./images/366.png" alt="" /></p>
 <p>乍一看，貌似没啥区别，不过一个是连着的，一个是分开的。但是这背后隐藏了一个事实：当 pool_header 被申请时，它所管理的 block 的内存一定也被申请了；但是当 arena_object 被申请时，它所管理的 pool 集合的内存则没有被申请，此时 arena_object 的 address 字段为 0。</p>
 <p>之后 arena_object 和 pool 集合会在某一时刻建立联系，所谓建立联系，其实就是为 pool 集合申请内存空间，然后让 address 字段保存这片空间的起始地址。</p>
-<p>当一个 arena 的 arena_object 没有与 pool 集合建立联系的时候，这时的 arena 就处于<font color="blue">未使用</font>状态；一旦建立了联系，这时 arena 就变成了<font color="blue">可用</font>状态。这两种状态，都会分别对应一个 arena 链表。</p>
+<p>当一个 arena 的 arena_object 没有与 pool 集合建立联系的时候，这时 arena 就处于<font color="blue">未使用</font>状态；一旦建立了联系，这时 arena 就变成了<font color="blue">可用</font>状态。这两种状态，都会分别对应一个 arena 链表。</p>
 <ul>
 <li>对于未使用的 arena，会通过 nextarena 链接成一个单向链表，prevarena 在这种情况下不使用。</li>
 <li>对于可用的 arena（关联的 pool 集合中至少有一个可用 pool），会通过 nextarena 和 prevarena 链接成一个双向链表，这个链表按照 nfreepools 的值递增排序。</li>
@@ -618,10 +618,10 @@ struct arena_object {
 </ul>
 <p>未使用的 arena 链表的表头是 unused_arena_objects，多个 arena_object 之间通过 nextarena 连接，并且是一个单向的链表；而可用的 arena 链表的表头是 usable_arenas，多个 arena_object 之间通过 nextarena、prevarena 连接，是一个双向链表。</p>
 <p><img src="./images/367.png" alt="" /></p>
-<p>当然啦，arena 指的是 arena_object 和管理的一组 pool 集合，所以图中应该是 arena_object，不应该是 arena。不过为了避免图像太长，就用 arena 代替了，我们理解就好。</p>
+<p>当然啦，arena 指的是 arena_object 和管理的一组 pool 集合，所以图中应该是 arena_object，而不是 arena。不过为了避免图像太长，就用 arena 代替了，我们理解就好。</p>
 <p>总结一下就是：arena 的 arena_object 是通过数组进行组织的，这个数组（arenas）就是所谓的内存池。然后 arena 又分为未使用和可用，未使用的 arena 里面的 arena_object 会用单向链表组织起来，可用的 arena 里面的 arena_object 会用双向链表组织起来。</p>
 <h3 id="申请-arena"><a class="header" href="#申请-arena">申请 arena</a></h3>
-<p>在运行期间，虚拟机使用 new_arena 函数来创建一个arena_object，我们来看看它是如何被创建的。</p>
+<p>在运行期间，虚拟机会使用 new_arena 函数来创建一个 arena_object，我们来看看它是如何创建的。</p>
 <pre><code class="language-C">// arenas，指向 arena_object 数组的首元素
 static struct arena_object* arenas = NULL;
 // arena 数组中一共有多少个 arena_object
@@ -660,9 +660,9 @@ new_arena(void)
         uint numarenas;
         size_t nbytes;
         // 计算要申请的 arena 数量，如果 maxarenas 不为 0，那么翻倍扩容
-        // 如果 maxarenas 为 0，说明第一次申请，那么默认申请 16 个
+        // 如果 maxarenas 为 0，说明是第一次申请，那么默认申请 16 个
         numarenas = maxarenas ? maxarenas &lt;&lt; 1 : INITIAL_ARENA_OBJECTS;
-        // maxarenas 的类型是 uint，说明最多申请 2 ** 32 - 1 个 arena
+        // maxarenas 的类型是 uint，因此最多申请 2 ** 32 - 1 个 arena
         // 如果 numarenas &lt;= maxarenas，说明发生了溢出
         if (numarenas &lt;= maxarenas)
             return NULL;                /* overflow */
@@ -698,14 +698,14 @@ new_arena(void)
         // 让 unused_arena_objects 指向未使用 arena 链表的头结点
         unused_arena_objects = &amp;arenas[maxarenas];
         // 更新 arena 数组的实际元素个数，显然第一次申请的话，maxarenas 为 16
-        // 如果后续未使用 arena 用完了，那么会再次申请，然后 maxarenas 会变成 32
-        // 至于 unused_arena_objects 则会 &amp;arenas[16]，因为它始终指向未使用 arena 链表的头结点
+        // 如果后续未使用的 arena 用完了，那么会再次申请，然后 maxarenas 会变成 32
+        // 至于 unused_arena_objects 则会变成 &amp;arenas[16]，因为它始终指向未使用 arena 链表的头结点
         maxarenas = numarenas;
     }
 
     // 到这里说明未使用 arena 链表不为空
     assert(unused_arena_objects != NULL);
-    // 那么从未使用 arena 链表的头部取出一个 arena，或者说 arena_object，我们理解就好
+    // 那么从头部取出一个 arena，或者说 arena_object，我们理解就好
     arenaobj = unused_arena_objects;
     // 取出之后，还要更新 unused_arena_objects，让它指向链表中下一个未使用 arena 的 arena_object
     unused_arena_objects = arenaobj-&gt;nextarena;
@@ -713,7 +713,7 @@ new_arena(void)
     assert(arenaobj-&gt;address == 0);
     // 申请内存空间，大小为 256KB，用于存储 pool 集合
     address = _PyObject_Arena.alloc(_PyObject_Arena.ctx, ARENA_SIZE);
-    // 如果 address 为 NULL，说明分配失败，那么将 arena_object 放回未使用列表
+    // 如果 address 为 NULL，说明分配失败，那么将 arena_object 放回未使用链表
     if (address == NULL) {
         arenaobj-&gt;nextarena = unused_arena_objects;
         unused_arena_objects = arenaobj;
@@ -729,10 +729,10 @@ new_arena(void)
     // 设置属性
     // freepools 初始为 NULL
     arenaobj-&gt;freepools = NULL;
-    // 先将 arenaobj-&gt;address 赋值为 arenaobj-&gt;pool_address
+    // 先将 arenaobj-&gt;pool_address 赋值为 arenaobj-&gt;address
     arenaobj-&gt;pool_address = (block*)arenaobj-&gt;address;
-    // 对于未使用 arena，它在申请空间之后，里面的所有 pool 都是可用的
-    // 所以空闲 pool 的数量为 MAX_POOLS_IN_ARENA，即 64
+    // 对于未使用 arena，它在申请空间之后，里面的所有 pool 都是空闲的（状态为 empty）
+    // 所以空闲 pool 的数量为 MAX_POOLS_IN_ARENA，即 256 / 4 = 64
     // #define MAX_POOLS_IN_ARENA  (ARENA_SIZE / POOL_SIZE)
     arenaobj-&gt;nfreepools = MAX_POOLS_IN_ARENA;
     // 将 address 按照 4KB 对齐，这里的 excess 是距离上一个 4KB 对齐的偏移量
@@ -746,10 +746,10 @@ new_arena(void)
     // 但 address 按照 4KB 对齐之后的地址，才是用于存储 pool 集合的首地址
     if (excess != 0) {
         // 如果 excess != 0，说明为了 4KB 对齐，需要向后跳 POOL_SIZE - excess 个字节
-        // 这样留给 pool 集合的空间就会小于 256KB，因此可用 pool 的数量要减 1
+        // 这样留给 pool 集合的空间就会小于 256KB，因此空闲 pool 的数量要减 1
         --arenaobj-&gt;nfreepools;  // 此时能存储的 pool 的数量是 63
         // pool_address 应该等于 address + POOL_SIZE - excess
-        // 这才是用于 pool 集合的首地址
+        // 这才是用于存储 pool 集合的首地址
         arenaobj-&gt;pool_address += POOL_SIZE - excess;
     }
     // 如果 excess == 0，那么不用做额外处理
@@ -765,69 +765,72 @@ new_arena(void)
 </code></pre>
 <p>我们再描述一下上面代码所做的事情，Python 首先会检查<font color="blue">未使用 arena 链表</font>中是否还有未使用的 arena，检查的结果将决定后续的动作。</p>
 <p>如果<font color="blue">未使用 arena 链表</font>中还存在未使用的 arena，那么会从头取走一个 arena，准确的说是 arena_object。接着调整未使用 arena 链表，让它和抽取的 arena_object 断绝一切联系。</p>
-<p>然后 Python 申请了一块 256kb 大小的内存，并将内存的首地址赋给了取出来的 arena_object 的 address，显然这块 256kb 的内存就是 pool 的容身之处，这时候 arena_object 就已经和 pool 集合建立联系了。既然建立了联系，那么这个 arena 已经具备了成为可用的条件，该 arena 和<font color="blue">未使用 arena 链表</font>便脱离了关系，就等着被<font color="red">可用 arena 链表</font>接收了，不过什么时候接收呢？先别急。</p>
-<p>随后 Python 设置了一些 arena 用于维护 pool 集合的信息，需要注意的是，Python 将申请到的 256kb 内存进行了处理，主要是放弃了一些内存，并将可使用的内存边界（pool_address）调整到了与系统页对齐。</p>
-<p>接着通过 <code>arenaobj-&gt;freepools = NULL</code> 将 freepools 设置为NULL，这不奇怪，基于对 freeblock 的了解，我们知道要等到释放一个 pool 时，这个 freepools 才会有用。最后我们看到，pool 集合占用的 256kb 内存在进行边界对齐后，实际是交给 pool_address 来维护的。</p>
+<p>然后 Python 申请了一块 256kb 大小的内存，并将内存的首地址赋给了取出来的 arena_object 的 address 字段，显然这块 256kb 的内存就是 pool 的容身之处，这时候 arena_object 就已经和 pool 集合建立联系了。既然建立了联系，那么这个 arena 就具备了成为可用的条件，该 arena 和<font color="blue">未使用 arena 链表</font>便脱离了关系，就等着被<font color="red">可用 arena 链表</font>接收了，不过什么时候接收呢？先别急。</p>
+<p>随后 Python 设置了一些 arena 用于维护 pool 集合的信息，需要注意的是，Python 将申请到的 256kb 内存进行了处理，将可使用的内存边界（pool_address）调整到了与系统页对齐。</p>
+<p>接着通过 <code>arenaobj-&gt;freepools = NULL</code> 将 freepools 设置为 NULL，这不奇怪，基于对 freeblock 的了解，我们知道要等到释放一个 pool 时，这个 freepools 才会有用。最后我们看到，pool 集合占用的 256kb 内存在进行边界对齐后，实际是交给 pool_address 来维护的。</p>
 <p>以上是<font color="blue">未使用 arena 链表</font>中还存在未使用 arena 的情况，但如果 unused_arena_objects 为 NULL，则表明目前系统中已经没有未使用的 arena 了，那么首先会扩大系统的 arenas 数组（内存池）。Python 在内部通过一个 maxarenas 变量维护了数组的元素个数，然后将待申请的 arena_object 的个数设置为 maxarenas 的 2 倍，当然首次初始化的时候因为 maxarenas 为 0，所以会申请 16 个。</p>
 <p>在获得了新的 maxarenas 后，Python 会检查它是否溢出，即是否超过了 uint 的最大值。如果检查顺利通过，Python 会通过 realloc 扩大 arenas 指向的数组，并对新申请的 arena_object 进行设置，特别是那个不起眼的 address，要将新申请的 address 一律设置为 0。因为 address 负责标识 arena 是处于<font color="blue">未使用状态</font>还是<font color="red">可用状态</font>，一旦 arena（内部的 arena_object）和 pool 集合建立了联系，这个 address 就变成了非 0。</p>
 <h2 id="内存池"><a class="header" href="#内存池">内存池</a></h2>
 <p>先来回顾一个宏：</p>
 <pre><code class="language-C">#define SMALL_REQUEST_THRESHOLD 512
 </code></pre>
-<p>显然它是小块内存与大块内存的分界点，也就是说，当申请的内存不超过 512 个字节，pymalloc_alloc 会在内存池中申请内存；而当申请的内存超过了 512 字节，那么 pymalloc_alloc 将退化为 PyMem_Malloc，通过操作系统来申请内存。当然，通过修改 Python 源代码我们可以改变这个值，从而改变 Python 的默认内存管理行为。</p>
+<p>显然它是小块内存与大块内存的分界点，也就是说，当申请的内存不超过 512 个字节，pymalloc_alloc 会在内存池中申请内存；而当申请的内存超过了 512 字节，那么 pymalloc_alloc 将退化为 PyMem_Malloc，该函数会调用 C 的 malloc 在系统堆上申请内存。当然，我们也可以修改 Python 源代码，改变这个宏的大小，从而改变 Python 的默认内存管理行为。</p>
 <p>虽然我们上面花了不少笔墨介绍 arena，同时也看到 arena 是 Python 小块内存池的最上层结构，其实所有 arena_object（和它关联的内存）的集合就是小块内存池（arenas）。然而在实际的使用中，Python 并不直接与 arena 打交道，当申请内存时，最基本的操作单元并不是 arena，而是 pool。估计有人到这里懵了，别急，慢慢来。</p>
-<p>举个例子，当我们申请一个 28 字节的内存时，内部会在内存池中寻找一块能够满足需求的 pool，从中取出一个 block 返回，而不会去寻找 arena，这实际上是由 pool 和 arena 的属性决定的。在 Python中，pool 是一个有 size 概念的内存管理抽象体，一个  pool 中的 block 总是有确定的大小，这个 pool 总是和某个 Size class idx 对应。</p>
-<p>而 arena 是没有 size 概念的内存管理抽象体，它内部会管理一个 pool 集合，也就是一组 pool。每一个 pool 里面所有 block 的规模都是相同的，但是不同 pool 里面的 block 的规模可以不同。</p>
-<p>这就意味着，一个 arena 在某个时刻，其内部的所有 pool 的 szidx 可能都是相同的，也就是这些 pool 管理的都是同一种规格的 block，比如 32 字节。而到了另一个时刻，由于系统需要，这个 arena 被重新划分，其内部的所有 pool 管理的 block 可能又都变成 64 字节了。甚至一半的 pool 管理的是 32 字节 block，另一半的 pool 管理 64 字节 block，当然还有更多可能。</p>
-<p>因为没有 size 的概念，这就决定了在进行内存分配和销毁时，所有的动作都是在 pool 上完成的。</p>
+<p>举个例子，当申请一个 28 字节的内存时，内部会在内存池中寻找一块能够满足需求的 pool，然后从中取出一个 block，而不会去寻找 arena，这实际上是由 pool 和 arena 的属性决定的。</p>
+<ul>
+<li>因为 pool 是一个有 size 概念的内存管理抽象体，一个  pool 中的 block 总是有确定的大小，这个 pool 总是和某个 Size class idx 对应。</li>
+<li>而 arena 是没有 size 概念的内存管理抽象体，它内部会管理一个 pool 集合，也就是一组 pool。每一个 pool 里面所有 block 的大小都是相同的，但是不同 pool 里面的 block 的大小可以不同。</li>
+</ul>
+<p>这就意味着，一个 arena 在某个时刻，其内部的所有 pool 的 szidx 可能都是相同的，也就是这些 pool 管理的都是同一种规格的 block，比如 32 字节。而到了另一个时刻，由于系统需要，这个 arena 被重新划分，其内部的所有 pool 管理的 block 可能又都变成 64 字节了。或者一半的 pool 管理 32 字节 block，另一半的 pool 管理 64 字节 block，当然还有更多可能。</p>
+<p>总之因为 arena 没有 size 的概念，这就决定了在进行内存分配和销毁时，所有的动作都是在 pool 上完成的。</p>
 <blockquote>
-<p>一个 arena，并不要求 poo l集合中所有 pool 管理的 block 都必须一样，可以有管理 16 字节 block 的 pool，也可以有管理 32 字节 block 的 pool 等等。但是同一个 pool，里面的 block一定都是一样的。</p>
+<p>一个 arena，并不要求 pool 集合中所有 pool 管理的 block 都必须一样，可以有管理 16 字节 block 的 pool，也可以有管理 32 字节 block 的 pool 等等。但是同一个 pool，里面的 block 一定都是一样的。</p>
 </blockquote>
 <p>对了， 一个 arena 可以管理一组 pool，那么对于 pool 而言，它怎么知道自己是隶属于哪一个 arena 呢？很简单，还记得 pool_header 里面的 arenaindex 字段吗？该字段负责维护 pool 隶属的 arena（或者说 arena_object）在数组中的索引。</p>
 <p>此外内存池中的 pool 不仅仅是一个有 size 概念的内存管理抽象体，更进一步的，它还是一个有状态的内存管理抽象体。正如我们之前说的，一个 pool 在 Python 运行的任何一个时刻，总是处于以下三种状态中的一种：</p>
 <p><font color="darkblue"><strong>empty 状态</strong></font></p>
-<p>pool 中所有的 block 都未被使用，处于这个状态的 pool 的集合通过其 pool_header 的 nextpool 字段构成一个链表，这个链表的表头就是 arena_object 里的 freepools 字段。另外，虽然不同 szidx 的 pool 会管理不同的规格的 block，但不管什么样的 pool，只要处于 empty 状态，都会被加入到这个链表中。</p>
+<p>pool 中所有的 block 都未被使用，处于这个状态的 pool 会通过 nextpool 字段构成一个链表，这个链表的表头就是 arena_object 里的 freepools 字段。另外，虽然不同 szidx 的 pool 会管理不同规格的 block，但不管什么样的 pool，只要处于 empty 状态，都会被加入到这个链表中。</p>
 <p><font color="darkblue"><strong>used 状态</strong></font></p>
 <p>pool 中至少有一个 block 已经被使用，并且至少有一个 block 未被使用，这种类型的 pool 会通过内部的 prevpool 字段和 nextpool 字段组成一个双向链表。但是注意，和 empty 状态的 pool 不同，used 状态的 pool 组成的双向链表有 64 条。</p>
 <p>也就是说，对于 used 状态的 pool 而言，每条链表上面的 pool 的种类是相同的（szidx 一样），管理的都是同一种规格的 block。而不同 szidx 的 pool，则位于不同的双向链表中。而这 64 条双向链表会由一个名为 usedpools 的数组进行管理。</p>
 <p><img src="./images/368.png" alt="" /></p>
 <p><font color="darkblue"><strong>full 状态</strong></font></p>
-<p>pool 中所有的 block 都已经被使用，此时 Python 会将它闲置在一旁。因为 full 状态的 pool 是各自独立的，没有像其它状态的 pool 一样，连接成一个链表。</p>
+<p>pool 中所有的 block 都已经被使用，此时 Python 会将它闲置在一旁。因为 full 状态的 pool 是各自独立的，没有像其它状态的 pool 一样串成一个链表。</p>
 <h3 id="used-状态的-pool-组成的双向链表"><a class="header" href="#used-状态的-pool-组成的双向链表">used 状态的 pool 组成的双向链表</a></h3>
-<p>对于 used 状态的 pool 会组成一个双向链表，而这样的链表有 64 条，并且这 64 条双向链表会放在一个名为 usedpools 的数组中。关于这个数组一会再说，我们先以其中的一条链表为例，看看它的结构。</p>
+<p>used 状态的 pool 会组成一个双向链表，而这样的链表有 64 条，并且这 64 条双向链表会放在一个名为 usedpools 的数组中。关于这个数组一会再说，我们先以其中的一条链表为例，看看它的结构。</p>
 <p><img src="./images/369.png" alt="" /></p>
 <p>同一个双向链表中所有 pool 的 szidx 都是一样的，它们管理的都是同一种规格的 block，并且越靠后，可用的内存块（block）就越多。另外为了简化链表处理逻辑，Python 引入了一个 dummyHead，也就是虚拟头结点，如果这个链表为空，那么 dummyHead 的 nextpool 和 prevpool 都指向它自己。</p>
 <p>既然是 dummyHead，说明它只是为了方便链表的维护，并不实际管理内存块，所以它只有一个 pool_header。但即便如此，仍然存在着内存浪费，因为 pool_header 内部有很多字段，可对于维护链表而言，只需要用 nextpool 和 prevpool 两个字段就够了。这两个字段总共 16 字节，而一个完整的 pool_header 是 48 字节，所以给 dummyHead 分配一个完整的 pool_header 会浪费 32 字节的内存。一条链表会浪费 32 字节，而这样的链表有 64 条，所以总共会浪费 2048 字节、也就是 2kb 的内存。</p>
-<p>因此 Python 官方为了不让这样的事情发生，在分配的时候真的就只分配了 16 字节，并且把它当成是一个完整的 pool_header 来用。但问题是一个 pool_header 实例是 48 字节，只分配 16 字节也不够啊，Python 是怎么把 16 字节当成 48 字节来用的呢？</p>
+<p>因此 Python 官方为了不让这样的事情发生，在分配的时候真的就只分配了 16 字节，并且把它当成是一个完整的 pool_header 来用。但问题是一个 pool_header 实例是 48 字节，只分配 16 字节也不够啊，那 Python 是怎么把 16 字节当成 48 字节来用的呢？</p>
 <p><img src="./images/370.png" alt="" /></p>
-<p>非常简单，分配的 16 字节不够的话，再借 32 字节不就行了吗。因此将 nextpool 和 prevpool 字段前后的空间都当做是 pool_header 的一部分，这样就能够得到一个完整的 pool_header 结构体实例。虽然这个实例是非法的，因为实际上这两个字段前后的空间不属于 pool_header，但这并不妨碍在精神层面上 YY 一下，就假装是自己的（相当于借用），因为除了 nextpool 和 prevpool 之外，其它部分的内存根本不会访问到。</p>
+<p>非常简单，分配的 16 字节不够的话，再借 32 字节不就行了吗。因此将 nextpool 和 prevpool 字段前后的空间都当做是 pool_header 的一部分，这样就能够得到一个完整的 pool_header 结构体实例。虽然这个实例是非法的，因为实际上这两个字段前后的空间不属于自己，但这并不妨碍在精神层面上 YY 一下，就假装是自己的（相当于借用），因为除了 nextpool 和 prevpool 之外，其它部分的内存根本不会访问到。</p>
 <p>所以我们上面画的那张双向链表的图，里面的 dummyHead 是不对的，真正存在的只有 nextpool 和 prevpool 两个字段，至于这两个字段前后的空间到底存了什么内容，在介绍 usedpools 时再聊。</p>
 <p>现在假设来了一个内存分配请求，那么会使用链表的头结点分配内存块，如果可用的内存块都分配完了，即 pool 从 used 变成 full，那么就将它从链表中剔除。</p>
 <p><img src="./images/371.png" alt="" /></p>
-<p>但如果 full 状态的 pool 的某个内存块释放了，即 pool 变成了 used 态，那么 Python 还会将它重新插入到双向链表的头部。为什么是插入到头部呢？前面说了，pool 链表中越是靠后的 pool，其内部可用的内存块（block）就越多，所以对于一个刚从 full 变成 used 的 pool 要插入到链表的头部，确保它后续会被优先使用。</p>
+<p>但如果 full 状态的 pool 的某个内存块释放了，即 pool 变成了 used 态，那么 Python 还会将它重新插入到双向链表的头部。为什么是插入到头部呢？前面说了，pool 链表中越是靠后的 pool，其内部可用的内存块（block）就越多，所以对于一个刚从 full 变成 used 的 pool 来说，要插入到链表的头部，确保它后续会被优先使用。</p>
 <p><img src="./images/372.png" alt="" /></p>
-<p>如果一个 pool 里面所有的 block 都变得可用，那么这个 pool 的状态就从 used 变成了 empty，此时依旧会将它从链表中移除。因为每次获取内存块时，都会从链表的头部的 pool 开始获取，当 pool 从 full 变成 used 时也会插入到链表的头部，因此链表中越是靠后的 pool，可用的内存块就越多，越有可能变成 empty。</p>
+<p>如果一个 pool 里面所有的 block 都变得可用，那么这个 pool 的状态就从 used 变成了 empty，此时依旧会将它从链表中移除。</p>
+<p>因为每次获取内存块时，都会从链表的头部的 pool 开始获取，当 pool 从 full 变成 used 时也会插入到链表的头部，因此链表中越是靠后的 pool，其内部可用的内存块就越多，越有可能变成 empty。</p>
 <p><img src="./images/373.png" alt="" /></p>
 <p>当 pool 变成 empty 时，Python 会将它从可用 pool 链表中移除，然后加入到 freepools 链表中，或者直接归还给操作系统。</p>
 <h3 id="64-个可用-pool-链表组成的数组"><a class="header" href="#64-个可用-pool-链表组成的数组">64 个可用 pool 链表组成的数组</a></h3>
-<p>Python 内存块有 64 种，而每种规格的多个内存块都需要用一个可用 pool 链表来维护，那么显然会有 64 种 pool 链表。</p>
-<p>那么如何组织这么多 pool 链表呢？最直接的办法就是分配一个长度为 64 的数组，这个数组就是上面提到的 usedpools，它里面存储了 64 个 pool 双向链表的 dummyHead。但我们知道这个 dummyHead 并不是一个正常的 pool_header，而是 nextpool 和 prevpool 两个字段、再加上前后各 16 字节的内存假装出来的 pool_header。</p>
+<p>可用 pool 链表有 64 条，每条链表上的 pool 都管理相同规格的 block，但这么多条链表要如何组织呢？最直接的办法就是分配一个长度为 64 的数组，这个数组就是上面提到的 usedpools，它里面存储了 64 个 pool 双向链表的 dummyHead。但我们知道这个 dummyHead 并不是一个正常的 pool_header，而是 nextpool 和 prevpool 两个字段、再加上前后各 16 字节的内存假装出来的 pool_header。</p>
 <p>那么问题来了，每个 dummyHead 只能访问 nextpool 和 prevpool 两个字段，至于它前后的内存只是假装是自己的，实际上并不属于自己。那属于谁呢？很明显，因为每个 dummyHead 只分配了 16 字节的内存，用于 nextpool 和 prevpool，要想把自己当成 48 字节的 pool_header，那么只能借助它的上一个 dummyHead 和下一个 dummyHead。也正因为如此，Python 才能从这个 usedpools 数组中扣掉 2k 的内存。</p>
-<p>而 usedpools 数组则维护着所有处于 used 状态的 pool 双向链表（的 dummyHead），当申请内存时，Python 就会通过 usedpools 寻找到一个可用的 pool（处于used状态），从中分配一个 block。那么这个数组长什么样子呢？</p>
+<p>而 usedpools 数组则维护着所有处于 used 状态的 pool 双向链表（的 dummyHead），当申请内存时，Python 就会通过 usedpools 寻找到一个可用的 pool（处于 used 状态），从中分配一个 block。那么这个数组长什么样子呢？</p>
 <p><img src="./images/374.png" alt="" /></p>
 <p>可能有人感觉这个数组看起来有点怪异，别急，我们画一张图就清晰了。</p>
 <p><img src="./images/375.png" alt="" /></p>
-<p>因此更准确的说，数组里面存储的其实是一组组的 nextpool 和 prevpool。当我们想获取第二个 dummyHead，那么就获取第二组的 nextpool 和 prevpool 即可。但别忘了，此时只有 16 字节，而 dummyHead 要想伪装成 pool_header 还差 32 字节。而差的这 32 字节，就由第一组和第三组的 nextpool 和 prevpool 来承载，只不过它们不能访问。</p>
+<p>因此更准确的说，数组里面存储的其实是一组组的 nextpool 和 prevpool。当我们想获取第二个 dummyHead，那么就获取第二组的 nextpool 和 prevpool 即可。但别忘了，此时只有 16 字节，如果想伪装成 pool_header 还差 32 字节。而差的这 32 字节，就由第一组和第三组的 nextpool、prevpool 来承载，只不过它们不能访问。</p>
 <blockquote>
-<p>因此 usedpools 里面实际上有 128 个元素，但如果把 nextpool 和 prevpool 整体看成是一个 dummyHead（少了 32 字节）的话，那么逻辑上还是维护了 64 条双向链表。</p>
+<p>所以 usedpools 里面实际上有 128 个元素，但如果把 nextpool 和 prevpool 整体看成是一个 dummyHead（少了 32 字节）的话，那么逻辑上还是维护了 64 条双向链表。</p>
 </blockquote>
-<p>但是在查找的时候有一个小 trick，再看一下上图，里面的每一个 nextpool 和 prevpool 都指向了上一个 nextpool。考虑一下当申请 18 字节的情形，由于 18 字节对应的 block 是 24 字节，所以 Size class idx 是 2，或者说对应的 pool 的 szidx 是 2，那么显然要获取 usedpools 中 szidx 为 2 的 pool 链表对应的 dummyHead，而 Python 会返回 <font color="blue">usedpools[2+2]</font>。同理，如果要获取 szidx 为 N 的 pool 链表对应的 dummyHead，那么会返回 <font color="blue">usedpools[N+N]</font> 。</p>
-<p>我们继续以 szidx 为 2 的 pool 为例，对于这样的 pool，会返回 usedpools[4]，注意：虽然 usedpools 在逻辑上维护了 64 条链表，但它内部实际上有 128 个元素。然后 usedpools[4] 和 usedpools[5] 分别对应 dummyHead 的 nextpool 和 prevpool，但如果想要当成 pool_header 来操作，它还需要向上借 16 字节、向下借 16 字节，所以会将 usedpools[2]、usedpools[3]、usedpools[4]、usedpools[5]、usedpools[6]、usedpools[7] 这 48 字节整体看作一个 pool_header。</p>
-<p>因此如果要当作 pool_header 来操作的话，那么内存地址是从 usedpools[2] 开始的，只是能操作的内存只有中间的 16 字节，即  usedpools[2]、usedpools[3]，当然也只需要操作这 16 字节。然后关键来了，从图中可以看到，usedpools[4] 的值正是指向 usedpools[2] 的地址。</p>
+<p>但是在查找的时候有一个小 trick，再看一下上图，里面的每一个 nextpool 和 prevpool 都指向了上一个 nextpool。考虑一下当申请 18 字节的情形，由于 18 字节对应的 block 是 24 字节，所以 Size class idx 为 2，或者说对应的 pool 的 szidx 为 2，那么显然要获取 usedpools 中 szidx 为 2 的 pool 链表对应的 dummyHead，而 Python 会返回 <font color="blue">usedpools[2+2]</font>。同理，如果要获取 szidx 为 N 的 pool 链表对应的 dummyHead，那么会返回 <font color="blue">usedpools[N+N]</font> 。</p>
+<p>我们继续以 szidx 为 2 的 pool 为例，对于这样的 pool，会返回 usedpools[4]，注意：虽然 usedpools 在逻辑上维护了 64 条链表，但它内部实际上有 128 个元素。然后 usedpools[4] 和 usedpools[5] 分别对应 dummyHead 的 nextpool 和 prevpool，但如果想要当成 pool_header 来操作，它还需要向上借 16 字节、向下借 16 字节，所以会将 usedpools[2]、usedpools[3]、usedpools[4]、usedpools[5]、usedpools[6]、usedpools[7] 这 48 字节整体看作是一个 pool_header。</p>
+<p>因此如果要当作 pool_header 来操作的话，那么内存地址是从 usedpools[2] 开始的，只是能操作的内存只有中间的 16 字节，即  usedpools[4]、usedpools[5]，当然也只需操作这 16 字节。然后关键来了，从图中可以看到，usedpools[4] 的值正是指向 usedpools[2] 的地址。</p>
 <p>所以这个设计就很巧妙，主要也和 pool_header 结构体有关。</p>
 <p><img src="./images/376.png" alt="" /></p>
-<p>在 pool_header 中，nextpool 和 prevpool 加起来是 16 字节，而它们之前的字段和之后的字段加起来仍都是 16 字节，所以 nextpool 向上偏移 16 个字节之后正好是对应 pool_header 的起始位置。</p>
-<p>因此 Python 的做法不是向上借 32 字节，也不会是向下借 32 字节，而是向上借 16 字节、向下借 16 字节，就是因为这种做法和 pool_header 结构体本身是完美契合的。以后再分配 block 的时候，只需要通过 <code>usedpools[szidx + szidx]-&gt;nextpool</code> 便可快速地从众多的 pool 中寻找到一个最适合当前内存需求的 pool，并从中分配一块 block。当然，也可以很方便地将一个 pool 加入到 usedpools 中。</p>
+<p>在 pool_header 中，nextpool 和 prevpool 加起来是 16 字节，而它们之前的字段和之后的字段各自加起来仍都是 16 字节，所以 nextpool 向上偏移 16 个字节之后正好是 pool_header 的起始位置。</p>
+<p>因此 Python 的做法不是向上借 32 字节，也不是向下借 32 字节，而是向上借 16 字节、向下借 16 字节，就是因为这种做法和 pool_header 结构体本身是完美契合的。以后再分配 block 的时候，只需要通过 <code>usedpools[szidx + szidx]-&gt;nextpool</code> 便可快速地从 64 条 pool 链表中寻找到一条最适合当前内存需求的 pool 链表，然后从链表的头结点获取一个可用 pool，再从中分配一块 block。当然，也可以很方便地将一个 pool 加入到 usedpools 中。</p>
 <pre><code class="language-C">// 快速查找表，可以根据空闲 pool 的数量快速找到对应的 arena
 // 比如想找有 5 个空闲 pool 的 arena，就可以直接查找 nfp2lasta[5]
 static struct arena_object* nfp2lasta[MAX_POOLS_IN_ARENA + 1] = { NULL };
@@ -870,14 +873,14 @@ pymalloc_alloc(void *ctx, size_t nbytes)
             usable_arenas-&gt;prevarena = NULL;
         assert(nfp2lasta[usable_arenas-&gt;nfreepools] == NULL);
         // 将新的 arena 记录到 nfp2lasta 数组中
-        // 这个数组用于根据空闲 pool 数量索引到对应的 arena
+        // 这个数组用于根据空闲 pool 的数量索引到对应的 arena
         nfp2lasta[usable_arenas-&gt;nfreepools] = usable_arenas;
     }
     assert(usable_arenas-&gt;address != 0);
     assert(usable_arenas-&gt;nfreepools &gt; 0);
     // 到这里说明有可用 arena，但如果当前 arena 是具有该数量空闲 pool 的最后一个
     if (nfp2lasta[usable_arenas-&gt;nfreepools] == usable_arenas) {
-        // 就将在 nfp2lasta 数组的值设置为 NULL。
+        // 就将在 nfp2lasta 数组中对应的值设置为 NULL。
         nfp2lasta[usable_arenas-&gt;nfreepools] = NULL;
     }
     // 如果剩余的空闲 pool 数量大于 1，将这个 arena 记录为具有更少空闲 pool 的最后一个
@@ -893,7 +896,7 @@ pymalloc_alloc(void *ctx, size_t nbytes)
         usable_arenas-&gt;freepools = pool-&gt;nextpool;
         // 空闲 pool 的个数减 1
         --usable_arenas-&gt;nfreepools;
-        // 完全分配满了，需要从可用 arena 链表中移除
+        // 完全分配完了，需要从可用 arena 链表中移除
         if (usable_arenas-&gt;nfreepools == 0) {
             /* Wholly allocated:  remove. */
             assert(usable_arenas-&gt;freepools == NULL);
@@ -908,7 +911,7 @@ pymalloc_alloc(void *ctx, size_t nbytes)
         }
         else {
             // nfreepools &gt; 0 的情况
-            // 说明要么还有空闲池，要么是第一次从 arena 中分配池
+            // 说明要么还有空闲 pool，要么是第一次从 arena 中分配 pool
             assert(usable_arenas-&gt;freepools != NULL ||
                    usable_arenas-&gt;pool_address &lt;=
                    (block*)usable_arenas-&gt;address +
@@ -917,7 +920,7 @@ pymalloc_alloc(void *ctx, size_t nbytes)
 
     init_pool:
         // ...
-        // 需要重新重建一个 pool
+        // 需要重新创建一个 pool
     }
 
     /* Carve off a new pool. */
@@ -928,17 +931,17 @@ pymalloc_alloc(void *ctx, size_t nbytes)
     // 断言：确保这个 pool 的地址在 arena 的合法地址范围内
     assert((block*)pool &lt;= (block*)usable_arenas-&gt;address +
                              ARENA_SIZE - POOL_SIZE);
-    // 设置 pool 的 arenaindex，即这个池所属的 arena 在 arenas 数组中的索引
+    // 设置 pool 的 arenaindex，即这个 pool 所属的 arena 在 arenas 数组中的索引
     pool-&gt;arenaindex = (uint)(usable_arenas - arenas);
     // 断言：通过计算出的索引反向验证确实能找到正确的 arena
     assert(&amp;arenas[pool-&gt;arenaindex] == usable_arenas);
-    // 初始化池的 Size class index 为一个虚拟值
+    // 初始化 pool 的 szidx 为一个虚拟值
     pool-&gt;szidx = DUMMY_SIZE_IDX;
-    // 将 arena 的 pool_address 向前移动一个池的大小，为下次分配做准备
+    // 将 arena 的 pool_address 向前移动一个 pool 的大小，为下次分配做准备
     usable_arenas-&gt;pool_address += POOL_SIZE;
-    // 减少该 arena 的空闲池计数
+    // 减少该 arena 的空闲 pool 的数量
     --usable_arenas-&gt;nfreepools;
-    // 如果这个 arena 没有空闲池了
+    // 如果这个 arena 没有空闲 pool 了
     if (usable_arenas-&gt;nfreepools == 0) {
         assert(usable_arenas-&gt;nextarena == NULL ||
                usable_arenas-&gt;nextarena-&gt;prevarena ==
@@ -961,24 +964,30 @@ failed:
     return NULL;
 }
 </code></pre>
-<p>到此我们就将 pymalloc_alloc 中关于 arena 的部分说完了，当然整个 pymalloc_alloc 函数也说完了，它和内存池分配内存息息相关。当申请的内存不超过 512 字节时，会从内存池中分配内存，而这个过程就由 pymalloc_alloc 函数负责。而关于函数里面查找 arena、pool 的逻辑可能不是很好理解，不过没关系，其实不必深究，只需要理解 usedpools 即可。可以认为 usedpools 里面存储了 64 个 dummyHead，分配 8 字节内存块，就去找索引为 0 的 dummyHead；分配 64 字节内存块，就去找索引为 7 的 dummyHead。</p>
+<p>到此我们就将 pymalloc_alloc 中关于 arena 的部分说完了，当然整个 pymalloc_alloc 函数也说完了，它和内存池分配内存息息相关。当申请的内存不超过 512 字节时，会从内存池中分配内存，而这个过程就由 pymalloc_alloc 函数负责。</p>
+<p>关于函数里面查找 arena、pool 的逻辑可能不是很好理解，不过没关系，其实不必深究，只需要理解 usedpools 即可。可以认为 usedpools 里面存储了 64 个 dummyHead，分配 8 字节内存块，就去找索引为 0 的 dummyHead；分配 64 字节内存块，就去找索引为 7 的 dummyHead。</p>
 <p>整个 usedpools 全貌如下：</p>
 <p><img src="./images/377.png" alt="" /></p>
-<p>当然啦，每个链表上的 pool 的个数是不同的，这里为了画图方便，就假设每个链表上面都挂了三个 pool。</p>
+<p>当然啦，每条链表上的 pool 的个数是不固定的，这里为了画图方便，就假设每条链表上面都挂了三个 pool。</p>
 <h3 id="block-的释放"><a class="header" href="#block-的释放">block 的释放</a></h3>
-<p>最后看看 block 的释放，释放 block 实际上就是将它归还给pool。我们知道 pool 存在 3 种状态，这 3 种状态的区别也说的很清楚了，总之状态不同，所在的位置也不同。</p>
-<p>而当我们释放一个block 时，可能会引起 pool 状态的转变，这种转变分为两种情况：</p>
+<p>最后看看 block 的释放，释放 block 实际上就是将它归还给 pool。我们知道 pool 存在 3 种状态，这 3 种状态的区别也说的很清楚了，总之状态不同，所在的位置也不同。</p>
 <ul>
-<li>used 状态转变为 empty 状态；</li>
-<li>full 状态转变为 used 状态；</li>
+<li>empty 状态的 pool，内部的 block 全部可用，这样的 pool 会通过 nextpool 字段组成一个单向链表，然后 arena 的 freepools 会指向这个头结点。注：不管 pool 的 szidx 是多少，只要它是 empty 状态，那么一律会加入到这条链表中。</li>
+<li>used 状态的 pool，内部的 block 部分可用，这样的 pool 会通过 nextpool 和 prevpool 字段组成一个双向链表，并且每个双向链表中的 pool 的 szidx 是相同的，这就说明类似的双向链表会有 64 条，它们统一由 usedpools 数组维护。</li>
+<li>full 状态的 pool，内部的 block 均不可用，这样的 pool 会被闲置在一旁。</li>
 </ul>
-<p>释放 block 由 pymalloc_free 函数负责。</p>
+<p>而当我们释放一个 block 时，可能会引起 pool 状态的转变，这种转变分为两种情况：</p>
+<ul>
+<li>从 used 状态转变为 empty 状态；</li>
+<li>从 full 状态转变为 used 状态；</li>
+</ul>
+<p>我们看一下具体逻辑，释放 block 由 pymalloc_free 函数负责。</p>
 <pre><code class="language-C">static int
 pymalloc_free(void *ctx, void *p)
 {
     // 指向 pool_header 的指针，直接理解为 pool 即可
     poolp pool;
-    // 为了提高性能和减少内存碎片，会维护一个已释放 block 的单向链表
+    // 为了提高性能和减少内存碎片，会维护一个由已释放的 block 组成的单向链表
     // 这个链表就是之前说的离散可用 block 链表
     // 当一个内存块被释放时，它会被加入到这个链表中
     // 而 lastfree 会指向链表中最后被释放的那个块，这么做有以下几个目的
@@ -1006,7 +1015,7 @@ pymalloc_free(void *ctx, void *p)
     if (!address_in_range(p, pool)) {
         return 0;
     }
-    // 因为要释放 block，所以 pool 中已分配出去的 block 数量一定大于 0
+    // 因为要释放 block，所以 pool 中已分配出去的 block 的数量一定大于 0
     assert(pool-&gt;ref.count &gt; 0);
     // 将被释放的 block 插入到离散可用 block 链表的头部
     *(block **)p = lastfree = pool-&gt;freeblock;
@@ -1032,14 +1041,14 @@ pymalloc_free(void *ctx, void *p)
     // 到这里说明 pool 不是满的，即 pool 的状态为 used
     struct arena_object* ao;
     uint nf;
-    // 如果 ref.count 减 1 后不为 0，说明池中还有其它块在使用
+    // 如果 ref.count 减 1 之后不为 0，说明 pool 中还有其它块在使用
     // 那么 pool 仍是 used 态，此时直接跳转即可
     if (--pool-&gt;ref.count != 0) {
         goto success;
     }
     // 到这里说明 ref.count 减 1 之后等于 0，那么 pool 会变成 empty 态
-    // 那么同样要将它从链表中移除，因为这个链表是 used 态的 pool 组成的链表（双向链表）
-    // 至于 empty 的 pool，会有另外的链表管理它
+    // 此时要将它从链表中移除，因为这个链表是 used 态的 pool 组成的链表（双向链表）
+    // 至于 empty 态的 pool，会有另外的链表管理它
     next = pool-&gt;nextpool;
     prev = pool-&gt;prevpool;
     next-&gt;prevpool = prev;
@@ -1050,7 +1059,7 @@ pymalloc_free(void *ctx, void *p)
     // 采用头插法，将该 pool 插入到 freepools 链表中
     pool-&gt;nextpool = ao-&gt;freepools;
     ao-&gt;freepools = pool;
-    // 获取当前空闲 pool 数量，这里的空闲指的就是 empty
+    // 获取当前空闲 pool 的数量，或者说 empty 态的 pool 的数量
     nf = ao-&gt;nfreepools;
     struct arena_object* lastnf = nfp2lasta[nf];
     assert((nf == 0 &amp;&amp; lastnf == NULL) ||
@@ -1135,7 +1144,7 @@ pymalloc_free(void *ctx, void *p)
      */
     assert(ao-&gt;nextarena != NULL);
 
-    // 3）如果右边的 arena 有更少的空闲 pools
+    // 3）如果右边的 arena 有更少的空闲 pool
     if (ao-&gt;prevarena != NULL) {
         /* ao isn't at the head of the list */
         assert(ao-&gt;prevarena-&gt;nextarena == ao);
@@ -1170,22 +1179,22 @@ success:
 </code></pre>
 <p>释放 block 的逻辑很简单，关键在于 block 释放之后的 arena 处理，一共四种情况。</p>
 <ul>
-<li>1）如果 arena 中所有的 pool 都是 empty 状态，则释放 pool 集合所占用的内存。而一旦 pool 集合释放，那么 arena_object 就和管理的 pool 集合失去了联系，因此状态就从<font color="blue">可用</font>变成了<font color="blue">未使用</font>。</li>
-<li>2）如果之前 arena 中没有 empty 状态的 pool，那么在<font color="blue">可用</font>链表中就找不到该 arena，但由于现在 arena 中有了一个空闲 pool，所以需要将这个 arena 链入到可用 arena 链表的表头。</li>
-<li>3）如果 arena 中 empty 状态的 pool 的个数为 n，那么会从可用 arena 链表中开始寻找可以插入该 arena 的位置，并将 arena 插入到可用链表。然后我们说可用 arena 链表实际上是一个有序的链表，从表头开始往后，空闲 pool（empty 状态的 pool）的个数、即 nfreepools，是依次递增的。保持这样的有序性是因为分配 block 时，会从可用链表的表头开始寻找可用 arena，因此一个 arena 的 empty pool 的数量越多，它被使用的机会就越少，最终释放维护的 pool 集合的内存的机会就越大，这样就能保证多余的内存会被归还给操作系统。</li>
+<li>1）如果 arena 中所有的 pool 都是 empty 状态，则释放 pool 集合所占用的内存。而一旦 pool 集合被释放，那么 arena_object 就和管理的 pool 集合失去了联系，因此状态就从<font color="blue">可用</font>变成了<font color="blue">未使用</font>。</li>
+<li>2）如果之前 arena 中没有可用的 pool，那么在<font color="blue">可用 arena 链表</font>中就找不到该 arena，但由于现在 arena 中有了一个可用 pool，所以需要将这个 arena 链入到可用 arena 链表的表头。</li>
+<li>3）如果 arena 中 empty 状态的 pool 的个数为 n，那么会从可用 arena 链表中开始寻找可以插入该 arena 的位置，并将 arena 插入到可用链表。然后我们说可用 arena 链表实际上是一个有序的链表，从表头开始往后，空闲 pool（empty 状态的 pool）的个数、即 nfreepools，是依次递增的。保持这样的有序性是因为分配 block 时，会从可用链表的表头开始寻找可用 arena，因此一个 arena 的 empty pool 的数量越多，它被使用的机会就越少，最终释放维护的 pool 集合的机会就越大，这样就能保证多余的内存会被归还给操作系统。</li>
 <li>4）其它情况，则不对 arena 进行任何处理；</li>
 </ul>
-<p>实际上在 Python2.4 之前，arena 是不会释放pool的，这样的话就会引起内存泄漏。比如我们申请 10 * 1024 * 1024 个 16 字节的小内存，这就意味着必须使用 160MB 的内存。</p>
-<p>由于 Python 默认会使用全部的 arena 来满足你的需求（这一点前面没有提到），那么当后续将所有的 16 字节内存全部释放了，这些内存也会回到 arena 的控制之中，这都没有问题。但关键的是，这些内存是被 arena 控制的，并没有交还给操作系统，所以这 160MB 的内存始终会被 Python 占用，即使后面程序不再需要这 160MB 的内存，那么这就不就相当于浪费了吗？</p>
-<p>由于这种情况必须在大量持续申请小内存对象时才会出现，因为大的话会自动交给操作系统，小的才会由 arena 控制，而持续申请大量小内存的情况几乎不会碰到，所以这个问题在 2.4 之前一直没有人发现，因此也就留在了 Python 中。但直到某一天，国外一个工程师在跑任务的时候发现即使是在低峰期，内存占用率仍然居高不下，这才挖出了这个隐藏的问题并进行了反馈，于是在 Python2.5 的时候得到了解决。</p>
+<p>实际上在 Python2.4 之前，arena 是不会释放 pool 的，这样的话就会引起内存泄漏。比如我们申请 10 * 1024 * 1024 个 16 字节的小内存，这就意味着必须使用 160MB 的内存。</p>
+<p>由于 Python 默认会使用全部的 arena 来满足你的需求（这一点前面没有提到），那么当后续将所有的 16 字节内存全部释放了，这些内存也会回到 arena 的控制之中，这都没有问题。但关键的是，这些内存是被 arena 控制的，并没有交还给操作系统，所以这 160MB 的内存始终会被 Python 占用，即使后面程序不再需要这 160MB 的内存，那么这不就相当于浪费了吗？</p>
+<p>由于这种情况必须在大量持续申请小内存对象时才会出现，因为大的话会自动交给操作系统，小的才会由 arena 控制，而持续申请大量小内存的情况几乎不会碰到，所以这个问题在 2.4 之前一直没有人发现，因此也就留在了 Python 中。但直到某一天，国外一个工程师在跑任务的时候发现即使是在低峰期，内存占用仍然居高不下，这才挖出了这个隐藏的问题并进行了反馈，于是在 Python2.5 的时候得到了解决。</p>
 <p>而早期的 Python 之所以不将内存归还给操作系统，是因为当时 arena 还没有区分未使用和可用两种状态。但到了 Python2.5，arena 已经可以将自己维护的 pool 集合释放，交给操作系统了，然后状态也从<font color="blue">可用</font>变成了<font color="blue">未使用</font>。而当 Python 处理完 pool，就开始处理 arena 了，而处理逻辑就是上面说的那四种情况。</p>
 <h2 id="小结"><a class="header" href="#小结">小结</a></h2>
-<p>对于一个用 C 开发的庞大的软件（虽然 Python 是一门高级语言，但是执行对应代码的解释器则可以看成是 C 的一个软件），其中的内存管理可谓是最复杂、最繁琐的地方了。不同尺度的内存会有不同的抽象，这些抽象在各种情况下会组成各式各样的链表，非常复杂。</p>
+<p>对于一个用 C 开发的庞大软件（虽然 Python 是一门高级语言，但是执行对应代码的解释器则可以看成是 C 的一个软件），其中的内存管理可谓是最复杂、最繁琐的地方了。不同尺度的内存会有不同的抽象，这些抽象在各种情况下会组成各式各样的链表，非常复杂。</p>
 <p>不过我们还是能从一个整体的尺度把握整个内存池，尽管不同的链表变幻无常，但只需记住，所有的内存都在 arenas（或者说那个存放多个 arena_object 的数组）的掌握之中。</p>
 <p>整个内存池全景如下：</p>
 <p><img src="./images/378.png" alt="" /></p>
-<p>以上就是 Python 管理内存的全部秘密，包括内存池的实现细节等等。总之凡是和内存管理相关的都不简单，更详细的内容可以自己进入 Objects/obmalloc.c 中查看对应的源码。</p>
-<p>关于内存管理和内存池我们就说到这里，下一篇介绍 Python 的垃圾回收机制。</p>
+<p>以上就是 Python 内存管理的全部秘密，包括内存池的实现细节等等。总之凡是和内存管理相关的都不简单，更详细的内容可以自己进入 Objects/obmalloc.c 中查看对应的源码。</p>
+<p>关于内存管理和内存池我们就说到这里，下一篇文章介绍 Python 的垃圾回收机制。</p>
 <hr />
 <p> </p>
 <p><strong>欢迎大家关注我的公众号：古明地觉的编程教室。</strong></p>
