@@ -104,3 +104,4 @@
 + [101. 深入源码，探究垃圾回收的秘密](101.深入源码，探究垃圾回收的秘密.md)
 + [102. 侵入 Python 虚拟机，动态修改底层数据结构和运行时](102.侵入Python虚拟机，动态修改底层数据结构和运行时.md)
 + [103. 使用 Python 的 ctypes 调用 C 的动态库](103.使用Python的ctypes调用C的动态库.md)
++ [104. 使用 Python 的 ctypes 调用 Rust 的动态库](104.使用Python的ctypes调用Rust的动态库.md)
