@@ -50,4 +50,27 @@ document.addEventListener('DOMContentLoaded', function() {
     // 添加到页面
     document.body.appendChild(navButton);
     document.body.appendChild(toc);
+
+    // 添加访问量统计
+    const separator = document.createElement('hr');
+    separator.style.margin = '30px 0';
+    
+    const visitCount = document.createElement('div');
+    visitCount.style.textAlign = 'center';
+    visitCount.style.marginBottom = '30px';
+    visitCount.innerHTML = `
+        <span id="busuanzi_container_page_pv" style="display: inline;">
+            当前访问量：<span id="busuanzi_value_page_pv"></span> 次
+        </span>
+    `;
+
+    // 添加不蒜子脚本
+    const bszScript = document.createElement('script');
+    bszScript.src = '//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js';
+    bszScript.async = true;
+    document.body.appendChild(bszScript);
+
+    // 将分隔线和访问量添加到内容底部
+    content.appendChild(separator);
+    content.appendChild(visitCount);
 });
