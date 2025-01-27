@@ -60,7 +60,7 @@ document.addEventListener('DOMContentLoaded', function() {
     visitCount.style.marginBottom = '30px';
     visitCount.innerHTML = `
         <span id="busuanzi_container_page_pv" style="display: inline;">
-            当前访问量：<span id="busuanzi_value_page_pv"></span> 次
+            当前访问量：<span id="busuanzi_value_page_pv"></span>
         </span>
     `;
 
