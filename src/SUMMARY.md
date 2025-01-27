@@ -102,3 +102,8 @@
 + [99. Python 是如何管理内存的？](99.Python是如何管理内存的？.md)
 + [100. Python 的垃圾回收机制是怎么实现的？](100.Python的垃圾回收机制是怎么实现的？.md)
 + [101. 深入源码，探究垃圾回收的秘密](101.深入源码，探究垃圾回收的秘密.md)
++ [102. 侵入 Python 虚拟机，动态修改底层数据结构和运行时](102.侵入Python虚拟机，动态修改底层数据结构和运行时.md)
++ [103. 使用 Python 的 ctypes 调用 C 的动态库](103.使用Python的ctypes调用C的动态库.md)
++ [104. 使用 Python 的 ctypes 调用 Rust 的动态库](104.使用Python的ctypes调用Rust的动态库.md)
++ [105. 用 C 写 Python](105.用C写Python.md)
++ [106. Cython 从入门到精通](106.Cython从入门到精通.md)
