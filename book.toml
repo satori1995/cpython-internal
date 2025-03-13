@@ -8,7 +8,7 @@ title = "CPython3.8 源码探秘"
 [output.html]
 mathjax-support = true
 no-section-label = true
-# git-repository-url = "https://github.com/satori1995/cpython-internal"
+git-repository-url = "https://github.com/satori1995/cpython-internal"
 site-url = "/cpython-internal/"
 
 fold.enable = false
