@@ -1,0 +1,355 @@
+<!DOCTYPE HTML>
+<html lang="zh-cn" class="sidebar-visible no-js light">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>10. Python 对象的行为是怎么区分的？ - CPython3.8 源码探秘</title>
+        <!-- Custom HTML head -->
+        <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff" />
+
+        <link rel="icon" href="favicon.svg">
+        <link rel="shortcut icon" href="favicon.png">
+        <link rel="stylesheet" href="css/variables.css">
+        <link rel="stylesheet" href="css/general.css">
+        <link rel="stylesheet" href="css/chrome.css">
+        <link rel="stylesheet" href="css/print.css" media="print">
+        <!-- Fonts -->
+        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="fonts/fonts.css">
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="highlight.css">
+        <link rel="stylesheet" href="tomorrow-night.css">
+        <link rel="stylesheet" href="ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+        <link rel="stylesheet" href="theme/custom.css">
+        <!-- MathJax -->
+        <script async type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    </head>
+    <body>
+        <!-- Provide site root to javascript -->
+        <script type="text/javascript">
+            var path_to_root = "";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script type="text/javascript">
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script type="text/javascript">
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            var html = document.querySelector('html');
+            html.classList.remove('no-js')
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add('js');
+        </script>
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script type="text/javascript">
+            var html = document.querySelector('html');
+            var sidebar = 'hidden';
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            }
+            html.classList.remove('sidebar-visible');
+            html.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li class="chapter-item expanded "><a href="0.序言.html">0. 序言</a></li><li class="chapter-item expanded "><a href="1.CPython源码长什么样子？.html">1. CPython 源码长什么样子？</a></li><li class="chapter-item expanded "><a href="2.变量和对象，它们之间有什么区别和联系呢？.html">2. 变量和对象，它们之间有什么区别和联系呢？</a></li><li class="chapter-item expanded "><a href="3.Python对象有哪几种，我们可以从哪些角度进行分类呢？.html">3. Python 对象有哪几种，我们可以从哪些角度进行分类呢？</a></li><li class="chapter-item expanded "><a href="4.万丈高楼平地起，一切从PyObject开始.html">4. 万丈高楼平地起，一切从 PyObject 开始</a></li><li class="chapter-item expanded "><a href="5.详解PyTypeObject，Python类型对象的载体.html">5. 详解 PyTypeObject，Python 类型对象的载体</a></li><li class="chapter-item expanded "><a href="6.通过type和object之间的关联，进一步分析类型对象.html">6. 通过 type 和 object 之间的关联，进一步分析类型对象</a></li><li class="chapter-item expanded "><a href="7.当创建一个Python对象时，背后都经历了哪些过程？.html">7. 当创建一个 Python 对象时，背后都经历了哪些过程？</a></li><li class="chapter-item expanded "><a href="8.当调用一个Python对象时，背后都经历了哪些过程？.html">8. 当调用一个 Python 对象时，背后都经历了哪些过程？</a></li><li class="chapter-item expanded "><a href="9.再探泛型API，感受Python对象的设计哲学.html">9. 再探泛型 API，感受 Python 对象的设计哲学</a></li><li class="chapter-item expanded "><a href="10.Python对象的行为是怎么区分的？.html" class="active">10. Python 对象的行为是怎么区分的？</a></li><li class="chapter-item expanded "><a href="11.一个Python对象会在何时被销毁？.html">11. 一个 Python 对象会在何时被销毁？</a></li><li class="chapter-item expanded "><a href="12.深度解密Python的浮点数是怎么实现的？.html">12. 深度解密 Python 的浮点数是怎么实现的？</a></li><li class="chapter-item expanded "><a href="13.对象被销毁之后所占的内存一定会释放吗？解密浮点数的缓存池机制.html">13. 对象被销毁之后所占的内存一定会释放吗？解密浮点数的缓存池机制</a></li><li class="chapter-item expanded "><a href="14.浮点数支持的操作是怎么实现的？.html">14. 浮点数支持的操作是怎么实现的？</a></li><li class="chapter-item expanded "><a href="15.解密Python的复数是怎么实现的？它有什么用途呢？.html">15. 解密 Python 的复数是怎么实现的？它有什么用途呢？</a></li><li class="chapter-item expanded "><a href="16.Python的整数是怎么设计的，为什么它不会溢出？.html">16. Python 的整数是怎么设计的，为什么它不会溢出？</a></li><li class="chapter-item expanded "><a href="17.解密Python的小整数对象池.html">17. 解密 Python 的小整数对象池</a></li><li class="chapter-item expanded "><a href="18.两个Python整数之间是如何进行大小比较的？过程并不像我们想的那样简单.html">18. 两个 Python 整数之间是如何进行大小比较的？过程并不像我们想的那样简单</a></li><li class="chapter-item expanded "><a href="19.探究Python整数的加减法，感受大整数的运算哲学与魅力.html">19. 探究 Python 整数的加减法，感受大整数的运算哲学与魅力</a></li><li class="chapter-item expanded "><a href="20.Python的布尔值是怎么实现的，你对它的了解有多深呢？.html">20. Python 的布尔值是怎么实现的，你对它的了解有多深呢？</a></li><li class="chapter-item expanded "><a href="21.Python的None是怎么实现的？.html">21. Python 的 None 是怎么实现的？</a></li><li class="chapter-item expanded "><a href="22.深度解密Python切片的实现原理.html">22.深度解密 Python 切片的实现原理</a></li><li class="chapter-item expanded "><a href="23.bytes对象（字节串）是怎么实现的？解密它的内部原理.html">23. bytes 对象（字节串）是怎么实现的？解密它的内部原理</a></li><li class="chapter-item expanded "><a href="24.bytes对象都支持哪些操作，它们是怎么实现的？.html">24. bytes 对象都支持哪些操作，它们是怎么实现的？</a></li><li class="chapter-item expanded "><a href="25.通过bytes对象的合并，探究缓冲区的奥秘.html">25. 通过 bytes 对象的合并，探究缓冲区的奥秘</a></li><li class="chapter-item expanded "><a href="26.解密bytes对象的缓存池.html">26. 解密 bytes 对象的缓存池</a></li><li class="chapter-item expanded "><a href="27.详解bytearray对象的底层实现.html">27. 详解 bytearray 对象的底层实现</a></li><li class="chapter-item expanded "><a href="28.字符集和字符编码.html">28. 字符集和字符编码</a></li><li class="chapter-item expanded "><a href="29.Python是怎么存储字符串的？.html">29. Python 是怎么存储字符串的？</a></li><li class="chapter-item expanded "><a href="30.解密字符串的底层结构，它是怎么实现的？.html">30. 解密字符串的底层结构，它是怎么实现的？</a></li><li class="chapter-item expanded "><a href="31.字符串的intern机制是怎么一回事？.html">31. 字符串的 intern 机制是怎么一回事？</a></li><li class="chapter-item expanded "><a href="32.聊一聊字符串常见操作的源码实现.html">32. 聊一聊字符串常见操作的源码实现</a></li><li class="chapter-item expanded "><a href="33.列表是怎么实现的？解密列表的数据结构.html">33. 列表是怎么实现的？解密列表的数据结构</a></li><li class="chapter-item expanded "><a href="34.列表是怎么扩容的？.html">34. 列表是怎么扩容的？</a></li><li class="chapter-item expanded "><a href="35.解密列表的创建与销毁，以及缓存池长什么样子？.html">35. 解密列表的创建与销毁，以及缓存池长什么样子？</a></li><li class="chapter-item expanded "><a href="36.列表作为序列型对象都支持哪些操作，它们在底层是怎么实现的？.html">36. 列表作为序列型对象都支持哪些操作，它们在底层是怎么实现的？</a></li><li class="chapter-item expanded "><a href="37.列表都有哪些自定义方法，它们是怎么实现的？.html">37. 列表都有哪些自定义方法，它们是怎么实现的？</a></li><li class="chapter-item expanded "><a href="38.解密元组的实现原理.html">38. 解密元组的实现原理</a></li><li class="chapter-item expanded "><a href="39.聊一聊喜闻乐见的哈希表.html">39. 聊一聊喜闻乐见的哈希表</a></li><li class="chapter-item expanded "><a href="40.字典是怎么实现的，它的底层结构长什么样子？.html">40. 字典是怎么实现的，它的底层结构长什么样子？</a></li><li class="chapter-item expanded "><a href="41.什么是可哈希对象，它的哈希值是怎么计算的？.html">41. 什么是可哈希对象，它的哈希值是怎么计算的？</a></li><li class="chapter-item expanded "><a href="42.字典的key是怎么映射成索引的，索引冲突了又该怎么办？.html">42. 字典的 key 是怎么映射成索引的，索引冲突了又该怎么办？</a></li><li class="chapter-item expanded "><a href="43.哈希表是怎么删除元素的，能直接删除吗？.html">43. 哈希表是怎么删除元素的，能直接删除吗？</a></li><li class="chapter-item expanded "><a href="44.字典是怎么创建的，支持的操作又是如何实现的？.html">44. 字典是怎么创建的，支持的操作又是如何实现的？</a></li><li class="chapter-item expanded "><a href="45.字典的自定义方法是怎么实现的？.html">45. 字典的自定义方法是怎么实现的？</a></li><li class="chapter-item expanded "><a href="46.字典是怎么扩容的？它会经历哪些过程？.html">46. 字典是怎么扩容的？它会经历哪些过程？</a></li><li class="chapter-item expanded "><a href="47.身虽死，道未消，解密字典的缓存池.html">47. 身虽死，道未消，解密字典的缓存池</a></li><li class="chapter-item expanded "><a href="48.解密集合的实现原理.html">48. 解密集合的实现原理</a></li><li class="chapter-item expanded "><a href="49.集合支持的操作有哪些，它们是怎么实现的？.html">49. 集合支持的操作有哪些，它们是怎么实现的？</a></li><li class="chapter-item expanded "><a href="50.迭代器是怎么实现的？.html">50. 迭代器是怎么实现的？</a></li><li class="chapter-item expanded "><a href="51.Python源文件编译之后会得到什么，它的结构是怎样的？和字节码又有什么联系？.html">51. Python 源文件编译之后会得到什么，它的结构是怎样的？和字节码又有什么联系？</a></li><li class="chapter-item expanded "><a href="52.PyCodeObject拾遗.html">52. PyCodeObject 拾遗</a></li><li class="chapter-item expanded "><a href="53.一文让你搞懂pyc文件.html">53. 一文让你搞懂 pyc 文件</a></li><li class="chapter-item expanded "><a href="54.深度解密虚拟机的执行环境：栈帧对象.html">54. 深度解密虚拟机的执行环境：栈帧对象</a></li><li class="chapter-item expanded "><a href="55.名字空间：变量的容身之所.html">55. 名字空间：变量的容身之所</a></li><li class="chapter-item expanded "><a href="56.当查找一个变量时，虚拟机会进行哪些动作？.html">56. 当查找一个变量时，虚拟机会进行哪些动作？</a></li><li class="chapter-item expanded "><a href="57.虚拟机是怎么执行字节码的？背后都经历了哪些过程.html">57. 虚拟机是怎么执行字节码的？背后都经历了哪些过程</a></li><li class="chapter-item expanded "><a href="58.深入源码，进一步考察字节码的执行流程.html">58. 深入源码，进一步考察字节码的执行流程</a></li><li class="chapter-item expanded "><a href="59.局部变量是怎么实现静态查找的，它和local名字空间又有什么联系呢？.html">59. 局部变量是怎么实现静态查找的，它和 local 名字空间又有什么联系呢？</a></li><li class="chapter-item expanded "><a href="60.剖析字节码指令，以及Python赋值语句的原理.html">60. 剖析字节码指令，以及 Python 赋值语句的原理</a></li><li class="chapter-item expanded "><a href="61.流程控制语句if是怎么实现的？.html">61. 流程控制语句 if 是怎么实现的？</a></li><li class="chapter-item expanded "><a href="62.流程控制语句for、while是怎么实现的？.html">62. 流程控制语句 for、while 是怎么实现的？</a></li><li class="chapter-item expanded "><a href="63.异常是怎么实现的？虚拟机是如何将异常抛出去的？.html">63. 异常是怎么实现的？虚拟机是如何将异常抛出去的？</a></li><li class="chapter-item expanded "><a href="64.虚拟机是如何捕获异常的？.html">64. 虚拟机是如何捕获异常的？</a></li><li class="chapter-item expanded "><a href="65.函数在底层长什么样子？.html">65. 函数在底层长什么样子？</a></li><li class="chapter-item expanded "><a href="66.函数是怎么创建的，背后经历了哪些过程？.html">66. 函数是怎么创建的，背后经历了哪些过程？</a></li><li class="chapter-item expanded "><a href="67.函数在底层是如何调用的？.html">67. 函数在底层是如何调用的？</a></li><li class="chapter-item expanded "><a href="68.函数是如何解析位置参数的？.html">68. 函数是如何解析位置参数的？</a></li><li class="chapter-item expanded "><a href="69.函数是如何解析关键字参数的？.html">69. 函数是如何解析关键字参数的？</a></li><li class="chapter-item expanded "><a href="70.扩展位置参数和扩展关键字参数是如何解析的？.html">70. 扩展位置参数和扩展关键字参数是如何解析的？</a></li><li class="chapter-item expanded "><a href="71.闭包是怎么实现的？.html">71. 闭包是怎么实现的？</a></li><li class="chapter-item expanded "><a href="72.生成器是做什么的，为什么会有生成器？.html">72. 生成器是做什么的，为什么会有生成器？</a></li><li class="chapter-item expanded "><a href="73.源码解密生成器的实现原理.html">73. 源码解密生成器的实现原理</a></li><li class="chapter-item expanded "><a href="74.回顾Python的对象模型.html">74. 回顾 Python 的对象模型</a></li><li class="chapter-item expanded "><a href="75.class概念解析.html">75. class 概念解析</a></li><li class="chapter-item expanded "><a href="76.类型对象的初始化.html">76. 类型对象的初始化</a></li><li class="chapter-item expanded "><a href="77.自定义类对象的底层实现与metaclass.html">77. 自定义类对象的底层实现与 metaclass</a></li><li class="chapter-item expanded "><a href="78.彻底搞懂描述符.html">78. 彻底搞懂描述符</a></li><li class="chapter-item expanded "><a href="79.实例对象是如何创建的？.html">79. 实例对象是如何创建的？</a></li><li class="chapter-item expanded "><a href="80.实例对象的属性访问.html">80. 实例对象的属性访问</a></li><li class="chapter-item expanded "><a href="81.为什么实例在调用方法时会将自身传给self参数.html">81. 为什么实例在调用方法时会将自身传给 self 参数</a></li><li class="chapter-item expanded "><a href="82.模块是如何导入的？.html">82. 模块是如何导入的？</a></li><li class="chapter-item expanded "><a href="83.import机制的黑盒探测.html">83. import 机制的黑盒探测</a></li><li class="chapter-item expanded "><a href="84.import机制是怎么实现的？.html">84. import 机制是怎么实现的？</a></li><li class="chapter-item expanded "><a href="85.Python运行时环境的初始化，解释器在启动时都做了什么？.html">85. Python 运行时环境的初始化，解释器在启动时都做了什么？</a></li><li class="chapter-item expanded "><a href="86.激活Python虚拟机.html">86. 激活 Python 虚拟机</a></li><li class="chapter-item expanded "><a href="87.初识GIL、以及多个线程之间的调度机制.html">87. 初识 GIL、以及多个线程之间的调度机制</a></li><li class="chapter-item expanded "><a href="88.线程的创建、销毁、调度，以及GIL的实现原理.html">88. 线程的创建、销毁、调度，以及 GIL 的实现原理</a></li><li class="chapter-item expanded "><a href="89.解密map、filter、zip底层实现，对比列表解析式.html">89. 解密 map、filter、zip 底层实现，对比列表解析式</a></li><li class="chapter-item expanded "><a href="90.为什么要有协程，协程是如何实现的？.html">90. 为什么要有协程，协程是如何实现的？</a></li><li class="chapter-item expanded "><a href="91.什么是asyncio？如何基于单线程实现并发？事件循环又是怎么工作的？.html">91. 什么是 asyncio？如何基于单线程实现并发？事件循环又是怎么工作的？</a></li><li class="chapter-item expanded "><a href="92.协程、任务、future，以及事件循环.html">92. 协程、任务、future，以及事件循环</a></li><li class="chapter-item expanded "><a href="93.在asyncio中使用Socket.html">93. 在 asyncio 中使用 Socket</a></li><li class="chapter-item expanded "><a href="94.解密asyncio的Future和Task.html">94. 解密 asyncio 的 Future 和 Task</a></li><li class="chapter-item expanded "><a href="95.如何精确控制asyncio中并发运行的多个任务.html">95. 如何精确控制 asyncio 中并发运行的多个任务</a></li><li class="chapter-item expanded "><a href="96.详解asyncio的同步原语.html">96. 详解 asyncio 的同步原语</a></li><li class="chapter-item expanded "><a href="97.在asyncio中引入多进程.html">97. 在 asyncio 中引入多进程</a></li><li class="chapter-item expanded "><a href="98.可执行文件的内存模型，变量的值是放在栈上还是放在堆上.html">98. 可执行文件的内存模型，变量的值是放在栈上还是放在堆上</a></li><li class="chapter-item expanded "><a href="99.Python是如何管理内存的？.html">99. Python 是如何管理内存的？</a></li><li class="chapter-item expanded "><a href="100.Python的垃圾回收机制是怎么实现的？.html">100. Python 的垃圾回收机制是怎么实现的？</a></li><li class="chapter-item expanded "><a href="101.深入源码，探究垃圾回收的秘密.html">101. 深入源码，探究垃圾回收的秘密</a></li><li class="chapter-item expanded "><a href="102.侵入Python虚拟机，动态修改底层数据结构和运行时.html">102. 侵入 Python 虚拟机，动态修改底层数据结构和运行时</a></li><li class="chapter-item expanded "><a href="103.使用Python的ctypes调用C的动态库.html">103. 使用 Python 的 ctypes 调用 C 的动态库</a></li><li class="chapter-item expanded "><a href="104.使用Python的ctypes调用Rust的动态库.html">104. 使用 Python 的 ctypes 调用 Rust 的动态库</a></li><li class="chapter-item expanded "><a href="105.用C写Python.html">105. 用 C 写 Python</a></li><li class="chapter-item expanded "><a href="106.Cython从入门到精通.html">106. Cython 从入门到精通</a></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky bordered">
+                    <div class="left-buttons">
+                        <button id="sidebar-toggle" class="icon-button" type="button" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </button>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light (default)</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">CPython3.8 源码探秘</h1>
+
+                    <div class="right-buttons">
+                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+                        <a href="https://github.com/satori1995/cpython-internal" title="Git repository" aria-label="Git repository">
+                            <i id="git-repository-button" class="fa fa-github"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script type="text/javascript">
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <p>我们知道所有类型对象在底层都由结构体 PyTypeObject 实例化得到，但内部字段接收的值不同，得到的类型对象就不同。类型对象不同，那么实例对象的表现就不同，这也正是一种对象区别于另一种对象的关键所在。</p>
+<p>比如 PyLong_Type 的 tp_iter 是空，那么整数就不是可迭代对象，而 PyList_Type 的 tp_iter 不是空，那么列表就是可迭代对象。再比如 PyLong_Type 和 PyFloat_Type，虽然内部都实现了 tp_hash，但它们是不同的类型，所以整数和浮点数的哈希值计算方式也不一样。</p>
+<p>因此类型对象决定了实例对象的行为，比如能否调用、能否计算哈希值、能否迭代等等，这些都由类型对象决定。</p>
+<p>PyTypeObject 里面定义了很多函数指针，比如 tp_call、tp_hash 等等，它们可能指向某个具体的函数，也可能为空。这些函数指针可以看做是类型对象所定义的<font color="blue">操作</font>，这些操作决定了其实例对象在运行时的<font color="blue">行为</font>。</p>
+<pre><code class="language-python">class A:
+    
+    # tp_new
+    def __new__(cls, *args, **kwargs):
+        pass
+    
+    # tp_init
+    def __init__(self):
+        pass
+    
+    # tp_call
+    def __call__(self):
+        pass
+    
+    # tp_getattro
+    def __getattr__(self, attr):
+        pass
+    
+    # tp_setattro
+    def __setattr__(self, key, value):
+        pass
+    
+    ...
+    ...
+</code></pre>
+<p>像 tp_call、tp_hash、tp_new 等字段会直接对应 Python 里的魔法函数，它们以双下划线开头、以双下划线结尾。但除了魔法函数之外，每种类型还可以有很多自定义的成员函数。</p>
+<pre><code class="language-python"># 自定义 foo 和 bar
+class A:
+
+    def foo(self):
+        pass
+
+    def bar(self):
+        pass
+
+# 当然内置类型也是如此
+# 像 str 定义了 join、split、upper 等
+print(str.join)
+print(str.split)
+print(str.upper)
+# 像 list 定义了 append、extend，insert 等
+print(list.append)
+print(list.extend)
+print(list.insert)
+</code></pre>
+<p>这些自定义的函数会一起保存在类型对象的 tp_methods 里面，负责让实例对象更具有表现力。另外需要补充的是，类型对象里面定义的是函数，也叫成员函数，但实例对象在获取之后会自动包装成方法。所以当提到魔法函数和魔法方法时，其实表达的是同一个意思，只不过一个是站在类的角度，一个是站在实例的角度。</p>
+<p>所以实例对象能调用的方法都定义在类型对象里面，并且通过实例调用本质上就是一个语法糖，但用起来更加优雅。假设有一个类 A，实例对象为 a，那么 <font color="blue">a.some()</font> 底层会转成 <font color="blue">A.some(a)</font>，至于这背后的细节后续再聊。</p>
+<p>但除了以上这些，PyTypeObject 还提供了三个字段。</p>
+<p><img src="./images/35.png" alt="" /></p>
+<p>每个字段分别指向一个结构体实例，结构体实例中有大量的字段，这些字段都是函数指针，指向了具体的函数。所以它们也被称为<font color="blue">方法簇</font>，分别应用于如下操作。</p>
+<ul>
+<li>tp_as_number：负责数值型操作，比如整数、浮点数的加减乘除；</li>
+<li>tp_as_sequence：负责序列型操作，比如字符串、列表、元组等通过索引取值的行为；</li>
+<li>tp_as_mapping：负责映射型操作，比如字典通过 key 映射出 value；</li>
+</ul>
+<p>我们以 tp_as_number 为例，它指向 PyNumberMethods 类型的结构体实例，那么这个结构体长什么样子呢？</p>
+<pre><code class="language-C">// Include/cpython/object.h
+
+typedef struct {
+    // __add__，对应 + 操作符，如 a + b
+    binaryfunc nb_add;
+    // __sub__，对应 - 操作符，如 a - b
+    binaryfunc nb_subtract;
+    // __mul__，对应 * 操作符，如 a * b
+    binaryfunc nb_multiply;
+    // __mod__，对应 % 操作符，如 a % b
+    binaryfunc nb_remainder;
+    // __divmod__，对应 divmode 函数，如 divmod(a, b)
+    binaryfunc nb_divmod;
+    // __power__，对应 ** 操作符，如 a ** b
+    ternaryfunc nb_power;
+    // __neg__，对应 - 操作符，如 -a
+    unaryfunc nb_negative;
+    // __pos__，对应 + 操作符，如 +a
+    unaryfunc nb_positive;
+    // __abs__，对应 abs 函数，如 abs(a)
+    unaryfunc nb_absolute;
+    // __bool__，如 bool(a)
+    inquiry nb_bool;
+    // __invert__，对应 ~ 操作符，如 ~a
+    unaryfunc nb_invert;
+    // __lshift__，对应 &lt;&lt; 操作符，如 a &lt;&lt; b
+    binaryfunc nb_lshift;
+    // __rshift__，对应 &gt;&gt; 操作符，如 a &gt;&gt; b
+    binaryfunc nb_rshift;
+    // __and__，对应 &amp; 操作符，如 a &amp; b
+    binaryfunc nb_and;
+    // __xor__，对应 ^ 操作符，如 a ^ b
+    binaryfunc nb_xor;
+    // __or__，对应 | 操作符，如 a | b
+    binaryfunc nb_or;
+    // __int__，如 int(a)
+    unaryfunc nb_int;
+    // ...
+} PyNumberMethods;
+</code></pre>
+<p>你看到了什么？是不是想到了 Python 里面的魔法方法，所以它们也被称为方法簇。</p>
+<p>在 PyNumberMethods 这个方法簇里面定义了作为一个数值对象应该支持的操作，同理，在 PySequenceMethods 和 PyMappingMethods 中分别定义了作为一个序列对象和映射对象应该支持的操作，这两种对象的典型例子就是 list 和 dict。</p>
+<p>所以，只要<font color="blue">类型对象</font>提供<font color="red">相关操作</font>，<font color="blue">实例对象</font>便具备<font color="red">对应的行为</font>，因为实例对象所调用的方法都是由类型对象提供的。</p>
+<pre><code class="language-Python">class Girl:
+
+    def __init__(self, name, age):
+        self.name = name
+        self.age = age
+
+    def say(self):
+        pass
+
+    def cry(self):
+        pass
+
+
+g = Girl(&quot;古明地觉&quot;, 16)
+print(g.__dict__)  # {'name': '古明地觉', 'age': 16}
+print(&quot;say&quot; in Girl.__dict__)  # True
+print(&quot;cry&quot; in Girl.__dict__)  # True
+</code></pre>
+<p>实例对象的属性字典，只包含了一些在 __init__ 里面设置的属性而已，而实例能够调用的 say、cry 都是定义在类型对象中的。</p>
+<p>因此一定要记住：<font color="blue">类型对象定义的操作，决定了实例对象的行为</font>。</p>
+<pre><code class="language-python">class Int(int):
+
+    def __getitem__(self, item):
+        return item
+
+
+a = Int(1)
+b = Int(2)
+
+print(a + b)  # 3
+print(a[&quot;你好&quot;])  # 你好
+</code></pre>
+<p>继承了 int 的自定义类 Int 在实例化之后自然是一个数值对象，但 a[&quot;&quot;] 却是一个类似于字典才具有的行为，那为什么可以实现呢？原因就是我们重写了 <font color="blue">__getitem__</font> 这个魔法函数，它在底层对应 <font color="blue">PyMappingMethods</font> 中的 <font color="blue">mp_subscript</font> 操作，因此最终 Int 实例对象表现的像一个字典一样。</p>
+<p>归根结底就在于这几个方法簇都只是 PyTypeObject 的一个字段罢了，默认使用 PyTypeObject 结构体创建的 PyLong_Type 所生成的实例对象（整数）是不具备列表和字典的属性特征的。但我们通过继承 PyLong_Type，同时指定 __getitem__，使得构建出来的类型对象所生成的实例对象，同时具备多种属性特征，就是因为解释器支持这种做法。</p>
+<p>自定义的类在底层也是 PyTypeObject 结构体实例，而在继承 int 的时候，将其内部定义的 PyNumberMethods 方法簇也继承了下来，而我们又单独实现了 PyMappingMethods 中的 mp_subscript。所以<font color="blue">自定义类 Int</font> 的实例对象具备了整数的全部行为，以及字典的部分行为（因为我们只实现了 __getitem__）。</p>
+<p>下面再通过 PyLong_Type 实际考察一下：</p>
+<p><img src="./images/36.png" alt="" /></p>
+<p>整数对象支持数值操作，所以在创建 PyLong_Type 时，实现了 tp_as_number。但整数显然不支持序列和映射操作，因此字段 tp_as_sequence 和 tp_as_mapping 就是 0，相当于空。</p>
+<p>而 tp_as_number 字段被赋值为 long_as_number，看一下它长什么样。</p>
+<p><img src="./images/37.png" alt="" /></p>
+<p>里面的 long_add、long_sub、long_mul 等等显然都是已经定义好的函数指针，在创建 PyNumberMethods 结构体实例 long_as_number 的时候，这些函数指针分别赋值给了字段 nb_add、nb_substract、nb_multiply 等等。然后创建完 long_as_number 之后，再将其指针交给 PyLong_Type 的 tp_as_number 字段。</p>
+<p>因此整数在操作的时候，比如相加，会先通过 <font color="blue">变量-&gt;ob_type-&gt;tp_as_number-&gt;nb_add</font> 获取该操作对应的函数指针，其中 int 类型对象的 tp_as_number 字段的值是 &amp;long_as_number，因此获取其字段 nb_add 的时候，拿到的就是 long_add 函数指针，然后调用。</p>
+<p>同理 float 类型里的 tp_as_number 字段则被赋值成了 &amp;float_as_number，获取 nb_add 字段的时候，拿到的就是 float_add 函数指针。不同类型的对象的行为不同，它们都有属于自己的一组方法簇。</p>
+<p>最后再画一张图总结一下，假设有两个变量，分别是 e = 2.71 和 num = 666。</p>
+<p><img src="./images/38.png" alt="" /></p>
+<p>所以对象的行为是由其类型对象定义的操作所决定的，比如一个对象可以计算长度，那么它的类型对象要实现 __len__；一个对象可以转成整数，那么它的类型对象要实现 __int__ 或 __index__。</p>
+<pre><code class="language-python">class A:
+
+    def __len__(self):
+        return 123
+
+    def __int__(self):
+        return 456
+
+a = A()
+print(len(a))  # 123
+print(int(a))  # 456
+# len(a) 在底层会执行 A.__len__(a)
+# int(a) 在底层会执行 A.__int__(a)
+print(A.__len__(a))  # 123
+print(A.__int__(a))  # 456
+</code></pre>
+<p>总之核心就是一句话：类型对象定义了哪些操作，决定了实例对象具有哪些行为。</p>
+<hr />
+<p> </p>
+<p><strong>欢迎大家关注我的公众号：古明地觉的编程教室。</strong></p>
+<p><img src="./images/qrcode_for_gh.jpg" alt="" /></p>
+<p><strong>如果觉得文章对你有所帮助，也可以请作者吃个馒头，Thanks♪(･ω･)ﾉ。</strong></p>
+<p><img src="./images/supports.png" alt="" /></p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="9.再探泛型API，感受Python对象的设计哲学.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+                            <a rel="next" href="11.一个Python对象会在何时被销毁？.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="9.再探泛型API，感受Python对象的设计哲学.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+                    <a rel="next" href="11.一个Python对象会在何时被销毁？.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+            </nav>
+
+        </div>
+
+        <script type="text/javascript">
+            window.playground_copyable = true;
+        </script>
+        <script src="elasticlunr.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="mark.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="searcher.js" type="text/javascript" charset="utf-8"></script>
+        <script src="clipboard.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="highlight.js" type="text/javascript" charset="utf-8"></script>
+        <script src="book.js" type="text/javascript" charset="utf-8"></script>
+
+        <!-- Custom JS scripts -->
+        <script type="text/javascript" src="theme/custom.js"></script>
+    </body>
+</html>

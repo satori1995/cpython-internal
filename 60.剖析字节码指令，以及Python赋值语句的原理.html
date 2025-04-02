@@ -1,0 +1,636 @@
+<!DOCTYPE HTML>
+<html lang="zh-cn" class="sidebar-visible no-js light">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>60. 剖析字节码指令，以及 Python 赋值语句的原理 - CPython3.8 源码探秘</title>
+        <!-- Custom HTML head -->
+        <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff" />
+
+        <link rel="icon" href="favicon.svg">
+        <link rel="shortcut icon" href="favicon.png">
+        <link rel="stylesheet" href="css/variables.css">
+        <link rel="stylesheet" href="css/general.css">
+        <link rel="stylesheet" href="css/chrome.css">
+        <link rel="stylesheet" href="css/print.css" media="print">
+        <!-- Fonts -->
+        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="fonts/fonts.css">
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="highlight.css">
+        <link rel="stylesheet" href="tomorrow-night.css">
+        <link rel="stylesheet" href="ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+        <link rel="stylesheet" href="theme/custom.css">
+        <!-- MathJax -->
+        <script async type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    </head>
+    <body>
+        <!-- Provide site root to javascript -->
+        <script type="text/javascript">
+            var path_to_root = "";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script type="text/javascript">
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script type="text/javascript">
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            var html = document.querySelector('html');
+            html.classList.remove('no-js')
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add('js');
+        </script>
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script type="text/javascript">
+            var html = document.querySelector('html');
+            var sidebar = 'hidden';
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            }
+            html.classList.remove('sidebar-visible');
+            html.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li class="chapter-item expanded "><a href="0.序言.html">0. 序言</a></li><li class="chapter-item expanded "><a href="1.CPython源码长什么样子？.html">1. CPython 源码长什么样子？</a></li><li class="chapter-item expanded "><a href="2.变量和对象，它们之间有什么区别和联系呢？.html">2. 变量和对象，它们之间有什么区别和联系呢？</a></li><li class="chapter-item expanded "><a href="3.Python对象有哪几种，我们可以从哪些角度进行分类呢？.html">3. Python 对象有哪几种，我们可以从哪些角度进行分类呢？</a></li><li class="chapter-item expanded "><a href="4.万丈高楼平地起，一切从PyObject开始.html">4. 万丈高楼平地起，一切从 PyObject 开始</a></li><li class="chapter-item expanded "><a href="5.详解PyTypeObject，Python类型对象的载体.html">5. 详解 PyTypeObject，Python 类型对象的载体</a></li><li class="chapter-item expanded "><a href="6.通过type和object之间的关联，进一步分析类型对象.html">6. 通过 type 和 object 之间的关联，进一步分析类型对象</a></li><li class="chapter-item expanded "><a href="7.当创建一个Python对象时，背后都经历了哪些过程？.html">7. 当创建一个 Python 对象时，背后都经历了哪些过程？</a></li><li class="chapter-item expanded "><a href="8.当调用一个Python对象时，背后都经历了哪些过程？.html">8. 当调用一个 Python 对象时，背后都经历了哪些过程？</a></li><li class="chapter-item expanded "><a href="9.再探泛型API，感受Python对象的设计哲学.html">9. 再探泛型 API，感受 Python 对象的设计哲学</a></li><li class="chapter-item expanded "><a href="10.Python对象的行为是怎么区分的？.html">10. Python 对象的行为是怎么区分的？</a></li><li class="chapter-item expanded "><a href="11.一个Python对象会在何时被销毁？.html">11. 一个 Python 对象会在何时被销毁？</a></li><li class="chapter-item expanded "><a href="12.深度解密Python的浮点数是怎么实现的？.html">12. 深度解密 Python 的浮点数是怎么实现的？</a></li><li class="chapter-item expanded "><a href="13.对象被销毁之后所占的内存一定会释放吗？解密浮点数的缓存池机制.html">13. 对象被销毁之后所占的内存一定会释放吗？解密浮点数的缓存池机制</a></li><li class="chapter-item expanded "><a href="14.浮点数支持的操作是怎么实现的？.html">14. 浮点数支持的操作是怎么实现的？</a></li><li class="chapter-item expanded "><a href="15.解密Python的复数是怎么实现的？它有什么用途呢？.html">15. 解密 Python 的复数是怎么实现的？它有什么用途呢？</a></li><li class="chapter-item expanded "><a href="16.Python的整数是怎么设计的，为什么它不会溢出？.html">16. Python 的整数是怎么设计的，为什么它不会溢出？</a></li><li class="chapter-item expanded "><a href="17.解密Python的小整数对象池.html">17. 解密 Python 的小整数对象池</a></li><li class="chapter-item expanded "><a href="18.两个Python整数之间是如何进行大小比较的？过程并不像我们想的那样简单.html">18. 两个 Python 整数之间是如何进行大小比较的？过程并不像我们想的那样简单</a></li><li class="chapter-item expanded "><a href="19.探究Python整数的加减法，感受大整数的运算哲学与魅力.html">19. 探究 Python 整数的加减法，感受大整数的运算哲学与魅力</a></li><li class="chapter-item expanded "><a href="20.Python的布尔值是怎么实现的，你对它的了解有多深呢？.html">20. Python 的布尔值是怎么实现的，你对它的了解有多深呢？</a></li><li class="chapter-item expanded "><a href="21.Python的None是怎么实现的？.html">21. Python 的 None 是怎么实现的？</a></li><li class="chapter-item expanded "><a href="22.深度解密Python切片的实现原理.html">22.深度解密 Python 切片的实现原理</a></li><li class="chapter-item expanded "><a href="23.bytes对象（字节串）是怎么实现的？解密它的内部原理.html">23. bytes 对象（字节串）是怎么实现的？解密它的内部原理</a></li><li class="chapter-item expanded "><a href="24.bytes对象都支持哪些操作，它们是怎么实现的？.html">24. bytes 对象都支持哪些操作，它们是怎么实现的？</a></li><li class="chapter-item expanded "><a href="25.通过bytes对象的合并，探究缓冲区的奥秘.html">25. 通过 bytes 对象的合并，探究缓冲区的奥秘</a></li><li class="chapter-item expanded "><a href="26.解密bytes对象的缓存池.html">26. 解密 bytes 对象的缓存池</a></li><li class="chapter-item expanded "><a href="27.详解bytearray对象的底层实现.html">27. 详解 bytearray 对象的底层实现</a></li><li class="chapter-item expanded "><a href="28.字符集和字符编码.html">28. 字符集和字符编码</a></li><li class="chapter-item expanded "><a href="29.Python是怎么存储字符串的？.html">29. Python 是怎么存储字符串的？</a></li><li class="chapter-item expanded "><a href="30.解密字符串的底层结构，它是怎么实现的？.html">30. 解密字符串的底层结构，它是怎么实现的？</a></li><li class="chapter-item expanded "><a href="31.字符串的intern机制是怎么一回事？.html">31. 字符串的 intern 机制是怎么一回事？</a></li><li class="chapter-item expanded "><a href="32.聊一聊字符串常见操作的源码实现.html">32. 聊一聊字符串常见操作的源码实现</a></li><li class="chapter-item expanded "><a href="33.列表是怎么实现的？解密列表的数据结构.html">33. 列表是怎么实现的？解密列表的数据结构</a></li><li class="chapter-item expanded "><a href="34.列表是怎么扩容的？.html">34. 列表是怎么扩容的？</a></li><li class="chapter-item expanded "><a href="35.解密列表的创建与销毁，以及缓存池长什么样子？.html">35. 解密列表的创建与销毁，以及缓存池长什么样子？</a></li><li class="chapter-item expanded "><a href="36.列表作为序列型对象都支持哪些操作，它们在底层是怎么实现的？.html">36. 列表作为序列型对象都支持哪些操作，它们在底层是怎么实现的？</a></li><li class="chapter-item expanded "><a href="37.列表都有哪些自定义方法，它们是怎么实现的？.html">37. 列表都有哪些自定义方法，它们是怎么实现的？</a></li><li class="chapter-item expanded "><a href="38.解密元组的实现原理.html">38. 解密元组的实现原理</a></li><li class="chapter-item expanded "><a href="39.聊一聊喜闻乐见的哈希表.html">39. 聊一聊喜闻乐见的哈希表</a></li><li class="chapter-item expanded "><a href="40.字典是怎么实现的，它的底层结构长什么样子？.html">40. 字典是怎么实现的，它的底层结构长什么样子？</a></li><li class="chapter-item expanded "><a href="41.什么是可哈希对象，它的哈希值是怎么计算的？.html">41. 什么是可哈希对象，它的哈希值是怎么计算的？</a></li><li class="chapter-item expanded "><a href="42.字典的key是怎么映射成索引的，索引冲突了又该怎么办？.html">42. 字典的 key 是怎么映射成索引的，索引冲突了又该怎么办？</a></li><li class="chapter-item expanded "><a href="43.哈希表是怎么删除元素的，能直接删除吗？.html">43. 哈希表是怎么删除元素的，能直接删除吗？</a></li><li class="chapter-item expanded "><a href="44.字典是怎么创建的，支持的操作又是如何实现的？.html">44. 字典是怎么创建的，支持的操作又是如何实现的？</a></li><li class="chapter-item expanded "><a href="45.字典的自定义方法是怎么实现的？.html">45. 字典的自定义方法是怎么实现的？</a></li><li class="chapter-item expanded "><a href="46.字典是怎么扩容的？它会经历哪些过程？.html">46. 字典是怎么扩容的？它会经历哪些过程？</a></li><li class="chapter-item expanded "><a href="47.身虽死，道未消，解密字典的缓存池.html">47. 身虽死，道未消，解密字典的缓存池</a></li><li class="chapter-item expanded "><a href="48.解密集合的实现原理.html">48. 解密集合的实现原理</a></li><li class="chapter-item expanded "><a href="49.集合支持的操作有哪些，它们是怎么实现的？.html">49. 集合支持的操作有哪些，它们是怎么实现的？</a></li><li class="chapter-item expanded "><a href="50.迭代器是怎么实现的？.html">50. 迭代器是怎么实现的？</a></li><li class="chapter-item expanded "><a href="51.Python源文件编译之后会得到什么，它的结构是怎样的？和字节码又有什么联系？.html">51. Python 源文件编译之后会得到什么，它的结构是怎样的？和字节码又有什么联系？</a></li><li class="chapter-item expanded "><a href="52.PyCodeObject拾遗.html">52. PyCodeObject 拾遗</a></li><li class="chapter-item expanded "><a href="53.一文让你搞懂pyc文件.html">53. 一文让你搞懂 pyc 文件</a></li><li class="chapter-item expanded "><a href="54.深度解密虚拟机的执行环境：栈帧对象.html">54. 深度解密虚拟机的执行环境：栈帧对象</a></li><li class="chapter-item expanded "><a href="55.名字空间：变量的容身之所.html">55. 名字空间：变量的容身之所</a></li><li class="chapter-item expanded "><a href="56.当查找一个变量时，虚拟机会进行哪些动作？.html">56. 当查找一个变量时，虚拟机会进行哪些动作？</a></li><li class="chapter-item expanded "><a href="57.虚拟机是怎么执行字节码的？背后都经历了哪些过程.html">57. 虚拟机是怎么执行字节码的？背后都经历了哪些过程</a></li><li class="chapter-item expanded "><a href="58.深入源码，进一步考察字节码的执行流程.html">58. 深入源码，进一步考察字节码的执行流程</a></li><li class="chapter-item expanded "><a href="59.局部变量是怎么实现静态查找的，它和local名字空间又有什么联系呢？.html">59. 局部变量是怎么实现静态查找的，它和 local 名字空间又有什么联系呢？</a></li><li class="chapter-item expanded "><a href="60.剖析字节码指令，以及Python赋值语句的原理.html" class="active">60. 剖析字节码指令，以及 Python 赋值语句的原理</a></li><li class="chapter-item expanded "><a href="61.流程控制语句if是怎么实现的？.html">61. 流程控制语句 if 是怎么实现的？</a></li><li class="chapter-item expanded "><a href="62.流程控制语句for、while是怎么实现的？.html">62. 流程控制语句 for、while 是怎么实现的？</a></li><li class="chapter-item expanded "><a href="63.异常是怎么实现的？虚拟机是如何将异常抛出去的？.html">63. 异常是怎么实现的？虚拟机是如何将异常抛出去的？</a></li><li class="chapter-item expanded "><a href="64.虚拟机是如何捕获异常的？.html">64. 虚拟机是如何捕获异常的？</a></li><li class="chapter-item expanded "><a href="65.函数在底层长什么样子？.html">65. 函数在底层长什么样子？</a></li><li class="chapter-item expanded "><a href="66.函数是怎么创建的，背后经历了哪些过程？.html">66. 函数是怎么创建的，背后经历了哪些过程？</a></li><li class="chapter-item expanded "><a href="67.函数在底层是如何调用的？.html">67. 函数在底层是如何调用的？</a></li><li class="chapter-item expanded "><a href="68.函数是如何解析位置参数的？.html">68. 函数是如何解析位置参数的？</a></li><li class="chapter-item expanded "><a href="69.函数是如何解析关键字参数的？.html">69. 函数是如何解析关键字参数的？</a></li><li class="chapter-item expanded "><a href="70.扩展位置参数和扩展关键字参数是如何解析的？.html">70. 扩展位置参数和扩展关键字参数是如何解析的？</a></li><li class="chapter-item expanded "><a href="71.闭包是怎么实现的？.html">71. 闭包是怎么实现的？</a></li><li class="chapter-item expanded "><a href="72.生成器是做什么的，为什么会有生成器？.html">72. 生成器是做什么的，为什么会有生成器？</a></li><li class="chapter-item expanded "><a href="73.源码解密生成器的实现原理.html">73. 源码解密生成器的实现原理</a></li><li class="chapter-item expanded "><a href="74.回顾Python的对象模型.html">74. 回顾 Python 的对象模型</a></li><li class="chapter-item expanded "><a href="75.class概念解析.html">75. class 概念解析</a></li><li class="chapter-item expanded "><a href="76.类型对象的初始化.html">76. 类型对象的初始化</a></li><li class="chapter-item expanded "><a href="77.自定义类对象的底层实现与metaclass.html">77. 自定义类对象的底层实现与 metaclass</a></li><li class="chapter-item expanded "><a href="78.彻底搞懂描述符.html">78. 彻底搞懂描述符</a></li><li class="chapter-item expanded "><a href="79.实例对象是如何创建的？.html">79. 实例对象是如何创建的？</a></li><li class="chapter-item expanded "><a href="80.实例对象的属性访问.html">80. 实例对象的属性访问</a></li><li class="chapter-item expanded "><a href="81.为什么实例在调用方法时会将自身传给self参数.html">81. 为什么实例在调用方法时会将自身传给 self 参数</a></li><li class="chapter-item expanded "><a href="82.模块是如何导入的？.html">82. 模块是如何导入的？</a></li><li class="chapter-item expanded "><a href="83.import机制的黑盒探测.html">83. import 机制的黑盒探测</a></li><li class="chapter-item expanded "><a href="84.import机制是怎么实现的？.html">84. import 机制是怎么实现的？</a></li><li class="chapter-item expanded "><a href="85.Python运行时环境的初始化，解释器在启动时都做了什么？.html">85. Python 运行时环境的初始化，解释器在启动时都做了什么？</a></li><li class="chapter-item expanded "><a href="86.激活Python虚拟机.html">86. 激活 Python 虚拟机</a></li><li class="chapter-item expanded "><a href="87.初识GIL、以及多个线程之间的调度机制.html">87. 初识 GIL、以及多个线程之间的调度机制</a></li><li class="chapter-item expanded "><a href="88.线程的创建、销毁、调度，以及GIL的实现原理.html">88. 线程的创建、销毁、调度，以及 GIL 的实现原理</a></li><li class="chapter-item expanded "><a href="89.解密map、filter、zip底层实现，对比列表解析式.html">89. 解密 map、filter、zip 底层实现，对比列表解析式</a></li><li class="chapter-item expanded "><a href="90.为什么要有协程，协程是如何实现的？.html">90. 为什么要有协程，协程是如何实现的？</a></li><li class="chapter-item expanded "><a href="91.什么是asyncio？如何基于单线程实现并发？事件循环又是怎么工作的？.html">91. 什么是 asyncio？如何基于单线程实现并发？事件循环又是怎么工作的？</a></li><li class="chapter-item expanded "><a href="92.协程、任务、future，以及事件循环.html">92. 协程、任务、future，以及事件循环</a></li><li class="chapter-item expanded "><a href="93.在asyncio中使用Socket.html">93. 在 asyncio 中使用 Socket</a></li><li class="chapter-item expanded "><a href="94.解密asyncio的Future和Task.html">94. 解密 asyncio 的 Future 和 Task</a></li><li class="chapter-item expanded "><a href="95.如何精确控制asyncio中并发运行的多个任务.html">95. 如何精确控制 asyncio 中并发运行的多个任务</a></li><li class="chapter-item expanded "><a href="96.详解asyncio的同步原语.html">96. 详解 asyncio 的同步原语</a></li><li class="chapter-item expanded "><a href="97.在asyncio中引入多进程.html">97. 在 asyncio 中引入多进程</a></li><li class="chapter-item expanded "><a href="98.可执行文件的内存模型，变量的值是放在栈上还是放在堆上.html">98. 可执行文件的内存模型，变量的值是放在栈上还是放在堆上</a></li><li class="chapter-item expanded "><a href="99.Python是如何管理内存的？.html">99. Python 是如何管理内存的？</a></li><li class="chapter-item expanded "><a href="100.Python的垃圾回收机制是怎么实现的？.html">100. Python 的垃圾回收机制是怎么实现的？</a></li><li class="chapter-item expanded "><a href="101.深入源码，探究垃圾回收的秘密.html">101. 深入源码，探究垃圾回收的秘密</a></li><li class="chapter-item expanded "><a href="102.侵入Python虚拟机，动态修改底层数据结构和运行时.html">102. 侵入 Python 虚拟机，动态修改底层数据结构和运行时</a></li><li class="chapter-item expanded "><a href="103.使用Python的ctypes调用C的动态库.html">103. 使用 Python 的 ctypes 调用 C 的动态库</a></li><li class="chapter-item expanded "><a href="104.使用Python的ctypes调用Rust的动态库.html">104. 使用 Python 的 ctypes 调用 Rust 的动态库</a></li><li class="chapter-item expanded "><a href="105.用C写Python.html">105. 用 C 写 Python</a></li><li class="chapter-item expanded "><a href="106.Cython从入门到精通.html">106. Cython 从入门到精通</a></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky bordered">
+                    <div class="left-buttons">
+                        <button id="sidebar-toggle" class="icon-button" type="button" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </button>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light (default)</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">CPython3.8 源码探秘</h1>
+
+                    <div class="right-buttons">
+                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+                        <a href="https://github.com/satori1995/cpython-internal" title="Git repository" aria-label="Git repository">
+                            <i id="git-repository-button" class="fa fa-github"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script type="text/javascript">
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h2 id="楔子"><a class="header" href="#楔子">楔子</a></h2>
+<p>前面我们考察了虚拟机执行字节码指令的原理，那么本篇文章就来看看这些指令对应的逻辑是怎样的，每个指令都做了哪些事情。当然啦，由于字节码指令有一两百个，我们没办法逐一分析，这里会介绍一些常见的。至于其它的指令，会随着学习的深入，慢慢揭晓。</p>
+<p>介绍完常见指令之后，我们会探讨 Python 赋值语句的背后原理，并分析它们的差异。</p>
+<h2 id="常用指令"><a class="header" href="#常用指令">常用指令</a></h2>
+<p>有一部分指令出现的频率极高，非常常用，我们来看一下。</p>
+<ul>
+<li>LOAD_CONST：加载一个常量；</li>
+<li>LOAD_FAST：在局部作用域中加载一个局部变量；</li>
+<li>LOAD_GLOBAL：在局部作用域中加载一个全局变量或内置变量；</li>
+<li>LOAD_NAME：在全局作用域中加载一个全局变量或内置变量；</li>
+<li>STORE_FAST：在局部作用域中定义一个局部变量，来建立和某个对象之间的映射关系；</li>
+<li>STORE_GLOBAL：在局部作用域中定义一个使用 global 关键字声明的全局变量，来建立和某个对象之间的映射关系；</li>
+<li>STORE_NAME：在全局作用域中定义一个全局变量，来建议和某个对象之间的映射关系；</li>
+</ul>
+<p>我们举例说明：</p>
+<pre><code class="language-Python">import dis
+
+name = &quot;古明地觉&quot;
+
+def foo():
+    age = 16
+    print(age)
+    global name
+    print(name)
+    name = &quot;古明地恋&quot;
+
+dis.dis(foo)
+&quot;&quot;&quot;
+  6           0 LOAD_CONST               1 (16)
+              2 STORE_FAST               0 (age)
+
+  7           4 LOAD_GLOBAL              0 (print)
+              6 LOAD_FAST                0 (age)
+              8 CALL_FUNCTION            1
+             10 POP_TOP
+
+  9          12 LOAD_GLOBAL              0 (print)
+             14 LOAD_GLOBAL              1 (name)
+             16 CALL_FUNCTION            1
+             18 POP_TOP
+
+ 10          20 LOAD_CONST               2 ('古明地恋')
+             22 STORE_GLOBAL             1 (name)
+             24 LOAD_CONST               0 (None)
+             26 RETURN_VALUE
+&quot;&quot;&quot;
+</code></pre>
+<p><font color="darkblue"><strong>我们看到 age = 16 对应两条字节码指令。</strong></font></p>
+<ul>
+<li>LOAD_CONST：加载一个常量，这里是 16；</li>
+<li>STORE_FAST：在局部作用域中创建一个局部变量，这里是 age；</li>
+</ul>
+<p><font color="darkblue"><strong>print(age) 对应四条字节码指令。</strong></font></p>
+<ul>
+<li>LOAD_GLOBAL：在局部作用域中加载一个全局变量或内置变量，这里是 print；</li>
+<li>LOAD_FAST：在局部作用域中加载一个局部变量，这里是 age；</li>
+<li>CALL_FUNCTION：函数调用；</li>
+<li>POP_TOP：从栈顶弹出返回值；</li>
+</ul>
+<p><font color="darkblue"><strong>print(name) 对应四条字节码指令。</strong></font></p>
+<ul>
+<li>LOAD_GLOBAL：在局部作用域中加载一个全局变量或内置变量，这里是 print；</li>
+<li>LOAD_GLOBAL：在局部作用域中加载一个全局变量或内置变量，这里是 name；</li>
+<li>CALL_FUNCTION：函数调用；</li>
+<li>POP_TOP：从栈顶弹出返回值；</li>
+</ul>
+<p><font color="darkblue"><strong>name = &quot;古明地恋&quot; 对应两条字节码指令。</strong></font></p>
+<ul>
+<li>LOAD_CONST：加载一个常量，这里是 &quot;古明地恋&quot;；</li>
+<li>STORE_GLOBAL：在局部作用域中创建一个 global 关键字声明的全局变量，这里是 name；</li>
+</ul>
+<p>这些指令非常常见，因为它们和常量、变量的加载，以及变量的定义密切相关，你写的任何代码在反编译之后都少不了它们的身影。</p>
+<blockquote>
+<p>注：不管加载的是常量、还是变量，得到的永远是指向对象的指针。</p>
+</blockquote>
+<h2 id="变量赋值的具体细节"><a class="header" href="#变量赋值的具体细节">变量赋值的具体细节</a></h2>
+<p>这里再通过变量赋值感受一下字节码的执行过程，首先关于变量赋值，你平时是怎么做的呢？</p>
+<p><img src="./images/186.png" alt="" /></p>
+<p>这些赋值语句背后的原理是什么呢？我们通过字节码来逐一回答。</p>
+<p><font color="darkblue"><strong>1）a, b = b, a 的背后原理是什么？</strong></font></p>
+<p>想要知道背后的原理，查看它的字节码是我们最好的选择。</p>
+<pre><code class="language-C">  1           0 LOAD_NAME                0 (b)
+              2 LOAD_NAME                1 (a)
+              4 ROT_TWO
+              6 STORE_NAME               1 (a)
+              8 STORE_NAME               0 (b)
+             10 LOAD_CONST               0 (None)
+             12 RETURN_VALUE
+</code></pre>
+<p>里面关键的就是 ROT_TWO 指令，虽然我们还没看这个指令，但也能猜出来它负责交换栈里面的两个元素。假设 a 和 b 的值分别为 22、33，看一下运行时栈的变化过程。</p>
+<p><img src="./images/187.png" alt="" /></p>
+<p>示意图还是很好理解的，关键就在于 ROT_TWO 指令，它是怎么交换元素的呢？</p>
+<pre><code class="language-C">case TARGET(ROT_TWO): {
+    // 获取栈顶元素
+    PyObject *top = TOP();
+    // 获取从栈顶开始的第二个元素（栈底元素）
+    PyObject *second = SECOND();
+    // 将栈顶元素设置为 second，将栈的第二个元素设置为 top
+    // 完成两个元素之间的交换
+    SET_TOP(second);
+    SET_SECOND(top);
+    FAST_DISPATCH();
+}
+</code></pre>
+<p>执行 ROT_TWO 指令之前，栈里有两个元素，栈顶元素是 a，栈底元素是 b。执行 ROT_TWO 指令之后，栈顶元素是 b，栈底元素是 a。然后后面的两个 STORE_NAME 会将栈里面的元素 b、a 依次弹出，赋值给 a、b，从而完成变量交换。</p>
+<p><font color="darkblue"><strong>2）a, b, c = c, b, a 的背后原理是什么？</strong></font></p>
+<p>老规矩，还是查看字节码，因为一切真相都隐藏在字节码当中。</p>
+<pre><code class="language-C">  1           0 LOAD_NAME                0 (c)
+              2 LOAD_NAME                1 (b)
+              4 LOAD_NAME                2 (a)
+              6 ROT_THREE
+              8 ROT_TWO
+             10 STORE_NAME               2 (a)
+             12 STORE_NAME               1 (b)
+             14 STORE_NAME               0 (c)
+             16 LOAD_CONST               0 (None)
+             18 RETURN_VALUE
+</code></pre>
+<p>整个过程和 a, b = b, a 是相似的，首先 LOAD_NAME 将变量 c、b、a 依次压入栈中。由于栈先入后出的特性，此时栈的三个元素按照顺序（从栈顶到栈底）分别是 a、b、c。然后是 ROT_THREE 和 ROT_TWO，毫无疑问，这两个指令执行完之后，会将栈的三个元素调换顺序，也就是将 a、b、c 变成 c、b、a。最后 STORE_NAME 将栈的三个元素 c、b、a 依次弹出，分别赋值给 a、b、c，从而完成变量的交换。</p>
+<p>因此核心就在 ROT_THREE 和 ROT_TWO 上面，由于后者上面已经说过了，所以我们看一下 ROT_THREE。</p>
+<pre><code class="language-C">case TARGET(ROT_THREE): {
+    PyObject *top = TOP();
+    PyObject *second = SECOND();
+    PyObject *third = THIRD();
+    SET_TOP(second);
+    SET_SECOND(third);
+    SET_THIRD(top);
+    FAST_DISPATCH();
+}
+</code></pre>
+<p>栈顶元素是 top、栈的第二个元素是 second、栈的第三个元素是 third，然后将栈顶元素设置为 second、栈的第二个元素设置为 third、栈的第三个元素设置为 top。所以栈里面的 a、b、c 在经过 ROT_THREE 之后就变成了 b、c、a，显然这还不是正确的结果。于是继续执行 ROT_TWO，将栈的前两个元素进行交换，执行完之后就变成了 c、b、a。</p>
+<p>假设 a、b、c 的值分别为 &quot;a&quot;、&quot;b&quot;、&quot;c&quot;，整个过程如下：</p>
+<p><img src="./images/188.png" alt="" /></p>
+<p>对于多元赋值来说，解释器的做法是固定的，首先按照从左往右的顺序，将等号右边的变量依次压入栈中，然后在栈里面对元素做处理，最后再将栈里的元素弹出，仍旧按照从左往右的顺序，依次赋值给等号左边的变量。</p>
+<p>另外这里为了交换栈里的三个元素，使用了两个指令，但其实一个指令就够了，只需将栈顶元素和栈底元素进行交换即可，因为中间的元素是不需要动的。而在之后的版本中，官方优化了这个逻辑。</p>
+<p><font color="darkblue"><strong>3）a, b, c, d = d, c, b, a 的背后原理是什么？它和上面提到的 1）和 2）有什么区别呢？</strong></font></p>
+<p>我们还是看一下字节码。</p>
+<pre><code class="language-C">  1           0 LOAD_NAME                0 (d)
+              2 LOAD_NAME                1 (c)
+              4 LOAD_NAME                2 (b)
+              6 LOAD_NAME                3 (a)
+              8 BUILD_TUPLE              4
+             10 UNPACK_SEQUENCE          4
+             12 STORE_NAME               3 (a)
+             14 STORE_NAME               2 (b)
+             16 STORE_NAME               1 (c)
+             18 STORE_NAME               0 (d)
+             20 LOAD_CONST               0 (None)
+             22 RETURN_VALUE
+</code></pre>
+<p>将等号右边的变量，按照从左往右的顺序，依次压入栈中，但此时没有直接将栈里面的元素做交换，而是构建一个元组。因为往栈里面压入了四个元素，所以 BUILD_TUPLE 后面的 oparg 是 4，表示构建长度为 4 的元组。</p>
+<pre><code class="language-C">case TARGET(BUILD_TUPLE): {
+    // 元素从栈顶到栈底依次是 a、b、c、d
+    PyObject *tup = PyTuple_New(oparg);
+    if (tup == NULL)
+        goto error;
+    // 将元素依次弹出，弹出的顺序也是 a、b、c、d
+    // 但是注意循环，元素是从后往前设置的
+    // 所以 item[3], item[2], item[1], item[0] = a, b, c, d
+    while (--oparg &gt;= 0) {
+        PyObject *item = POP();
+        PyTuple_SET_ITEM(tup, oparg, item);
+    }
+    // 将元组 item 压入栈中，元组为 (d, c, b, a)
+    PUSH(tup);
+    DISPATCH();
+}
+</code></pre>
+<p>此时栈里面只有一个元素，指向一个元组。接下来是 UNPACK_SEQUENCE，负责对序列进行解包，它的指令参数也是 4，表示要解包的序列的长度为 4，我们来看看它的逻辑。</p>
+<pre><code class="language-C">case TARGET(UNPACK_SEQUENCE): {
+    PREDICTED(UNPACK_SEQUENCE);
+    // seq：从栈里面弹出的元组 (d, c, b, a)
+    // item：用于遍历元素
+    // items：指向一个 PyObject * 类型的数组
+    PyObject *seq = POP(), *item, **items;
+    if (PyTuple_CheckExact(seq) &amp;&amp;
+        PyTuple_GET_SIZE(seq) == oparg) {
+        // 获取元组内部的 ob_item 字段，元素就存储在它指向的数组中
+        items = ((PyTupleObject *)seq)-&gt;ob_item;
+        // 遍历内部的每一个元素，并依次压入栈中
+        // 由于是从后往前遍历的，所以遍历的元素依次是 a b c d
+        // 但在压入栈中之后，元素从栈顶到栈底就变成了 d c b a
+        while (oparg--) {
+            item = items[oparg];
+            Py_INCREF(item);
+            PUSH(item);
+        }
+    } else if (PyList_CheckExact(seq) &amp;&amp;
+               PyList_GET_SIZE(seq) == oparg) {
+        // 该指令同样适用于列表，逻辑一样（一会儿会看到）
+        items = ((PyListObject *)seq)-&gt;ob_item;
+        while (oparg--) {
+            item = items[oparg];
+            Py_INCREF(item);
+            PUSH(item);
+        }
+    } 
+    // ...
+    Py_DECREF(seq);
+    DISPATCH();
+}
+</code></pre>
+<p>最后 STORE_NAME 将 d c b a 依次弹出，赋值给变量 a b c d，从而完成变量交换。所以当交换的变量多了之后，不会直接在运行时栈里面操作，而是将栈里面的元素挨个弹出，构建元组；然后再按照指定顺序，将元组里面的元素重新压到栈里面。</p>
+<p>假设变量 a b c d 的值分别为 1 2 3 4，我们画图来描述一下整个过程。</p>
+<p><img src="./images/189.png" alt="" /></p>
+<p>不管是哪一种做法，Python 在进行变量交换时所做的事情是不变的，核心分为三步走。首先将等号右边的变量，按照从左往右的顺序，依次压入栈中；然后对运行时栈里面元素的顺序进行调整；最后再将运行时栈里面的元素挨个弹出，还是按照从左往右的顺序，再依次赋值给等号左边的变量。</p>
+<p>只不过当变量不多时，调整元素位置会直接基于栈进行操作；而当达到四个时，则需要额外借助于元组。</p>
+<p>然后多元赋值也是同理，比如 a, b, c = 1, 2, 3，看一下它的字节码。</p>
+<pre><code class="language-C">  1           0 LOAD_CONST               0 ((1, 2, 3))
+              2 UNPACK_SEQUENCE          3
+              4 STORE_NAME               0 (a)
+              6 STORE_NAME               1 (b)
+              8 STORE_NAME               2 (c)
+             10 LOAD_CONST               1 (None)
+             12 RETURN_VALUE
+</code></pre>
+<p>元组直接作为一个常量被加载进来了，然后解包，再依次赋值。</p>
+<p><font color="darkblue"><strong>4）a, b, c, d = d, c, b, a 和 a, b, c, d = [d, c, b, a] 有区别吗？</strong></font></p>
+<p>答案是没有区别，两者在反编译之后对应的字节码指令只有一处不同。</p>
+<pre><code class="language-C">  1           0 LOAD_NAME                0 (d)
+              2 LOAD_NAME                1 (c)
+              4 LOAD_NAME                2 (b)
+              6 LOAD_NAME                3 (a)
+              8 BUILD_LIST               4
+             10 UNPACK_SEQUENCE          4
+             12 STORE_NAME               3 (a)
+             14 STORE_NAME               2 (b)
+             16 STORE_NAME               1 (c)
+             18 STORE_NAME               0 (d)
+             20 LOAD_CONST               0 (None)
+             22 RETURN_VALUE
+</code></pre>
+<p>前者是 BUILD_TUPLE，现在变成了 BUILD_LIST，其它部分一模一样，并且解包用的依旧是 UNPACK_SEQUENCE 指令，所以两者的效果是相同的。当然啦，由于元组的构建比列表快一些，因此还是推荐第一种写法。</p>
+<p><font color="darkblue"><strong>5）a = b = c = 123 背后的原理是什么？</strong></font></p>
+<p>如果变量 a、b、c 指向的值相同，比如都是 123，那么便可以通过这种方式进行链式赋值。那么它背后是怎么做的呢？</p>
+<pre><code class="language-C">  1           0 LOAD_CONST               0 (123)
+              2 DUP_TOP
+              4 STORE_NAME               0 (a)
+              6 DUP_TOP
+              8 STORE_NAME               1 (b)
+             10 STORE_NAME               2 (c)
+             12 LOAD_CONST               1 (None)
+             14 RETURN_VALUE
+</code></pre>
+<p>出现了一个新的字节码指令 DUP_TOP，只要搞清楚它的作用，事情就简单了。</p>
+<pre><code class="language-C">case TARGET(DUP_TOP): {
+    // 获取栈顶元素，注意是获取、不是弹出
+    // TOP：查看元素，POP：弹出元素
+    PyObject *top = TOP();
+    // 增加指向对象的引用计数
+    Py_INCREF(top);
+    // 压入栈中
+    PUSH(top);
+    FAST_DISPATCH();
+}
+</code></pre>
+<p>所以 DUP_TOP 干的事情就是将栈顶元素拷贝一份，再重新压到栈里面。另外不管链式赋值语句中有多少个变量，模式都是一样的。</p>
+<p>我们以 a = b = c = d = e = 123 为例：</p>
+<pre><code class="language-C">  1           0 LOAD_CONST               0 (123)
+              2 DUP_TOP
+              4 STORE_NAME               0 (a)
+              6 DUP_TOP
+              8 STORE_NAME               1 (b)
+             10 DUP_TOP
+             12 STORE_NAME               2 (c)
+             14 DUP_TOP
+             16 STORE_NAME               3 (d)
+             18 STORE_NAME               4 (e)
+             20 LOAD_CONST               1 (None)
+             22 RETURN_VALUE
+</code></pre>
+<p>将常量压入运行时栈，然后拷贝一份，赋值给 a；再拷贝一份，赋值给 b；再拷贝一份，赋值给 c；再拷贝一份，赋值给 d；最后自身赋值给 e。</p>
+<blockquote>
+<p>当然啦，虽然 Python 一切皆对象，但拿到的都是指向对象的指针，所以这里拷贝的是指针。</p>
+</blockquote>
+<p>以上就是链式赋值的秘密，其实没有什么好神奇的，就是将栈顶元素进行拷贝，再依次赋值。但是这背后有一个坑，就是给变量赋的值不能是可变对象，否则容易造成 BUG。</p>
+<pre><code class="language-Python">a = b = c = {}
+
+a[&quot;ping&quot;] = &quot;pong&quot;
+print(a)  # {'ping': 'pong'}
+print(b)  # {'ping': 'pong'}
+print(c)  # {'ping': 'pong'}
+</code></pre>
+<p>虽然 Python 一切皆对象，但对象都是通过指针来间接操作的。所以 DUP_TOP 是将字典的地址拷贝一份，而字典只有一个，因此最终 a、b、c 会指向同一个字典。</p>
+<p><font color="darkblue"><strong>6）a is b 和 a == b 的区别是什么？</strong></font></p>
+<p>is 用于判断两个变量是不是引用同一个对象，也就是保存的对象的地址是否相等；而 == 则是判断两个变量引用的对象是否相等，等价于 a.__eq__(b) 。</p>
+<blockquote>
+<p>Python 的变量在 C 看来只是一个指针，因此两个变量是否指向同一个对象，等价于 C 中的两个指针存储的地址是否相等；</p>
+<p>而 Python 的 ==，则需要调用 PyObject_RichCompare，来比较它们指向的对象所维护的值是否相等。</p>
+</blockquote>
+<p>这两个语句的字节码指令是一样的，唯一的区别就是指令 COMPARE_OP 的参数不同。</p>
+<pre><code class="language-C">              // a is b
+  1           0 LOAD_NAME                0 (a)
+              2 LOAD_NAME                1 (b)
+              4 COMPARE_OP               8 (is)
+              6 POP_TOP
+              8 LOAD_CONST               0 (None)
+             10 RETURN_VALUE
+  
+              // a == b
+  1           0 LOAD_NAME                0 (a)
+              2 LOAD_NAME                1 (b)
+              4 COMPARE_OP               2 (==)
+              6 POP_TOP
+              8 LOAD_CONST               0 (None)
+             10 RETURN_VALUE      
+</code></pre>
+<p>我们看到指令参数一个是 8、一个是 2，然后是 COMPARE_OP 指令的背后逻辑：</p>
+<pre><code class="language-C">case TARGET(COMPARE_OP): {
+    // 弹出栈顶元素，这里是 b
+    PyObject *right = POP();
+    // 显然 left 就是 a，因为 b 被弹出之后，a 就成为了新的栈顶元素
+    PyObject *left = TOP();
+    // 进行比较，比较结果为 res
+    PyObject *res = cmp_outcome(tstate, oparg, left, right);
+    // 减少 left 和 right 引用计数
+    Py_DECREF(left);
+    Py_DECREF(right);
+    // 将栈顶元素替换为 res
+    SET_TOP(res);
+    if (res == NULL)
+        goto error;
+    // 指令预测，暂时不用管，等介绍 if 控制流的时候再说
+    PREDICT(POP_JUMP_IF_FALSE);
+    PREDICT(POP_JUMP_IF_TRUE);
+    DISPATCH();
+}
+</code></pre>
+<p>所以逻辑很简单，核心就在 cmp_outcome 函数中。</p>
+<pre><code class="language-C">// Python/ceval.c
+static PyObject *
+cmp_outcome(PyThreadState *tstate, int op, PyObject *v, PyObject *w)
+{
+    int res = 0;
+    // op 就是 COMPARE_OP 指令的参数
+    switch (op) {
+    // PyCmp_IS 是一个枚举变量，等于 8，定义在 Include/opcode.h 中
+    // 而 is 关键字，在 C 的层面就是一个 == 判断
+    case PyCmp_IS:
+        res = (v == w);
+        break;
+    // is not 则对应 !=
+    case PyCmp_IS_NOT:
+        res = (v != w);
+        break;
+    // in 关键字
+    case PyCmp_IN:
+        res = PySequence_Contains(w, v);
+        if (res &lt; 0)
+            return NULL;
+        break;
+    // not in 关键字
+    case PyCmp_NOT_IN:
+        res = PySequence_Contains(w, v);
+        if (res &lt; 0)
+            return NULL;
+        res = !res;
+        break;
+    // except 关键字
+    case PyCmp_EXC_MATCH:
+        if (PyTuple_Check(w)) {
+            Py_ssize_t i, length;
+            length = PyTuple_Size(w);
+            for (i = 0; i &lt; length; i += 1) {
+                PyObject *exc = PyTuple_GET_ITEM(w, i);
+                if (!PyExceptionClass_Check(exc)) {
+                    _PyErr_SetString(tstate, PyExc_TypeError,
+                                     CANNOT_CATCH_MSG);
+                    return NULL;
+                }
+            }
+        }
+        else {
+            if (!PyExceptionClass_Check(w)) {
+                _PyErr_SetString(tstate, PyExc_TypeError,
+                                 CANNOT_CATCH_MSG);
+                return NULL;
+            }
+        }
+        res = PyErr_GivenExceptionMatches(v, w);
+        break;
+    default:
+        // 剩下的走 PyObject_RichCompare 逻辑
+        // 这是一个函数调用，比较对象维护的值是否相等
+        return PyObject_RichCompare(v, w, op);
+    }
+    v = res ? Py_True : Py_False;
+    Py_INCREF(v);
+    return v;
+}
+</code></pre>
+<p>我们实际举个栗子：</p>
+<pre><code class="language-Python">a = 3.14
+b = float(&quot;3.14&quot;)
+print(a is b)  # False
+print(a == b)  # True
+</code></pre>
+<p>a 和 b 都是 3.14，两者是相等的，但不是同一个对象。</p>
+<p>反过来也是如此，如果 a is b 成立，那么 a == b 也不一定成立。可能有人好奇，a is b 成立说明 a 和 b 指向的是同一个对象，那么 a == b 表示该对象和自己进行比较，结果应该始终是相等的呀，为啥也不一定成立呢？以下面两种情况为例：</p>
+<pre><code class="language-Python">class Girl:
+
+    def __eq__(self, other):
+        return False
+
+g = Girl()
+print(g is g)  # True
+print(g == g)  # False
+</code></pre>
+<p>__eq__ 返回 False，此时虽然是同一个对象，但是两者不相等。</p>
+<pre><code class="language-Python">import math
+import numpy as np
+
+a = float(&quot;nan&quot;)
+b = math.nan
+c = np.nan
+print(a is a, a == a)  # True False
+print(b is b, b == b)  # True False
+print(c is c, c == c)  # True False
+</code></pre>
+<p>nan 是一个特殊的浮点数，意思是 not a number（不是一个数字），用于表示空值。而 nan 和所有数字的比较结果均为 False，即使是和它自身比较。</p>
+<p>但需要注意的是，在使用 == 进行比较的时候虽然是不相等的，但如果放到容器里面就不一定了。举个例子：</p>
+<pre><code class="language-Python">import numpy as np
+
+lst = [np.nan, np.nan, np.nan]
+print(lst[0] == np.nan)  # False
+print(lst[1] == np.nan)  # False
+print(lst[2] == np.nan)  # False
+# lst 里面的三个元素和 np.nan 均不相等
+
+# 但是 np.nan 位于列表中，并且数量是 3
+print(np.nan in lst)  # True
+print(lst.count(np.nan))  # 3
+</code></pre>
+<p>出现以上结果的原因就在于，元素被放到了容器里，而容器的一些 API 在比较元素时会先判定它们存储的对象的地址是否相同，即：是否指向了同一个对象。如果是，直接认为相等；否则，再去比较对象维护的值是否相等。可以理解为先进行 is 判断，如果结果为 True，直接判定两者相等；如果 is 操作的结果不为 True，再去进行 == 判断。</p>
+<p>因此 np.nan in lst 的结果为 True，lst.count(np.nan) 的结果是 3，因为它们会先比较对象的地址。地址相同，则直接认为对象相等。</p>
+<blockquote>
+<p>在用 pandas 做数据处理的时候，nan 是一个非常容易坑的地方。</p>
+</blockquote>
+<p>提到 is 和 ==，那么问题来了，在和 True、False、None 比较时，是用 is 还是用 == 呢？由于 True、False、None 它们不仅是关键字，而且也被看做是一个常量，最重要的是它们都是单例的，所以我们应该用 is 判断。</p>
+<p>另外 is 在底层只需要一个 == 即可完成，但 Python 的 ==，在底层则需要调用 PyObject_RichCompare 函数。因此 is 在速度上也更有优势，== 操作肯定比函数调用要快。</p>
+<blockquote>
+<p>补充：判断对象是否相等，底层有两个常用的函数，分别是 PyObject_RichCompare 和 PyObject_RichCompareBool。</p>
+<p>PyObject_RichCompare 是直接比较对象的值是否相等。而 PyObject_RichCompareBool 会先比较地址是否相等（即是否是同一个对象），如果是同一个对象，那么直接认为相等，否则再调用 PyObject_RichCompare 判断值是否相等。</p>
+<p>对于容器的一些 API，在比较对象是否相等时，调用的都是 PyObject_RichCompareBool。</p>
+</blockquote>
+<h2 id="小结"><a class="header" href="#小结">小结</a></h2>
+<p>以上我们就分析了常见的几个指令，以及变量赋值的底层逻辑，怎么样，是不是对 Python 有更深的理解了呢。</p>
+<hr />
+<p> </p>
+<p><strong>欢迎大家关注我的公众号：古明地觉的编程教室。</strong></p>
+<p><img src="./images/qrcode_for_gh.jpg" alt="" /></p>
+<p><strong>如果觉得文章对你有所帮助，也可以请作者吃个馒头，Thanks♪(･ω･)ﾉ。</strong></p>
+<p><img src="./images/supports.png" alt="" /></p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="59.局部变量是怎么实现静态查找的，它和local名字空间又有什么联系呢？.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+                            <a rel="next" href="61.流程控制语句if是怎么实现的？.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="59.局部变量是怎么实现静态查找的，它和local名字空间又有什么联系呢？.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+                    <a rel="next" href="61.流程控制语句if是怎么实现的？.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+            </nav>
+
+        </div>
+
+        <script type="text/javascript">
+            window.playground_copyable = true;
+        </script>
+        <script src="elasticlunr.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="mark.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="searcher.js" type="text/javascript" charset="utf-8"></script>
+        <script src="clipboard.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="highlight.js" type="text/javascript" charset="utf-8"></script>
+        <script src="book.js" type="text/javascript" charset="utf-8"></script>
+
+        <!-- Custom JS scripts -->
+        <script type="text/javascript" src="theme/custom.js"></script>
+    </body>
+</html>

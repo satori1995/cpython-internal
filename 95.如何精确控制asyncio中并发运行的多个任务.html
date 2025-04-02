@@ -1,0 +1,840 @@
+<!DOCTYPE HTML>
+<html lang="zh-cn" class="sidebar-visible no-js light">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>95. 如何精确控制 asyncio 中并发运行的多个任务 - CPython3.8 源码探秘</title>
+        <!-- Custom HTML head -->
+        <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff" />
+
+        <link rel="icon" href="favicon.svg">
+        <link rel="shortcut icon" href="favicon.png">
+        <link rel="stylesheet" href="css/variables.css">
+        <link rel="stylesheet" href="css/general.css">
+        <link rel="stylesheet" href="css/chrome.css">
+        <link rel="stylesheet" href="css/print.css" media="print">
+        <!-- Fonts -->
+        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="fonts/fonts.css">
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="highlight.css">
+        <link rel="stylesheet" href="tomorrow-night.css">
+        <link rel="stylesheet" href="ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+        <link rel="stylesheet" href="theme/custom.css">
+        <!-- MathJax -->
+        <script async type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    </head>
+    <body>
+        <!-- Provide site root to javascript -->
+        <script type="text/javascript">
+            var path_to_root = "";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script type="text/javascript">
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script type="text/javascript">
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            var html = document.querySelector('html');
+            html.classList.remove('no-js')
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add('js');
+        </script>
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script type="text/javascript">
+            var html = document.querySelector('html');
+            var sidebar = 'hidden';
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            }
+            html.classList.remove('sidebar-visible');
+            html.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li class="chapter-item expanded "><a href="0.序言.html">0. 序言</a></li><li class="chapter-item expanded "><a href="1.CPython源码长什么样子？.html">1. CPython 源码长什么样子？</a></li><li class="chapter-item expanded "><a href="2.变量和对象，它们之间有什么区别和联系呢？.html">2. 变量和对象，它们之间有什么区别和联系呢？</a></li><li class="chapter-item expanded "><a href="3.Python对象有哪几种，我们可以从哪些角度进行分类呢？.html">3. Python 对象有哪几种，我们可以从哪些角度进行分类呢？</a></li><li class="chapter-item expanded "><a href="4.万丈高楼平地起，一切从PyObject开始.html">4. 万丈高楼平地起，一切从 PyObject 开始</a></li><li class="chapter-item expanded "><a href="5.详解PyTypeObject，Python类型对象的载体.html">5. 详解 PyTypeObject，Python 类型对象的载体</a></li><li class="chapter-item expanded "><a href="6.通过type和object之间的关联，进一步分析类型对象.html">6. 通过 type 和 object 之间的关联，进一步分析类型对象</a></li><li class="chapter-item expanded "><a href="7.当创建一个Python对象时，背后都经历了哪些过程？.html">7. 当创建一个 Python 对象时，背后都经历了哪些过程？</a></li><li class="chapter-item expanded "><a href="8.当调用一个Python对象时，背后都经历了哪些过程？.html">8. 当调用一个 Python 对象时，背后都经历了哪些过程？</a></li><li class="chapter-item expanded "><a href="9.再探泛型API，感受Python对象的设计哲学.html">9. 再探泛型 API，感受 Python 对象的设计哲学</a></li><li class="chapter-item expanded "><a href="10.Python对象的行为是怎么区分的？.html">10. Python 对象的行为是怎么区分的？</a></li><li class="chapter-item expanded "><a href="11.一个Python对象会在何时被销毁？.html">11. 一个 Python 对象会在何时被销毁？</a></li><li class="chapter-item expanded "><a href="12.深度解密Python的浮点数是怎么实现的？.html">12. 深度解密 Python 的浮点数是怎么实现的？</a></li><li class="chapter-item expanded "><a href="13.对象被销毁之后所占的内存一定会释放吗？解密浮点数的缓存池机制.html">13. 对象被销毁之后所占的内存一定会释放吗？解密浮点数的缓存池机制</a></li><li class="chapter-item expanded "><a href="14.浮点数支持的操作是怎么实现的？.html">14. 浮点数支持的操作是怎么实现的？</a></li><li class="chapter-item expanded "><a href="15.解密Python的复数是怎么实现的？它有什么用途呢？.html">15. 解密 Python 的复数是怎么实现的？它有什么用途呢？</a></li><li class="chapter-item expanded "><a href="16.Python的整数是怎么设计的，为什么它不会溢出？.html">16. Python 的整数是怎么设计的，为什么它不会溢出？</a></li><li class="chapter-item expanded "><a href="17.解密Python的小整数对象池.html">17. 解密 Python 的小整数对象池</a></li><li class="chapter-item expanded "><a href="18.两个Python整数之间是如何进行大小比较的？过程并不像我们想的那样简单.html">18. 两个 Python 整数之间是如何进行大小比较的？过程并不像我们想的那样简单</a></li><li class="chapter-item expanded "><a href="19.探究Python整数的加减法，感受大整数的运算哲学与魅力.html">19. 探究 Python 整数的加减法，感受大整数的运算哲学与魅力</a></li><li class="chapter-item expanded "><a href="20.Python的布尔值是怎么实现的，你对它的了解有多深呢？.html">20. Python 的布尔值是怎么实现的，你对它的了解有多深呢？</a></li><li class="chapter-item expanded "><a href="21.Python的None是怎么实现的？.html">21. Python 的 None 是怎么实现的？</a></li><li class="chapter-item expanded "><a href="22.深度解密Python切片的实现原理.html">22.深度解密 Python 切片的实现原理</a></li><li class="chapter-item expanded "><a href="23.bytes对象（字节串）是怎么实现的？解密它的内部原理.html">23. bytes 对象（字节串）是怎么实现的？解密它的内部原理</a></li><li class="chapter-item expanded "><a href="24.bytes对象都支持哪些操作，它们是怎么实现的？.html">24. bytes 对象都支持哪些操作，它们是怎么实现的？</a></li><li class="chapter-item expanded "><a href="25.通过bytes对象的合并，探究缓冲区的奥秘.html">25. 通过 bytes 对象的合并，探究缓冲区的奥秘</a></li><li class="chapter-item expanded "><a href="26.解密bytes对象的缓存池.html">26. 解密 bytes 对象的缓存池</a></li><li class="chapter-item expanded "><a href="27.详解bytearray对象的底层实现.html">27. 详解 bytearray 对象的底层实现</a></li><li class="chapter-item expanded "><a href="28.字符集和字符编码.html">28. 字符集和字符编码</a></li><li class="chapter-item expanded "><a href="29.Python是怎么存储字符串的？.html">29. Python 是怎么存储字符串的？</a></li><li class="chapter-item expanded "><a href="30.解密字符串的底层结构，它是怎么实现的？.html">30. 解密字符串的底层结构，它是怎么实现的？</a></li><li class="chapter-item expanded "><a href="31.字符串的intern机制是怎么一回事？.html">31. 字符串的 intern 机制是怎么一回事？</a></li><li class="chapter-item expanded "><a href="32.聊一聊字符串常见操作的源码实现.html">32. 聊一聊字符串常见操作的源码实现</a></li><li class="chapter-item expanded "><a href="33.列表是怎么实现的？解密列表的数据结构.html">33. 列表是怎么实现的？解密列表的数据结构</a></li><li class="chapter-item expanded "><a href="34.列表是怎么扩容的？.html">34. 列表是怎么扩容的？</a></li><li class="chapter-item expanded "><a href="35.解密列表的创建与销毁，以及缓存池长什么样子？.html">35. 解密列表的创建与销毁，以及缓存池长什么样子？</a></li><li class="chapter-item expanded "><a href="36.列表作为序列型对象都支持哪些操作，它们在底层是怎么实现的？.html">36. 列表作为序列型对象都支持哪些操作，它们在底层是怎么实现的？</a></li><li class="chapter-item expanded "><a href="37.列表都有哪些自定义方法，它们是怎么实现的？.html">37. 列表都有哪些自定义方法，它们是怎么实现的？</a></li><li class="chapter-item expanded "><a href="38.解密元组的实现原理.html">38. 解密元组的实现原理</a></li><li class="chapter-item expanded "><a href="39.聊一聊喜闻乐见的哈希表.html">39. 聊一聊喜闻乐见的哈希表</a></li><li class="chapter-item expanded "><a href="40.字典是怎么实现的，它的底层结构长什么样子？.html">40. 字典是怎么实现的，它的底层结构长什么样子？</a></li><li class="chapter-item expanded "><a href="41.什么是可哈希对象，它的哈希值是怎么计算的？.html">41. 什么是可哈希对象，它的哈希值是怎么计算的？</a></li><li class="chapter-item expanded "><a href="42.字典的key是怎么映射成索引的，索引冲突了又该怎么办？.html">42. 字典的 key 是怎么映射成索引的，索引冲突了又该怎么办？</a></li><li class="chapter-item expanded "><a href="43.哈希表是怎么删除元素的，能直接删除吗？.html">43. 哈希表是怎么删除元素的，能直接删除吗？</a></li><li class="chapter-item expanded "><a href="44.字典是怎么创建的，支持的操作又是如何实现的？.html">44. 字典是怎么创建的，支持的操作又是如何实现的？</a></li><li class="chapter-item expanded "><a href="45.字典的自定义方法是怎么实现的？.html">45. 字典的自定义方法是怎么实现的？</a></li><li class="chapter-item expanded "><a href="46.字典是怎么扩容的？它会经历哪些过程？.html">46. 字典是怎么扩容的？它会经历哪些过程？</a></li><li class="chapter-item expanded "><a href="47.身虽死，道未消，解密字典的缓存池.html">47. 身虽死，道未消，解密字典的缓存池</a></li><li class="chapter-item expanded "><a href="48.解密集合的实现原理.html">48. 解密集合的实现原理</a></li><li class="chapter-item expanded "><a href="49.集合支持的操作有哪些，它们是怎么实现的？.html">49. 集合支持的操作有哪些，它们是怎么实现的？</a></li><li class="chapter-item expanded "><a href="50.迭代器是怎么实现的？.html">50. 迭代器是怎么实现的？</a></li><li class="chapter-item expanded "><a href="51.Python源文件编译之后会得到什么，它的结构是怎样的？和字节码又有什么联系？.html">51. Python 源文件编译之后会得到什么，它的结构是怎样的？和字节码又有什么联系？</a></li><li class="chapter-item expanded "><a href="52.PyCodeObject拾遗.html">52. PyCodeObject 拾遗</a></li><li class="chapter-item expanded "><a href="53.一文让你搞懂pyc文件.html">53. 一文让你搞懂 pyc 文件</a></li><li class="chapter-item expanded "><a href="54.深度解密虚拟机的执行环境：栈帧对象.html">54. 深度解密虚拟机的执行环境：栈帧对象</a></li><li class="chapter-item expanded "><a href="55.名字空间：变量的容身之所.html">55. 名字空间：变量的容身之所</a></li><li class="chapter-item expanded "><a href="56.当查找一个变量时，虚拟机会进行哪些动作？.html">56. 当查找一个变量时，虚拟机会进行哪些动作？</a></li><li class="chapter-item expanded "><a href="57.虚拟机是怎么执行字节码的？背后都经历了哪些过程.html">57. 虚拟机是怎么执行字节码的？背后都经历了哪些过程</a></li><li class="chapter-item expanded "><a href="58.深入源码，进一步考察字节码的执行流程.html">58. 深入源码，进一步考察字节码的执行流程</a></li><li class="chapter-item expanded "><a href="59.局部变量是怎么实现静态查找的，它和local名字空间又有什么联系呢？.html">59. 局部变量是怎么实现静态查找的，它和 local 名字空间又有什么联系呢？</a></li><li class="chapter-item expanded "><a href="60.剖析字节码指令，以及Python赋值语句的原理.html">60. 剖析字节码指令，以及 Python 赋值语句的原理</a></li><li class="chapter-item expanded "><a href="61.流程控制语句if是怎么实现的？.html">61. 流程控制语句 if 是怎么实现的？</a></li><li class="chapter-item expanded "><a href="62.流程控制语句for、while是怎么实现的？.html">62. 流程控制语句 for、while 是怎么实现的？</a></li><li class="chapter-item expanded "><a href="63.异常是怎么实现的？虚拟机是如何将异常抛出去的？.html">63. 异常是怎么实现的？虚拟机是如何将异常抛出去的？</a></li><li class="chapter-item expanded "><a href="64.虚拟机是如何捕获异常的？.html">64. 虚拟机是如何捕获异常的？</a></li><li class="chapter-item expanded "><a href="65.函数在底层长什么样子？.html">65. 函数在底层长什么样子？</a></li><li class="chapter-item expanded "><a href="66.函数是怎么创建的，背后经历了哪些过程？.html">66. 函数是怎么创建的，背后经历了哪些过程？</a></li><li class="chapter-item expanded "><a href="67.函数在底层是如何调用的？.html">67. 函数在底层是如何调用的？</a></li><li class="chapter-item expanded "><a href="68.函数是如何解析位置参数的？.html">68. 函数是如何解析位置参数的？</a></li><li class="chapter-item expanded "><a href="69.函数是如何解析关键字参数的？.html">69. 函数是如何解析关键字参数的？</a></li><li class="chapter-item expanded "><a href="70.扩展位置参数和扩展关键字参数是如何解析的？.html">70. 扩展位置参数和扩展关键字参数是如何解析的？</a></li><li class="chapter-item expanded "><a href="71.闭包是怎么实现的？.html">71. 闭包是怎么实现的？</a></li><li class="chapter-item expanded "><a href="72.生成器是做什么的，为什么会有生成器？.html">72. 生成器是做什么的，为什么会有生成器？</a></li><li class="chapter-item expanded "><a href="73.源码解密生成器的实现原理.html">73. 源码解密生成器的实现原理</a></li><li class="chapter-item expanded "><a href="74.回顾Python的对象模型.html">74. 回顾 Python 的对象模型</a></li><li class="chapter-item expanded "><a href="75.class概念解析.html">75. class 概念解析</a></li><li class="chapter-item expanded "><a href="76.类型对象的初始化.html">76. 类型对象的初始化</a></li><li class="chapter-item expanded "><a href="77.自定义类对象的底层实现与metaclass.html">77. 自定义类对象的底层实现与 metaclass</a></li><li class="chapter-item expanded "><a href="78.彻底搞懂描述符.html">78. 彻底搞懂描述符</a></li><li class="chapter-item expanded "><a href="79.实例对象是如何创建的？.html">79. 实例对象是如何创建的？</a></li><li class="chapter-item expanded "><a href="80.实例对象的属性访问.html">80. 实例对象的属性访问</a></li><li class="chapter-item expanded "><a href="81.为什么实例在调用方法时会将自身传给self参数.html">81. 为什么实例在调用方法时会将自身传给 self 参数</a></li><li class="chapter-item expanded "><a href="82.模块是如何导入的？.html">82. 模块是如何导入的？</a></li><li class="chapter-item expanded "><a href="83.import机制的黑盒探测.html">83. import 机制的黑盒探测</a></li><li class="chapter-item expanded "><a href="84.import机制是怎么实现的？.html">84. import 机制是怎么实现的？</a></li><li class="chapter-item expanded "><a href="85.Python运行时环境的初始化，解释器在启动时都做了什么？.html">85. Python 运行时环境的初始化，解释器在启动时都做了什么？</a></li><li class="chapter-item expanded "><a href="86.激活Python虚拟机.html">86. 激活 Python 虚拟机</a></li><li class="chapter-item expanded "><a href="87.初识GIL、以及多个线程之间的调度机制.html">87. 初识 GIL、以及多个线程之间的调度机制</a></li><li class="chapter-item expanded "><a href="88.线程的创建、销毁、调度，以及GIL的实现原理.html">88. 线程的创建、销毁、调度，以及 GIL 的实现原理</a></li><li class="chapter-item expanded "><a href="89.解密map、filter、zip底层实现，对比列表解析式.html">89. 解密 map、filter、zip 底层实现，对比列表解析式</a></li><li class="chapter-item expanded "><a href="90.为什么要有协程，协程是如何实现的？.html">90. 为什么要有协程，协程是如何实现的？</a></li><li class="chapter-item expanded "><a href="91.什么是asyncio？如何基于单线程实现并发？事件循环又是怎么工作的？.html">91. 什么是 asyncio？如何基于单线程实现并发？事件循环又是怎么工作的？</a></li><li class="chapter-item expanded "><a href="92.协程、任务、future，以及事件循环.html">92. 协程、任务、future，以及事件循环</a></li><li class="chapter-item expanded "><a href="93.在asyncio中使用Socket.html">93. 在 asyncio 中使用 Socket</a></li><li class="chapter-item expanded "><a href="94.解密asyncio的Future和Task.html">94. 解密 asyncio 的 Future 和 Task</a></li><li class="chapter-item expanded "><a href="95.如何精确控制asyncio中并发运行的多个任务.html" class="active">95. 如何精确控制 asyncio 中并发运行的多个任务</a></li><li class="chapter-item expanded "><a href="96.详解asyncio的同步原语.html">96. 详解 asyncio 的同步原语</a></li><li class="chapter-item expanded "><a href="97.在asyncio中引入多进程.html">97. 在 asyncio 中引入多进程</a></li><li class="chapter-item expanded "><a href="98.可执行文件的内存模型，变量的值是放在栈上还是放在堆上.html">98. 可执行文件的内存模型，变量的值是放在栈上还是放在堆上</a></li><li class="chapter-item expanded "><a href="99.Python是如何管理内存的？.html">99. Python 是如何管理内存的？</a></li><li class="chapter-item expanded "><a href="100.Python的垃圾回收机制是怎么实现的？.html">100. Python 的垃圾回收机制是怎么实现的？</a></li><li class="chapter-item expanded "><a href="101.深入源码，探究垃圾回收的秘密.html">101. 深入源码，探究垃圾回收的秘密</a></li><li class="chapter-item expanded "><a href="102.侵入Python虚拟机，动态修改底层数据结构和运行时.html">102. 侵入 Python 虚拟机，动态修改底层数据结构和运行时</a></li><li class="chapter-item expanded "><a href="103.使用Python的ctypes调用C的动态库.html">103. 使用 Python 的 ctypes 调用 C 的动态库</a></li><li class="chapter-item expanded "><a href="104.使用Python的ctypes调用Rust的动态库.html">104. 使用 Python 的 ctypes 调用 Rust 的动态库</a></li><li class="chapter-item expanded "><a href="105.用C写Python.html">105. 用 C 写 Python</a></li><li class="chapter-item expanded "><a href="106.Cython从入门到精通.html">106. Cython 从入门到精通</a></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky bordered">
+                    <div class="left-buttons">
+                        <button id="sidebar-toggle" class="icon-button" type="button" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </button>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light (default)</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">CPython3.8 源码探秘</h1>
+
+                    <div class="right-buttons">
+                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+                        <a href="https://github.com/satori1995/cpython-internal" title="Git repository" aria-label="Git repository">
+                            <i id="git-repository-button" class="fa fa-github"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script type="text/javascript">
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h2 id="楔子"><a class="header" href="#楔子">楔子</a></h2>
+<p>之前我们了解了如何创建多个任务来并发运行程序，方式是通过 asyncio.create_task 将协程包装成任务，如下所示：</p>
+<pre><code class="language-python">import asyncio, time
+
+async def main():
+    task1 = asyncio.create_task(asyncio.sleep(3))
+    task2 = asyncio.create_task(asyncio.sleep(3))
+    task3 = asyncio.create_task(asyncio.sleep(3))
+
+    await task1
+    await task2
+    await task3
+
+start = time.perf_counter()
+asyncio.run(main())
+end = time.perf_counter()
+print(&quot;总耗时:&quot;, end - start)
+&quot;&quot;&quot;
+总耗时: 3.003109625
+&quot;&quot;&quot;
+</code></pre>
+<p>但这种代码编写方式只适用于简单情况，如果在同时发出数百、数千甚至更多 Web 请求的情况下，这种编写方式将变得冗长且混乱。所以 asyncio 提供了许多便利的函数，支持我们一次性等待多个任务。</p>
+<h2 id="等待一组任务全部完成"><a class="header" href="#等待一组任务全部完成">等待一组任务全部完成</a></h2>
+<p>一个被广泛用于等待一组任务的方式是使用 asyncio.gather，这个函数接收一系列的可等待对象，允许我们在一行代码中同时运行它们。如果传入的 awaitable 对象是协程，gather 函数会自动将其包装成任务，以确保它们可以同时运行。这意味着不必像之前那样，用 asyncio.create_task 单独包装，但即便如此，还是建议手动包装一下。</p>
+<p>asyncio.gather 同样返回一个 awaitable 对象，在 await 表达式中使用它时，它将暂停，直到传递给它的所有 awaitable 对象都完成为止。一旦所有任务都完成，asyncio.gather 将返回这些任务的结果所组成的列表。</p>
+<pre><code class="language-Python">import asyncio
+import time
+from aiohttp import ClientSession
+
+async def fetch_status(session: ClientSession, url: str):
+    async with session.get(url) as resp:
+        return resp.status
+
+async def main():
+    async with ClientSession() as session:
+        # 注意：requests 里面是 100 个协程
+        # 传递给 asyncio.gather 之后会自动被包装成任务
+        requests = [fetch_status(session, &quot;http://www.baidu.com&quot;)
+                    for _ in range(100)]
+        # 并发运行 100 个任务，并等待这些任务全部完成
+        # 相比写 for 循环再单独 await，这种方式就简便多了
+        status_codes = await asyncio.gather(*requests)
+        print(f&quot;{len(status_codes)} 个任务已全部完成&quot;)
+
+start = time.perf_counter()
+asyncio.run(main())
+end = time.perf_counter()
+print(&quot;总耗时:&quot;, end - start)
+&quot;&quot;&quot;
+100 个任务已全部完成
+总耗时: 0.552532458
+&quot;&quot;&quot;
+</code></pre>
+<p>完成 100 个请求只需要 0.55 秒钟，由于网络问题，测试的结果可能不准确，但异步肯定比同步要快。</p>
+<p>另外传给 gather 的每个 awaitable 对象可能不是按照确定性顺序完成的，例如将协程 a 和 b 按顺序传递给 gather，但 b 可能会在 a 之前完成。不过 gather 的一个很好的特性是，不管 awaitable 对象何时完成，都保证结果会按照传递它们的顺序返回。</p>
+<pre><code class="language-Python">import asyncio
+import time
+
+async def main():
+    # asyncio.sleep 还可以接收一个 result 参数，作为 await 表达式的值
+    tasks = [asyncio.sleep(second, result=f&quot;我睡了 {second} 秒&quot;)
+             for second in (5, 3, 4)]
+    print(await asyncio.gather(*tasks))
+
+start = time.perf_counter()
+asyncio.run(main())
+end = time.perf_counter()
+print(&quot;总耗时:&quot;, end - start)
+&quot;&quot;&quot;
+['我睡了 5 秒', '我睡了 3 秒', '我睡了 4 秒']
+总耗时: 5.002968417
+&quot;&quot;&quot;
+</code></pre>
+<p>然后 gather 还可以实现分组，什么意思呢？</p>
+<pre><code class="language-Python">import asyncio
+import time
+
+async def main():
+    gather1 = asyncio.gather(
+        *[asyncio.sleep(second, result=f&quot;我睡了 {second} 秒&quot;)
+          for second in (5, 3, 4)]
+    )
+    gather2 = asyncio.gather(
+        *[asyncio.sleep(second, result=f&quot;我睡了 {second} 秒&quot;)
+          for second in (3, 3, 3)]
+    )
+    results = await asyncio.gather(
+        gather1, gather2, asyncio.sleep(6, &quot;我睡了 6 秒&quot;)
+    )
+    print(results)
+
+
+start = time.perf_counter()
+asyncio.run(main())
+end = time.perf_counter()
+print(&quot;总耗时:&quot;, end - start)
+&quot;&quot;&quot;
+[['我睡了 5 秒', '我睡了 3 秒', '我睡了 4 秒'], 
+ ['我睡了 3 秒', '我睡了 3 秒', '我睡了 3 秒'], 
+ '我睡了 6 秒']
+总耗时: 6.002826208
+&quot;&quot;&quot;
+</code></pre>
+<p>asyncio.gather 里面可以通过继续接收 asyncio.gather 返回的对象，从而实现分组功能，还是比较强大的。</p>
+<blockquote>
+<p>如果 gather 里面啥都不传的话，那么会返回一个空列表。</p>
+</blockquote>
+<p>问题来了，在上面的例子中，我们假设所有请求都不会失败或抛出异常，这是理想情况。但如果请求失败了呢？我们来看一下，当 gather 里面的任务出现异常时会发生什么？</p>
+<pre><code class="language-Python">import asyncio
+
+async def normal_running():
+    await asyncio.sleep(3)
+    return &quot;正常运行&quot;
+
+async def raise_error():
+    raise ValueError(&quot;出错啦&quot;)
+
+async def main():
+    results = await asyncio.gather(normal_running(), raise_error())
+    print(results)
+
+loop = asyncio.get_event_loop()
+loop.run_until_complete(main())
+&quot;&quot;&quot;
+Traceback (most recent call last):
+    ......
+    raise ValueError(&quot;出错啦&quot;)
+ValueError: 出错啦
+&quot;&quot;&quot;
+</code></pre>
+<p>我们看到抛异常了，其实 gather 函数的原理就是等待一组任务运行完毕，当某个任务完成时，就调用它的 result 方法，拿到返回值。但我们之前介绍 Future 和 Task 的时候说过，如果出错了，调用 result 方法会将异常抛出来。</p>
+<pre><code class="language-Python">import asyncio
+
+async def normal_running():
+    await asyncio.sleep(3)
+    return &quot;正常运行&quot;
+
+async def raise_error():
+    raise ValueError(&quot;出错啦&quot;)
+
+async def main():
+    try:
+        await asyncio.gather(normal_running(), raise_error())
+    except Exception:
+        print(&quot;执行时出现了异常&quot;)
+    # 但剩余的任务仍在执行，拿到当前所有正在执行的任务
+    all_tasks = asyncio.all_tasks()
+    # task 相当于对协程做了一个封装，那么通过 get_coro 方法也可以拿到对应的协程
+    print(f&quot;当前剩余的任务:&quot;, [task.get_coro().__name__ for task in all_tasks])
+    # 继续等待剩余的任务完成
+    results = await asyncio.gather(
+        *[task for task in all_tasks if task.get_coro().__name__ != &quot;main&quot;]
+    )
+    print(results)
+
+loop = asyncio.get_event_loop()
+loop.run_until_complete(main())
+&quot;&quot;&quot;
+执行时出现了异常
+当前剩余的任务: ['main', 'normal_running']
+['正常运行']
+&quot;&quot;&quot;
+</code></pre>
+<p>可以看到在 await asyncio.gather() 的时候，raise_error() 协程抛异常了，那么异常会向上传播，在 main() 里面 await 处产生 ValueError。我们捕获之后查看剩余未完成的任务，显然只剩下 normal_running() 和 main()，因为任务执行出现异常也代表它完成了。</p>
+<p>需要注意的是，一个任务出现了异常，并不影响剩余未完成的任务，它们仍在后台运行。我们举个例子证明这一点：</p>
+<pre><code class="language-Python">import asyncio, time
+
+async def normal_running():
+    await asyncio.sleep(5)
+    return &quot;正常运行&quot;
+
+async def raise_error():
+    await asyncio.sleep(3)
+    raise ValueError(&quot;出错啦&quot;)
+
+async def main():
+    try:
+        await asyncio.gather(normal_running(), raise_error())
+    except Exception:
+        print(&quot;执行时出现了异常&quot;)
+    # raise_error() 会在 3 秒后抛异常，然后向上抛，被这里捕获
+    # 而 normal_running() 不会受到影响，它仍然在后台运行
+    # 显然接下来它只需要再过 2 秒就能运行完毕
+    time.sleep(2)  # 注意：此处会阻塞整个线程
+    # asyncio.sleep 是不耗费 CPU 的，因此即使 time.sleep 将整个线程阻塞了，也不影响
+    # 因为执行 time.sleep 时，normal_running() 里面的 await asyncio.sleep(5) 已经开始执行了
+    results = await asyncio.gather(*[task for task in asyncio.all_tasks()
+                                     if task.get_coro().__name__ != &quot;main&quot;])
+    print(results)
+
+loop = asyncio.get_event_loop()
+start = time.perf_counter()
+loop.run_until_complete(main())
+end = time.perf_counter()
+print(&quot;总耗时:&quot;, end - start)
+&quot;&quot;&quot;
+执行时出现了异常
+['正常运行']
+总耗时: 5.004949666
+&quot;&quot;&quot;
+</code></pre>
+<p>这里耗时是 5 秒，说明一个任务抛异常不会影响其它任务，因为 time.sleep(2) 执行完毕之后，normal_running() 里面的 asyncio.sleep(5) 也已经执行完毕了，说明异常捕获之后，剩余的任务没有受到影响。</p>
+<p>并且这里我们使用了 time.sleep，在工作中千万不要这么做，因为它会阻塞整个线程，导致主线程无法再做其它事情了。而这里之所以用 time.sleep，主要是想说明一个任务出错，那么将异常捕获之后，其它任务不会受到影响。</p>
+<p>那么问题来了，如果发生异常，我们不希望它将异常向上抛，该怎么办呢？可能有人觉得这还不简单，直接来一个异常捕获不就行了？这是一个解决办法，但 asyncio.gather 提供了一个参数，可以更优雅地实现这一点。</p>
+<pre><code class="language-Python">import asyncio
+
+async def normal_running():
+    await asyncio.sleep(3)
+    return &quot;正常运行&quot;
+
+async def raise_error():
+    raise ValueError(&quot;出错啦&quot;)
+
+async def main():
+    results = await asyncio.gather(
+        normal_running(), raise_error(),
+        return_exceptions=True
+    )
+    print(results)
+
+
+loop = asyncio.get_event_loop()
+loop.run_until_complete(main())
+&quot;&quot;&quot;
+['正常运行', ValueError('出错啦')]
+&quot;&quot;&quot;
+</code></pre>
+<p>之前在介绍任务的时候我们说了，不管正常执行结束还是出错，都代表任务已完成，会将结果和异常都收集起来，只不过其中肯定有一个为 None。然后根据不同的情况，选择是否将异常抛出来。所以在 asyncio 里面，异常只是一个普通的属性，会保存在任务对象里面。</p>
+<p>对于 asyncio.gather 也是同理，它里面有一个 return_exceptions 参数，默认为 False，表示当任务出现异常时，会抛给 await 所在的位置。如果该参数设置为 True，那么出现异常时，会直接把异常本身返回（此时任务也算是结束了）。</p>
+<blockquote>
+<p>在 asyncio 里面，异常变成了一个可控的属性。因为执行是以任务为单位的，当出现异常时，也会作为任务的一个普通的属性。我们可以选择将它抛出来，也可以选择隐式处理掉。</p>
+</blockquote>
+<p>至于我们要判断哪些任务是正常执行，哪些任务是抛了异常，便可以通过返回值来判断。如果 isinstance(res, Exception) 为 True，那么证明任务出现了异常，否则正常执行。虽然这有点笨拙，但也能凑合用，因为 API 并不完美。</p>
+<p>当然以上这些都不能算是缺点，gather 真正的缺点有两个：</p>
+<ul>
+<li>如果我希望所有任务都执行成功，只要有一个任务失败就算失败了，其它任务立刻自动取消，该怎么实现呢？比如发送 Web 请求，如果一个请求失败，其它所有请求也会失败（要取消请求以释放资源）。显然要做到这一点不容易，因为协程被包装在后台的任务中；</li>
+<li>必须等待所有任务都执行完成，才能处理结果，这会存在问题。例如有一个请求需要 100 毫秒，而另一个请求需要 20 秒，那么在处理 100 毫秒完成的那个请求之前，我们将等待 20 秒。</li>
+</ul>
+<p>而 asyncio 也提供了用于解决这两个问题的 API。</p>
+<h2 id="在任务完成时立即处理"><a class="header" href="#在任务完成时立即处理">在任务完成时立即处理</a></h2>
+<p>如果想在某个结果生成之后就对其进行处理，这是一个问题；如果有一些可以快速完成的等待对象，和一些可能需要很长时间完成的等待对象，这也可能是一个问题。因为 gather 需要等待所有对象执行完毕，这就导致应用程序可能变得无法响应。</p>
+<p>想象一个用户发出 100 个请求，其中两个很慢，但其余的都很快完成。如果一旦有请求完成，可以向用户输出一些信息，来提升用户的使用体验。</p>
+<p>为处理这种情况，asyncio 公开了一个名为 as_completed 的 API 函数，这个函数接收一个可等待对象（awaitable）组成的列表，并返回一个生成器。通过遍历，等待它们中的每一个对象都完成，并且哪个先完成，哪个就先被迭代。这意味着可以在结果可用时立即就处理它们，但很明显此时就没有所谓的顺序了，因为无法保证哪些请求先完成。</p>
+<pre><code class="language-Python">import asyncio
+import time
+
+async def delay(seconds):
+    await asyncio.sleep(seconds)
+    return f&quot;我睡了 {seconds} 秒&quot;
+
+async def main():
+    # asyncio 提供的用于等待一组 awaitable 对象的 API 都很智能
+    # 如果检测到你传递的是协程，那么会自动包装成任务，不过还是建议手动包装一下
+    tasks = [asyncio.create_task(delay(seconds))
+             for seconds in (3, 5, 2, 4, 6, 1)]
+    for finished in asyncio.as_completed(tasks):
+        print(await finished)
+
+loop = asyncio.get_event_loop()
+start = time.perf_counter()
+loop.run_until_complete(main())
+end = time.perf_counter()
+print(&quot;总耗时:&quot;, end - start)
+&quot;&quot;&quot;
+我睡了 1 秒
+我睡了 2 秒
+我睡了 3 秒
+我睡了 4 秒
+我睡了 5 秒
+我睡了 6 秒
+总耗时: 6.000872417
+&quot;&quot;&quot;
+</code></pre>
+<p>和 gather 不同，gather 是等待一组任务全部完成之后才返回，并且会自动将结果取出来，结果值的顺序和添加任务的顺序是一致的。对于 as_completed 而言，它会返回一个生成器，我们遍历它，哪个任务先完成则哪个就先被处理。</p>
+<p>那么问题来了，如果出现异常了该怎么办？很简单，直接异常捕获即可。</p>
+<p>然后我们再来思考一个问题，任何基于 Web 的请求都存在花费很长时间的风险，服务器可能处于过重的资源负载下，或者网络连接可能很差。之前我们看到了通过 wait_for 函数可以为特定请求添加超时，但如果想为一组请求设置超时怎么办？as_completed 函数通过提供一个可选的 timeout 参数来处理这种情况，它允许以秒为单位指定超时时间。如果花费的时间超过设定的时间，那么迭代器中的每个可等待对象都会在等待时抛出 TimeoutError。</p>
+<pre><code class="language-Python">import asyncio
+
+async def delay(seconds):
+    await asyncio.sleep(seconds)
+    return f&quot;我睡了 {seconds} 秒&quot;
+
+async def main():
+    tasks = [asyncio.create_task(delay(seconds))
+             for seconds in (1, 5, 6)]
+    for finished in asyncio.as_completed(tasks, timeout=3):
+        try:
+            print(await finished)
+        except asyncio.TimeoutError:
+            print(&quot;超时啦&quot;)
+
+loop = asyncio.get_event_loop()
+loop.run_until_complete(main())
+&quot;&quot;&quot;
+我睡了 1 秒
+超时啦
+超时啦
+&quot;&quot;&quot;
+</code></pre>
+<p>as_completed 非常适合用于尽快获得结果，但它也有缺点。</p>
+<p>第一个缺点是没有任何方法可快速了解我们正在等待哪个协程或任务，因为运行顺序是完全不确定的。如果不关心顺序，这可能没问题，但如果需要以某种方式将结果与请求相关联，那么将面临挑战。</p>
+<p>第二个缺点是超时，目前虽然会正确地抛出异常并继续运行程序，但创建的所有任务仍在后台运行。如果想取消它们，那么要确定是哪些任务在运行，而这是我们面临的另一个挑战。</p>
+<pre><code class="language-Python">import asyncio
+
+async def delay(seconds):
+    await asyncio.sleep(seconds)
+    return f&quot;我睡了 {seconds} 秒&quot;
+
+async def main():
+    tasks = [asyncio.create_task(delay(seconds))
+             for seconds in (1, 5, 6)]
+    for finished in asyncio.as_completed(tasks, timeout=3):
+        try:
+            print(await finished)
+        except asyncio.TimeoutError:
+            print(&quot;超时啦&quot;)
+
+    # tasks[1] 还需要 2 秒运行完毕，tasks[2] 还需要 3 秒运行完毕
+    print(tasks[1].done(), tasks[2].done())
+
+    await asyncio.sleep(2)
+    # 此时只剩下 tasks[2]，还需要 1 秒运行完毕
+    print(tasks[1].done(), tasks[2].done())
+
+    await asyncio.sleep(1)
+    # tasks[2] 也运行完毕
+    print(tasks[1].done(), tasks[2].done())
+
+
+loop = asyncio.get_event_loop()
+loop.run_until_complete(main())
+&quot;&quot;&quot;
+我睡了 1 秒
+超时啦
+超时啦
+False False
+True False
+True True
+&quot;&quot;&quot;
+</code></pre>
+<p>根据输出结果可以发现，虽然因为抵达超时时间， await 会导致 TimeoutError，但未完成的任务不会受到影响，它们仍然在后台执行。而这对我们来说，有时却不是一件好事，因为我们希望如果抵达超时时间，那么未完成的任务就别在执行了，这时候如何快速找到那些未完成的任务呢？为处理这种情况，asyncio 提供了另一个 API 函数：wait。</p>
+<h2 id="使用-wait-进行细粒度控制"><a class="header" href="#使用-wait-进行细粒度控制">使用 wait 进行细粒度控制</a></h2>
+<p>gather 和 as_completed 的缺点之一是，当我们看到异常时，没有简单的方法可以取消已经在运行的任务。这在很多情况下可能没问题，但是想象一个场景：同时发送大批量 Web 请求（参数格式是相同的），如果某个请求的参数格式错误（说明所有请求的参数格式都错了），那么剩余的请求还有必要执行吗？显然是没有必要的，而且还会消耗更多资源。另外 as_completed 的另一个缺点是，由于迭代顺序是不确定的，因此很难准确跟踪已完成的任务。</p>
+<p>于是 asyncio 提供了 wait 函数，注意它和 wait_for 的区别，wait_for 针对的是单个任务，而 wait 针对的是一组任务（不限数量）。</p>
+<blockquote>
+<p>注：wait 函数接收的是一组 awaitable 对象，但未来的版本会改为仅接收任务对象。因此对于 gather、as_completed、wait 等函数，虽然它们会自动包装成任务，但我们更建议先手动包装成任务，然后再传过去。</p>
+<p>并且 wait 和 as_completed 接收的都是任务列表，而 gather 则要求将列表打散，以多个位置参数的方式传递，因此这些 API 的参数格式不要搞混了。</p>
+</blockquote>
+<p>然后是 wait 函数的返回值，它会返回两个集合：一个由已完成的任务（执行结束或出现异常）组成的集合，另一个由未完成的任务组成的集合。而 wait 函数的参数，它除了可以接收一个任务列表之外，还可以接收一个 timeout（超时时间）和一个 return_when（用于控制返回条件）。光说很容易乱，我们来实际演示一下。</p>
+<h3 id="等待所有任务完成"><a class="header" href="#等待所有任务完成">等待所有任务完成</a></h3>
+<p>如果未指定 retun_when，则此选项使用默认值，并且它的行为与 asyncio.gather 最接近，但也存在一些差异。</p>
+<pre><code class="language-python">import asyncio
+
+async def delay(seconds):
+    await asyncio.sleep(seconds)
+    return f&quot;我睡了 {seconds} 秒&quot;
+
+async def main():
+    tasks = [asyncio.create_task(delay(seconds)) for seconds in (3, 2, 4)]
+    # 和 gather 一样，默认会等待所有任务都完成
+    done, pending = await asyncio.wait(tasks)
+    print(f&quot;已完成的任务数: {len(done)}&quot;)
+    print(f&quot;未完成的任务数: {len(pending)}&quot;)
+
+    for done_task in done:
+        print(await done_task)
+
+
+loop = asyncio.get_event_loop()
+loop.run_until_complete(main())
+&quot;&quot;&quot;
+已完成的任务数: 3
+未完成的任务数: 0
+我睡了 2 秒
+我睡了 4 秒
+我睡了 3 秒
+&quot;&quot;&quot;
+</code></pre>
+<p>await asynio.wait 时，会返回两个集合，分别保存已完成的任务和仍然运行的任务。并且由于返回的是集合，所以是无序的。默认情况下，asyncio.wait 会等到所有任务都完成后才返回，所以待处理集合的长度为 0。</p>
+<p>然后还是要说一下异常，如果某个任务执行时出现异常了该怎么办呢？</p>
+<pre><code class="language-Python">import asyncio
+
+async def delay(seconds):
+    await asyncio.sleep(seconds)
+    if seconds == 3:
+        raise ValueError(&quot;我出错了(second is 3)&quot;)
+    return f&quot;我睡了 {seconds} 秒&quot;
+
+async def main():
+    tasks = [asyncio.create_task(delay(seconds)) for seconds in range(1, 6)]
+    done, pending = await asyncio.wait(tasks)
+    print(f&quot;已完成的任务数: {len(done)}&quot;)
+    print(f&quot;未完成的任务数: {len(pending)}&quot;)
+
+
+loop = asyncio.get_event_loop()
+loop.run_until_complete(main())
+&quot;&quot;&quot;
+已完成的任务数: 5
+未完成的任务数: 0
+Task exception was never retrieved
+future: &lt;Task finished ... coro=&lt;delay() done, defined at .../main.py:3&gt; 
+         exception=ValueError('我出错了(second is 3)')&gt;
+    ......
+    raise ValueError(&quot;我出错了(second is 3)&quot;)
+ValueError: 我出错了(second is 3)
+&quot;&quot;&quot;
+</code></pre>
+<p>对于 asyncio.gather 而言，如果某个任务出现异常，那么异常会向上抛给 await 所在的位置。如果不希望它抛，那么可以将 gather 里面的 return_exceptions 参数指定为 True，这样当出现异常时，会将异常返回。</p>
+<p>而 asyncio.wait 也是如此，如果任务出现异常了，那么会直接视为已完成，异常同样不会向上抛。但是从程序开发的角度来讲，返回值可以不要，但异常不能不处理。所以当任务执行出错时，虽然异常不会向上抛，但 asyncio 会将它打印出来，于是就有了：Task exception was never retrieved。意思就是该任务出现异常了，但你没有处理它。</p>
+<pre><code class="language-Python">import asyncio
+
+async def delay(seconds):
+    await asyncio.sleep(seconds)
+    if seconds == 3:
+        raise ValueError(&quot;我出错了(second is 3)&quot;)
+    return f&quot;我睡了 {seconds} 秒&quot;
+
+async def main():
+    tasks = [asyncio.create_task(delay(seconds)) for seconds in range(1, 6)]
+    # done 里面保存的都是已完成的任务
+    done, pending = await asyncio.wait(tasks)
+    print(f&quot;已完成的任务数: {len(done)}&quot;)
+    print(f&quot;未完成的任务数: {len(pending)}&quot;)
+
+    # 所以我们直接遍历 done 即可
+    for done_task in done:
+        # 这里不能使用 await done_task，因为当任务完成时，它就等价于 done_task.result()
+        # 而任务出现异常时，调用 result() 是会将异常抛出来的，所以我们需要先检测异常是否为空
+        exc = done_task.exception()
+        if exc:
+            print(exc)
+        else:
+            print(done_task.result())
+
+
+loop = asyncio.get_event_loop()
+loop.run_until_complete(main())
+&quot;&quot;&quot;
+已完成的任务数: 5
+未完成的任务数: 0
+我睡了 5 秒
+我睡了 2 秒
+我出错了(second is 3)
+我睡了 4 秒
+我睡了 1 秒
+&quot;&quot;&quot;
+</code></pre>
+<p>这里调用 result 和 exception 有一个前提，就是任务必须处于已完成状态，否则会抛异常：InvalidStateError: Result is not ready.。但对于当前是没有问题的，因为 done 里面的都是已完成的任务。</p>
+<p>这里能再次看到和 gather 的区别，gather 会帮你把返回值都取出来，放在一个列表中，并且顺序就是任务添加的顺序。而 wait 返回的是集合，集合里面是任务，我们需要手动拿到返回值。</p>
+<h3 id="某个任务出现异常时取消其它任务"><a class="header" href="#某个任务出现异常时取消其它任务">某个任务出现异常时取消其它任务</a></h3>
+<p>从目前来讲，wait 的作用和 gather 没有太大的区别，都是等到任务全部结束再解除等待（出现异常也视作任务完成，并且其它任务不受影响）。那如果我希望当有任务出现异常时，立即取消其它任务该怎么做呢？显然这就依赖 wait 函数里面的 return_when，它有三个可选值：</p>
+<ul>
+<li>asyncio.ALL_COMPLETED：等待所有任务完成后返回；</li>
+<li>asyncio.FIRST_COMPLETED：有一个任务完成就返回；</li>
+<li>asyncio.FIRST_EXCEPTION：当有任务出现异常时返回；</li>
+</ul>
+<p>显然为完成这个需求，我们应该将 return_when 指定为 FIRST_EXCEPTION。</p>
+<pre><code class="language-Python">import asyncio
+
+async def delay(seconds):
+    await asyncio.sleep(seconds)
+    if seconds == 3:
+        raise ValueError(&quot;我出错了(second is 3)&quot;)
+    return f&quot;我睡了 {seconds} 秒&quot;
+
+async def main():
+    tasks = [asyncio.create_task(delay(seconds), name=f&quot;睡了 {seconds} 秒的任务&quot;)
+             for seconds in range(1, 6)]
+    done, pending = await asyncio.wait(tasks, return_when=asyncio.FIRST_EXCEPTION)
+    print(f&quot;已完成的任务数: {len(done)}&quot;)
+    print(f&quot;未完成的任务数: {len(pending)}&quot;)
+
+    print(&quot;都有哪些任务完成了？&quot;)
+    for t in done:
+        print(&quot;    &quot; + t.get_name())
+
+    print(&quot;还有哪些任务没完成？&quot;)
+    for t in pending:
+        print(&quot;    &quot; + t.get_name())
+
+loop = asyncio.get_event_loop()
+loop.run_until_complete(main())
+&quot;&quot;&quot;
+已完成的任务数: 3
+未完成的任务数: 2
+都有哪些任务完成了？
+    睡了 2 秒的任务
+    睡了 3 秒的任务
+    睡了 1 秒的任务
+还有哪些任务没完成？
+    睡了 4 秒的任务
+    睡了 5 秒的任务
+&quot;&quot;&quot;
+</code></pre>
+<p>当 delay(3) 失败时，显然 delay(1)、delay(2) 已完成，而 delay(4) 和 delay(5) 未完成。此时集合 done 里面的就是已完成的任务，pending 里面则是未完成的任务。当 wait 返回时，未完成的任务仍在后台继续运行，如果我们希望将剩余未完成的任务取消掉，那么直接遍历 pending 集合即可。</p>
+<pre><code class="language-Python">import asyncio
+
+async def delay(seconds):
+    await asyncio.sleep(seconds)
+    if seconds == 3:
+        raise ValueError(&quot;我出错了(second is 3)&quot;)
+    print(f&quot;我睡了 {seconds} 秒&quot;)
+
+async def main():
+    tasks = [asyncio.create_task(delay(seconds))
+             for seconds in range(1, 6)]
+    done, pending = await asyncio.wait(tasks, return_when=asyncio.FIRST_EXCEPTION)
+    print(f&quot;已完成的任务数: {len(done)}&quot;)
+    print(f&quot;未完成的任务数: {len(pending)}&quot;)
+    # 此时未完成的任务仍然在后台运行，这时候可以将它们取消掉
+    for t in pending:
+        t.cancel()
+    # 阻塞 3 秒
+    await asyncio.sleep(3)
+
+loop = asyncio.get_event_loop()
+loop.run_until_complete(main())
+&quot;&quot;&quot;
+我睡了 1 秒
+我睡了 2 秒
+已完成的任务数: 3
+未完成的任务数: 2
+&quot;&quot;&quot;
+</code></pre>
+<p>在 await asyncio.sleep(3) 的时候，剩余两个任务并没有输出，所以任务确实被取消了。注：出现异常的任务会被挂在已完成集合里面，如果没有任务在执行时出现异常，那么效果等价于 ALL_COMPLETED。</p>
+<h3 id="当任务完成时处理结果"><a class="header" href="#当任务完成时处理结果">当任务完成时处理结果</a></h3>
+<p>ALL_COMPLETED 和 FIRST_EXCEPTION 都有一个缺点，在任务成功且不抛出异常的情况下，必须等待所有任务完成。对于之前的用例，这是可以接受的，但如果想要在某个协程成功完成后立即处理结果，那么现在的情况将不能满足我们的需求。</p>
+<p>虽然这个场景可使用 as_completed 实现，但 as_completed 的问题是没有简单的方法可以查看哪些任务还在运行，哪些任务已经完成。因为遍历的时候，无法得知哪个任务先完成，所以 as_completed 无法完成我们的需求。</p>
+<p>好在 wait 函数的 return_when 参数可以接收 FIRST_COMPLETED 选项，表示只要有一个任务完成就立即返回，而返回的可以是执行出错的任务，也可以是成功运行的任务。然后我们可以取消其它正在运行的任务，或者让某些任务继续运行，具体取决于用例。</p>
+<pre><code class="language-Python">import asyncio
+
+async def delay(seconds):
+    await asyncio.sleep(seconds)
+    if seconds == 3:
+        raise ValueError(&quot;我出错了(second is 3)&quot;)
+    print(f&quot;我睡了 {seconds} 秒&quot;)
+
+async def main():
+    tasks = [asyncio.create_task(delay(seconds))
+             for seconds in range(1, 6)]
+    done, pending = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
+    print(f&quot;已完成的任务数: {len(done)}&quot;)
+    print(f&quot;未完成的任务数: {len(pending)}&quot;)
+
+loop = asyncio.get_event_loop()
+loop.run_until_complete(main())
+&quot;&quot;&quot;
+我睡了 1 秒
+已完成的任务数: 1
+未完成的任务数: 4
+&quot;&quot;&quot;
+</code></pre>
+<p>当 return_when 参数为 FIRST_COMPLETED 时，那么只要有一个任务完成就会立即返回，然后我们处理完成的任务即可。至于剩余的任务，它们仍在后台运行，我们可以继续对其使用 wait 函数。</p>
+<pre><code class="language-Python">import asyncio
+
+async def delay(seconds):
+    await asyncio.sleep(seconds)
+    if seconds == 3:
+        raise ValueError(&quot;我出错了(second is 3)&quot;)
+    return f&quot;我睡了 {seconds} 秒&quot;
+
+async def main():
+    tasks = [asyncio.create_task(delay(seconds))
+             for seconds in range(1, 6)]
+    while True:
+        done, pending = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
+        for t in done:
+            exc = t.exception()
+            print(exc) if exc else print(t.result())
+
+        if pending:  # 还有未完成的任务，那么继续使用 wait
+            tasks = pending
+        else:
+            break
+
+loop = asyncio.get_event_loop()
+loop.run_until_complete(main())
+&quot;&quot;&quot;
+我睡了 1 秒
+我睡了 2 秒
+我出错了(second is 3)
+我睡了 4 秒
+我睡了 5 秒
+&quot;&quot;&quot;
+</code></pre>
+<p>整个行为和 as_completed 是一致的，但这种做法有一个好处，就是我们每一步都可以准确地知晓哪些任务已经完成，哪些任务仍然运行，并且也可以做到精确取消指定任务。</p>
+<h3 id="处理超时"><a class="header" href="#处理超时">处理超时</a></h3>
+<p>除了允许对如何等待任务完成进行更细粒度的控制外，wait 还允许设置超时，以指定我们希望等待完成的时间。要启用此功能，可将 timeout 参数设置为所需的最大秒数，如果超过了这个超时时间，wait 将立即返回 done 和 pending 任务集。</p>
+<p>不过与目前所看到的 wait_for 和 as_completed 相比，超时在 wait 中的行为方式存在一些差异。</p>
+<ul>
+<li>1）任务不会被取消。当使用 wait_for 时，如果任务超时，则引发 TimeouError，并且任务也会自动取消。但使用 wait 的情况并非如此，它的行为更接近我们在 as_completed 中看到的情况。如果想因为超时而取消任务，必须显式地遍历任务并取消，否则它们仍在后台运行。</li>
+<li>2）不会引发超时错误。如果发生超时，则 wait 会立即返回所有已完成的任务，以及在发生超时的时候仍处于运行状态的任务。</li>
+</ul>
+<pre><code class="language-Python">import asyncio
+
+async def delay(seconds):
+    await asyncio.sleep(seconds)
+    return f&quot;我睡了 {seconds} 秒&quot;
+
+async def main():
+    tasks = [asyncio.create_task(delay(seconds))
+             for seconds in range(1, 6)]
+    done, pending = await asyncio.wait(tasks, timeout=3.1)
+    print(f&quot;已完成的任务数: {len(done)}&quot;)
+    print(f&quot;未完成的任务数: {len(pending)}&quot;)
+
+loop = asyncio.get_event_loop()
+loop.run_until_complete(main())
+&quot;&quot;&quot;
+已完成的任务数: 3
+未完成的任务数: 2
+&quot;&quot;&quot;
+</code></pre>
+<p>wait 调用将在 3 秒后返回 done 和 pending 集合，在 done 集合中，会有三个已完成的任务。而耗时 4 秒和 5 秒的任务，由于仍在运行，因此它们将出现在 pending 集合中。我们可以继续等待它们完成并提取返回值，也可以将它们取消掉。</p>
+<p>需要注意：和之前一样，pending 集合中的任务不会被取消，并且继续运行，尽管超时了。对于要终止待处理任务的情况，我们需要显式地遍历 pending 集合，并在每个任务上调用 cancel。</p>
+<h3 id="为什么要先将协程包装成任务"><a class="header" href="#为什么要先将协程包装成任务">为什么要先将协程包装成任务</a></h3>
+<p>我们说协程在传给 wait 的时候会自动包装成任务，那为什么我们还要手动包装呢？</p>
+<pre><code class="language-Python">import asyncio
+
+async def delay(seconds):
+    await asyncio.sleep(seconds)
+    return f&quot;我睡了 {seconds} 秒&quot;
+
+async def main():
+    tasks = [asyncio.create_task(delay(seconds))
+             for seconds in range(1, 6)]
+    done, pending = await asyncio.wait(tasks, timeout=3.1)
+    print(all(map(lambda t: t in tasks, done)))
+    print(all(map(lambda t: t in tasks, pending)))
+
+loop = asyncio.get_event_loop()
+loop.run_until_complete(main())
+&quot;&quot;&quot;
+True
+True
+&quot;&quot;&quot;
+</code></pre>
+<p>如果 wait 函数接收的就是任务，那么 wait 函数就不会再包装了，所以 done 和 pending 里面的任务和 tasks 里面的任务是相同的。基于这个条件，我们后续可以做一些比较之类的。</p>
+<p>比如有很多 Web 请求任务，但如果当未完成的任务是 task1、task2、task3，那么就取消掉，于是可以这么做。</p>
+<pre><code class="language-Python">for t in pending:
+    if t in (task1, task2, task3):
+        t.cancel()
+</code></pre>
+<p>如果返回的 done 和 pending 里的任务，是在 wait 函数中自动创建的，那么我们就无法进行任何比较来查看 pending 集合中的特定任务。</p>
+<h2 id="小结"><a class="header" href="#小结">小结</a></h2>
+<p>1）asyncio.gather 函数允许同时运行多个任务，并等待它们完成。一旦传递给它的所有任务全部完成，这个函数就会返回。由于 gather 会拿到里面每个任务的返回值，所以它要求每个任务都是成功的，如果有任务执行出错（没有返回值），那么获取返回值的时候会将异常抛出来，然后向上传递给 await asyncio.gather。</p>
+<p>为此，可以将 return_exceptions 设置为 True，这将返回成功完成的可等待对象的结果，以及产生的异常（异常会作为一个普通的属性返回，和返回值是等价的）。</p>
+<p>2）可使用 as_completed 函数在可等待对象列表完成时处理它们的结果，它会返回一个可以循环遍历的生成器。一旦某个协程或任务完成，就能访问结果并处理它。</p>
+<p>3）如果希望同时运行多个任务，并且还希望能了解哪些任务已经完成，哪些任务在运行，则可以使用 wait。这个函数还允许在返回结果时进行更多控制，返回时，我们会得到一组已经完成的任务和一组仍在运行的任务。</p>
+<p>然后可以取消任何想取消的任务，或执行其它任何需要执行的任务。并且 wait 里面的任务出现异常，也不会影响其它任务，异常会作为任务的一个属性，只是在没有处理的时候会给出警告。至于具体的处理方式，直接通过 exception 方法判断是否发生了异常即可，没有异常返回 result()，有异常返回 exception()。</p>
+<hr />
+<p> </p>
+<p><strong>欢迎大家关注我的公众号：古明地觉的编程教室。</strong></p>
+<p><img src="./images/qrcode_for_gh.jpg" alt="" /></p>
+<p><strong>如果觉得文章对你有所帮助，也可以请作者吃个馒头，Thanks♪(･ω･)ﾉ。</strong></p>
+<p><img src="./images/supports.png" alt="" /></p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="94.解密asyncio的Future和Task.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+                            <a rel="next" href="96.详解asyncio的同步原语.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="94.解密asyncio的Future和Task.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+                    <a rel="next" href="96.详解asyncio的同步原语.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+            </nav>
+
+        </div>
+
+        <script type="text/javascript">
+            window.playground_copyable = true;
+        </script>
+        <script src="elasticlunr.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="mark.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="searcher.js" type="text/javascript" charset="utf-8"></script>
+        <script src="clipboard.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="highlight.js" type="text/javascript" charset="utf-8"></script>
+        <script src="book.js" type="text/javascript" charset="utf-8"></script>
+
+        <!-- Custom JS scripts -->
+        <script type="text/javascript" src="theme/custom.js"></script>
+    </body>
+</html>

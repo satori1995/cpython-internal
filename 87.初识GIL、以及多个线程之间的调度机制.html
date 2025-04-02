@@ -1,0 +1,381 @@
+<!DOCTYPE HTML>
+<html lang="zh-cn" class="sidebar-visible no-js light">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>87. 初识 GIL、以及多个线程之间的调度机制 - CPython3.8 源码探秘</title>
+        <!-- Custom HTML head -->
+        <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff" />
+
+        <link rel="icon" href="favicon.svg">
+        <link rel="shortcut icon" href="favicon.png">
+        <link rel="stylesheet" href="css/variables.css">
+        <link rel="stylesheet" href="css/general.css">
+        <link rel="stylesheet" href="css/chrome.css">
+        <link rel="stylesheet" href="css/print.css" media="print">
+        <!-- Fonts -->
+        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="fonts/fonts.css">
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="highlight.css">
+        <link rel="stylesheet" href="tomorrow-night.css">
+        <link rel="stylesheet" href="ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+        <link rel="stylesheet" href="theme/custom.css">
+        <!-- MathJax -->
+        <script async type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    </head>
+    <body>
+        <!-- Provide site root to javascript -->
+        <script type="text/javascript">
+            var path_to_root = "";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script type="text/javascript">
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script type="text/javascript">
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            var html = document.querySelector('html');
+            html.classList.remove('no-js')
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add('js');
+        </script>
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script type="text/javascript">
+            var html = document.querySelector('html');
+            var sidebar = 'hidden';
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            }
+            html.classList.remove('sidebar-visible');
+            html.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li class="chapter-item expanded "><a href="0.序言.html">0. 序言</a></li><li class="chapter-item expanded "><a href="1.CPython源码长什么样子？.html">1. CPython 源码长什么样子？</a></li><li class="chapter-item expanded "><a href="2.变量和对象，它们之间有什么区别和联系呢？.html">2. 变量和对象，它们之间有什么区别和联系呢？</a></li><li class="chapter-item expanded "><a href="3.Python对象有哪几种，我们可以从哪些角度进行分类呢？.html">3. Python 对象有哪几种，我们可以从哪些角度进行分类呢？</a></li><li class="chapter-item expanded "><a href="4.万丈高楼平地起，一切从PyObject开始.html">4. 万丈高楼平地起，一切从 PyObject 开始</a></li><li class="chapter-item expanded "><a href="5.详解PyTypeObject，Python类型对象的载体.html">5. 详解 PyTypeObject，Python 类型对象的载体</a></li><li class="chapter-item expanded "><a href="6.通过type和object之间的关联，进一步分析类型对象.html">6. 通过 type 和 object 之间的关联，进一步分析类型对象</a></li><li class="chapter-item expanded "><a href="7.当创建一个Python对象时，背后都经历了哪些过程？.html">7. 当创建一个 Python 对象时，背后都经历了哪些过程？</a></li><li class="chapter-item expanded "><a href="8.当调用一个Python对象时，背后都经历了哪些过程？.html">8. 当调用一个 Python 对象时，背后都经历了哪些过程？</a></li><li class="chapter-item expanded "><a href="9.再探泛型API，感受Python对象的设计哲学.html">9. 再探泛型 API，感受 Python 对象的设计哲学</a></li><li class="chapter-item expanded "><a href="10.Python对象的行为是怎么区分的？.html">10. Python 对象的行为是怎么区分的？</a></li><li class="chapter-item expanded "><a href="11.一个Python对象会在何时被销毁？.html">11. 一个 Python 对象会在何时被销毁？</a></li><li class="chapter-item expanded "><a href="12.深度解密Python的浮点数是怎么实现的？.html">12. 深度解密 Python 的浮点数是怎么实现的？</a></li><li class="chapter-item expanded "><a href="13.对象被销毁之后所占的内存一定会释放吗？解密浮点数的缓存池机制.html">13. 对象被销毁之后所占的内存一定会释放吗？解密浮点数的缓存池机制</a></li><li class="chapter-item expanded "><a href="14.浮点数支持的操作是怎么实现的？.html">14. 浮点数支持的操作是怎么实现的？</a></li><li class="chapter-item expanded "><a href="15.解密Python的复数是怎么实现的？它有什么用途呢？.html">15. 解密 Python 的复数是怎么实现的？它有什么用途呢？</a></li><li class="chapter-item expanded "><a href="16.Python的整数是怎么设计的，为什么它不会溢出？.html">16. Python 的整数是怎么设计的，为什么它不会溢出？</a></li><li class="chapter-item expanded "><a href="17.解密Python的小整数对象池.html">17. 解密 Python 的小整数对象池</a></li><li class="chapter-item expanded "><a href="18.两个Python整数之间是如何进行大小比较的？过程并不像我们想的那样简单.html">18. 两个 Python 整数之间是如何进行大小比较的？过程并不像我们想的那样简单</a></li><li class="chapter-item expanded "><a href="19.探究Python整数的加减法，感受大整数的运算哲学与魅力.html">19. 探究 Python 整数的加减法，感受大整数的运算哲学与魅力</a></li><li class="chapter-item expanded "><a href="20.Python的布尔值是怎么实现的，你对它的了解有多深呢？.html">20. Python 的布尔值是怎么实现的，你对它的了解有多深呢？</a></li><li class="chapter-item expanded "><a href="21.Python的None是怎么实现的？.html">21. Python 的 None 是怎么实现的？</a></li><li class="chapter-item expanded "><a href="22.深度解密Python切片的实现原理.html">22.深度解密 Python 切片的实现原理</a></li><li class="chapter-item expanded "><a href="23.bytes对象（字节串）是怎么实现的？解密它的内部原理.html">23. bytes 对象（字节串）是怎么实现的？解密它的内部原理</a></li><li class="chapter-item expanded "><a href="24.bytes对象都支持哪些操作，它们是怎么实现的？.html">24. bytes 对象都支持哪些操作，它们是怎么实现的？</a></li><li class="chapter-item expanded "><a href="25.通过bytes对象的合并，探究缓冲区的奥秘.html">25. 通过 bytes 对象的合并，探究缓冲区的奥秘</a></li><li class="chapter-item expanded "><a href="26.解密bytes对象的缓存池.html">26. 解密 bytes 对象的缓存池</a></li><li class="chapter-item expanded "><a href="27.详解bytearray对象的底层实现.html">27. 详解 bytearray 对象的底层实现</a></li><li class="chapter-item expanded "><a href="28.字符集和字符编码.html">28. 字符集和字符编码</a></li><li class="chapter-item expanded "><a href="29.Python是怎么存储字符串的？.html">29. Python 是怎么存储字符串的？</a></li><li class="chapter-item expanded "><a href="30.解密字符串的底层结构，它是怎么实现的？.html">30. 解密字符串的底层结构，它是怎么实现的？</a></li><li class="chapter-item expanded "><a href="31.字符串的intern机制是怎么一回事？.html">31. 字符串的 intern 机制是怎么一回事？</a></li><li class="chapter-item expanded "><a href="32.聊一聊字符串常见操作的源码实现.html">32. 聊一聊字符串常见操作的源码实现</a></li><li class="chapter-item expanded "><a href="33.列表是怎么实现的？解密列表的数据结构.html">33. 列表是怎么实现的？解密列表的数据结构</a></li><li class="chapter-item expanded "><a href="34.列表是怎么扩容的？.html">34. 列表是怎么扩容的？</a></li><li class="chapter-item expanded "><a href="35.解密列表的创建与销毁，以及缓存池长什么样子？.html">35. 解密列表的创建与销毁，以及缓存池长什么样子？</a></li><li class="chapter-item expanded "><a href="36.列表作为序列型对象都支持哪些操作，它们在底层是怎么实现的？.html">36. 列表作为序列型对象都支持哪些操作，它们在底层是怎么实现的？</a></li><li class="chapter-item expanded "><a href="37.列表都有哪些自定义方法，它们是怎么实现的？.html">37. 列表都有哪些自定义方法，它们是怎么实现的？</a></li><li class="chapter-item expanded "><a href="38.解密元组的实现原理.html">38. 解密元组的实现原理</a></li><li class="chapter-item expanded "><a href="39.聊一聊喜闻乐见的哈希表.html">39. 聊一聊喜闻乐见的哈希表</a></li><li class="chapter-item expanded "><a href="40.字典是怎么实现的，它的底层结构长什么样子？.html">40. 字典是怎么实现的，它的底层结构长什么样子？</a></li><li class="chapter-item expanded "><a href="41.什么是可哈希对象，它的哈希值是怎么计算的？.html">41. 什么是可哈希对象，它的哈希值是怎么计算的？</a></li><li class="chapter-item expanded "><a href="42.字典的key是怎么映射成索引的，索引冲突了又该怎么办？.html">42. 字典的 key 是怎么映射成索引的，索引冲突了又该怎么办？</a></li><li class="chapter-item expanded "><a href="43.哈希表是怎么删除元素的，能直接删除吗？.html">43. 哈希表是怎么删除元素的，能直接删除吗？</a></li><li class="chapter-item expanded "><a href="44.字典是怎么创建的，支持的操作又是如何实现的？.html">44. 字典是怎么创建的，支持的操作又是如何实现的？</a></li><li class="chapter-item expanded "><a href="45.字典的自定义方法是怎么实现的？.html">45. 字典的自定义方法是怎么实现的？</a></li><li class="chapter-item expanded "><a href="46.字典是怎么扩容的？它会经历哪些过程？.html">46. 字典是怎么扩容的？它会经历哪些过程？</a></li><li class="chapter-item expanded "><a href="47.身虽死，道未消，解密字典的缓存池.html">47. 身虽死，道未消，解密字典的缓存池</a></li><li class="chapter-item expanded "><a href="48.解密集合的实现原理.html">48. 解密集合的实现原理</a></li><li class="chapter-item expanded "><a href="49.集合支持的操作有哪些，它们是怎么实现的？.html">49. 集合支持的操作有哪些，它们是怎么实现的？</a></li><li class="chapter-item expanded "><a href="50.迭代器是怎么实现的？.html">50. 迭代器是怎么实现的？</a></li><li class="chapter-item expanded "><a href="51.Python源文件编译之后会得到什么，它的结构是怎样的？和字节码又有什么联系？.html">51. Python 源文件编译之后会得到什么，它的结构是怎样的？和字节码又有什么联系？</a></li><li class="chapter-item expanded "><a href="52.PyCodeObject拾遗.html">52. PyCodeObject 拾遗</a></li><li class="chapter-item expanded "><a href="53.一文让你搞懂pyc文件.html">53. 一文让你搞懂 pyc 文件</a></li><li class="chapter-item expanded "><a href="54.深度解密虚拟机的执行环境：栈帧对象.html">54. 深度解密虚拟机的执行环境：栈帧对象</a></li><li class="chapter-item expanded "><a href="55.名字空间：变量的容身之所.html">55. 名字空间：变量的容身之所</a></li><li class="chapter-item expanded "><a href="56.当查找一个变量时，虚拟机会进行哪些动作？.html">56. 当查找一个变量时，虚拟机会进行哪些动作？</a></li><li class="chapter-item expanded "><a href="57.虚拟机是怎么执行字节码的？背后都经历了哪些过程.html">57. 虚拟机是怎么执行字节码的？背后都经历了哪些过程</a></li><li class="chapter-item expanded "><a href="58.深入源码，进一步考察字节码的执行流程.html">58. 深入源码，进一步考察字节码的执行流程</a></li><li class="chapter-item expanded "><a href="59.局部变量是怎么实现静态查找的，它和local名字空间又有什么联系呢？.html">59. 局部变量是怎么实现静态查找的，它和 local 名字空间又有什么联系呢？</a></li><li class="chapter-item expanded "><a href="60.剖析字节码指令，以及Python赋值语句的原理.html">60. 剖析字节码指令，以及 Python 赋值语句的原理</a></li><li class="chapter-item expanded "><a href="61.流程控制语句if是怎么实现的？.html">61. 流程控制语句 if 是怎么实现的？</a></li><li class="chapter-item expanded "><a href="62.流程控制语句for、while是怎么实现的？.html">62. 流程控制语句 for、while 是怎么实现的？</a></li><li class="chapter-item expanded "><a href="63.异常是怎么实现的？虚拟机是如何将异常抛出去的？.html">63. 异常是怎么实现的？虚拟机是如何将异常抛出去的？</a></li><li class="chapter-item expanded "><a href="64.虚拟机是如何捕获异常的？.html">64. 虚拟机是如何捕获异常的？</a></li><li class="chapter-item expanded "><a href="65.函数在底层长什么样子？.html">65. 函数在底层长什么样子？</a></li><li class="chapter-item expanded "><a href="66.函数是怎么创建的，背后经历了哪些过程？.html">66. 函数是怎么创建的，背后经历了哪些过程？</a></li><li class="chapter-item expanded "><a href="67.函数在底层是如何调用的？.html">67. 函数在底层是如何调用的？</a></li><li class="chapter-item expanded "><a href="68.函数是如何解析位置参数的？.html">68. 函数是如何解析位置参数的？</a></li><li class="chapter-item expanded "><a href="69.函数是如何解析关键字参数的？.html">69. 函数是如何解析关键字参数的？</a></li><li class="chapter-item expanded "><a href="70.扩展位置参数和扩展关键字参数是如何解析的？.html">70. 扩展位置参数和扩展关键字参数是如何解析的？</a></li><li class="chapter-item expanded "><a href="71.闭包是怎么实现的？.html">71. 闭包是怎么实现的？</a></li><li class="chapter-item expanded "><a href="72.生成器是做什么的，为什么会有生成器？.html">72. 生成器是做什么的，为什么会有生成器？</a></li><li class="chapter-item expanded "><a href="73.源码解密生成器的实现原理.html">73. 源码解密生成器的实现原理</a></li><li class="chapter-item expanded "><a href="74.回顾Python的对象模型.html">74. 回顾 Python 的对象模型</a></li><li class="chapter-item expanded "><a href="75.class概念解析.html">75. class 概念解析</a></li><li class="chapter-item expanded "><a href="76.类型对象的初始化.html">76. 类型对象的初始化</a></li><li class="chapter-item expanded "><a href="77.自定义类对象的底层实现与metaclass.html">77. 自定义类对象的底层实现与 metaclass</a></li><li class="chapter-item expanded "><a href="78.彻底搞懂描述符.html">78. 彻底搞懂描述符</a></li><li class="chapter-item expanded "><a href="79.实例对象是如何创建的？.html">79. 实例对象是如何创建的？</a></li><li class="chapter-item expanded "><a href="80.实例对象的属性访问.html">80. 实例对象的属性访问</a></li><li class="chapter-item expanded "><a href="81.为什么实例在调用方法时会将自身传给self参数.html">81. 为什么实例在调用方法时会将自身传给 self 参数</a></li><li class="chapter-item expanded "><a href="82.模块是如何导入的？.html">82. 模块是如何导入的？</a></li><li class="chapter-item expanded "><a href="83.import机制的黑盒探测.html">83. import 机制的黑盒探测</a></li><li class="chapter-item expanded "><a href="84.import机制是怎么实现的？.html">84. import 机制是怎么实现的？</a></li><li class="chapter-item expanded "><a href="85.Python运行时环境的初始化，解释器在启动时都做了什么？.html">85. Python 运行时环境的初始化，解释器在启动时都做了什么？</a></li><li class="chapter-item expanded "><a href="86.激活Python虚拟机.html">86. 激活 Python 虚拟机</a></li><li class="chapter-item expanded "><a href="87.初识GIL、以及多个线程之间的调度机制.html" class="active">87. 初识 GIL、以及多个线程之间的调度机制</a></li><li class="chapter-item expanded "><a href="88.线程的创建、销毁、调度，以及GIL的实现原理.html">88. 线程的创建、销毁、调度，以及 GIL 的实现原理</a></li><li class="chapter-item expanded "><a href="89.解密map、filter、zip底层实现，对比列表解析式.html">89. 解密 map、filter、zip 底层实现，对比列表解析式</a></li><li class="chapter-item expanded "><a href="90.为什么要有协程，协程是如何实现的？.html">90. 为什么要有协程，协程是如何实现的？</a></li><li class="chapter-item expanded "><a href="91.什么是asyncio？如何基于单线程实现并发？事件循环又是怎么工作的？.html">91. 什么是 asyncio？如何基于单线程实现并发？事件循环又是怎么工作的？</a></li><li class="chapter-item expanded "><a href="92.协程、任务、future，以及事件循环.html">92. 协程、任务、future，以及事件循环</a></li><li class="chapter-item expanded "><a href="93.在asyncio中使用Socket.html">93. 在 asyncio 中使用 Socket</a></li><li class="chapter-item expanded "><a href="94.解密asyncio的Future和Task.html">94. 解密 asyncio 的 Future 和 Task</a></li><li class="chapter-item expanded "><a href="95.如何精确控制asyncio中并发运行的多个任务.html">95. 如何精确控制 asyncio 中并发运行的多个任务</a></li><li class="chapter-item expanded "><a href="96.详解asyncio的同步原语.html">96. 详解 asyncio 的同步原语</a></li><li class="chapter-item expanded "><a href="97.在asyncio中引入多进程.html">97. 在 asyncio 中引入多进程</a></li><li class="chapter-item expanded "><a href="98.可执行文件的内存模型，变量的值是放在栈上还是放在堆上.html">98. 可执行文件的内存模型，变量的值是放在栈上还是放在堆上</a></li><li class="chapter-item expanded "><a href="99.Python是如何管理内存的？.html">99. Python 是如何管理内存的？</a></li><li class="chapter-item expanded "><a href="100.Python的垃圾回收机制是怎么实现的？.html">100. Python 的垃圾回收机制是怎么实现的？</a></li><li class="chapter-item expanded "><a href="101.深入源码，探究垃圾回收的秘密.html">101. 深入源码，探究垃圾回收的秘密</a></li><li class="chapter-item expanded "><a href="102.侵入Python虚拟机，动态修改底层数据结构和运行时.html">102. 侵入 Python 虚拟机，动态修改底层数据结构和运行时</a></li><li class="chapter-item expanded "><a href="103.使用Python的ctypes调用C的动态库.html">103. 使用 Python 的 ctypes 调用 C 的动态库</a></li><li class="chapter-item expanded "><a href="104.使用Python的ctypes调用Rust的动态库.html">104. 使用 Python 的 ctypes 调用 Rust 的动态库</a></li><li class="chapter-item expanded "><a href="105.用C写Python.html">105. 用 C 写 Python</a></li><li class="chapter-item expanded "><a href="106.Cython从入门到精通.html">106. Cython 从入门到精通</a></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky bordered">
+                    <div class="left-buttons">
+                        <button id="sidebar-toggle" class="icon-button" type="button" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </button>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light (default)</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">CPython3.8 源码探秘</h1>
+
+                    <div class="right-buttons">
+                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+                        <a href="https://github.com/satori1995/cpython-internal" title="Git repository" aria-label="Git repository">
+                            <i id="git-repository-button" class="fa fa-github"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script type="text/javascript">
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h2 id="楔子"><a class="header" href="#楔子">楔子</a></h2>
+<p>这次我们来说一下 Python 的多线程，上篇文章提到了 Python 线程是对 OS 线程的一个封装，并提供了相应的线程状态对象 PyThreadState，来记录 OS 线程的一些状态信息。</p>
+<p>那什么是多线程呢？首先线程是操作系统调度 CPU 工作的最小单元，进程则是操作系统资源分配的最小单元，线程是需要依赖于进程的，并且每一个进程内部至少有一个线程，这个线程我们称之为主线程。然后主线程可以创建子线程，而一个进程中如果有多个线程在工作，我们就称之为多线程。</p>
+<p>开发一个多线程应用程序是很常见的事情，很多语言都支持多线程，有的是原生支持，有的是通过库来支持。而 Python 毫无疑问也支持多线程，并且它是通过标准库 threading 实现的。</p>
+<p>当然标准库 threading 底层依赖了 _thread，而 _thread 是一个用 C 实现的库，位于 Modules/_threadmodule.c 中。还记得这个 Modules 目录是做什么的吗？它也是 CPython 源码的一部分，里面存放的都是一些用 C 实现、并且对性能要求较为苛刻的库，编译之后就内嵌在解释器里面了。</p>
+<p>另外提到多线程，总会让人想到 GIL（global interpreter lock）这个万恶之源，我们后面会详细介绍。目前我们知道 Python 多线程是不能利用多核的，因为虚拟机使用一个全局解释器锁（GIL）来控制线程对程序的执行，这个结果就使得无论你的 CPU 有多少核，但是同时被线程调度的 CPU 只有一个。不过底层是怎么做的呢？我们下面就来分析一下。</p>
+<h2 id="gil-与线程调度"><a class="header" href="#gil-与线程调度">GIL 与线程调度</a></h2>
+<p>如果讨论基于线程的并⾏，那么全局解释器锁（GIL）是⼀个绕不开的话题。我们知道 GIL 是⼀个施加在解释器之上的互斥锁，⽤于防⽌本机多个线程同时执⾏字节码。换句话说 ，GIL 确保解释器在程序执⾏期间，同⼀时刻只会使⽤操作系统的⼀个线程。不管你的 CPU 是多少核，以及你开了多少个线程，同⼀时刻只会使⽤操作系统的⼀个线程、去调度⼀个 CPU。⽽且 GIL 不仅影响 Python 代码，也会影响 Python/C API。</p>
+<p>⾸先我们来分析⼀下为什么会有 GIL 这个东⻄存在？举个例⼦：</p>
+<pre><code class="language-Python">import dis
+
+dis.dis(&quot;del obj&quot;)
+&quot;&quot;&quot;
+ 0 DELETE_NAME              0 (obj)
+ 2 LOAD_CONST               0 (None)
+ 4 RETURN_VALUE
+&quot;&quot;&quot;
+</code></pre>
+<p>当使⽤ del 删除⼀个变量的时候，对应的指令是 DELETE_NAME，这条指令做的事情⾮常简单：通过宏 Py_DECREF 将对象的引⽤计数减 1，并且判断减少之后其引⽤计数是否为 0，如果为 0 就进⾏回收。伪代码如下:</p>
+<pre><code class="language-C">--obj-&gt;ob_refcnt
+if (obj -&gt; ob_refcnt == 0){
+    销毁obj
+}
+</code></pre>
+<p>所以总共是两步：第⼀步先将对象的引⽤计数减 1；第⼆步判断引⽤计数是否为 0，为 0 则进⾏销毁。那么问题来了，假设有两个线程 A 和 B，内部都引⽤了某个变量 obj，此时 obj 指向的对象的引⽤计数为 2，然后让两个线程都执⾏ del obj 这⾏代码。</p>
+<p>其中 A 线程先执⾏，A 线程在执⾏完 <code>--obj -&gt; ob_refcnt</code> 之后，会将对象的引⽤计数减⼀，但不幸的是，这个时候调度机制将 A 挂起了，唤醒了 B。⽽ B 也执⾏ del obj，但它⽐较幸运，将两步⼀块执⾏完了。⽽由于之前 A 已经将引⽤计数减 1，所以 B 再减 1 之后会发现对象的引⽤计数为 0，从⽽执⾏了对象的销毁动作（tp_dealloc），内存被释放。</p>
+<p>然后 A ⼜被唤醒了，此时开始执⾏第⼆个步骤，但由于 <code>obj-&gt;ob_refcnt</code> 已经被减少到 0，所以条件满⾜，那么 A 依旧会对 obj 指向的对象进⾏释放。但问题是这个对象所占的内存已经被释放了，所以 obj 此时就成了悬空指针。如果再对 obj 指向的对象进⾏释放，最终会引发什么后果，只有天知道，这也是臭名昭著的⼆次释放。</p>
+<p>关键来了，所以 CPython 引⼊了 GIL，GIL 是解释器层⾯上的⼀把超级⼤锁，它是字节码级别的互斥锁。作⽤就是：在同时⼀刻，只让⼀个线程执⾏字节码，并且保证每⼀条字节码在执⾏的时候都不会被打断。</p>
+<p>因此由于 GIL 的存在，会使得线程只有把当前的某条字节码指令执⾏完毕之后才有可能发⽣调度。所以⽆论是 A 还是 B，线程调度时，要么发⽣在 DELETE_NAME 这条指令执⾏之前，要么发⽣在 DELETE_NAME 这条指令执⾏完毕之后，但是不存在指令（不仅是 DELETE_NAME，⽽是所有指令）执⾏到⼀半的时候发⽣调度。</p>
+<p>所以 GIL 才被称之为是字节码级别的互斥锁，它保护每条字节码指令只有在执⾏完毕之后才会发⽣线程调度，或者说线程切换。</p>
+<p>回到上⾯那个 del obj 的例⼦当中，由于引⼊了 GIL，所以就不存在我们之前说的：在 A 将引⽤计数减⼀之后，挂起 A、唤醒 B 这⼀过程。因为 A 已经开始了 DELETE_NAME 这条指令的执⾏，⽽在没执⾏完之前是不会发⽣线程调度的，所以此时不会出现悬空指针的问题。</p>
+<p>因此 Python 的⼀条字节码指令会对应多⾏ C 代码，这其中可能会涉及很多个 C 函数的调⽤，我们举个例⼦：</p>
+<p><img src="./images/279.png" alt="" /></p>
+<p>这是 FOR_ITER 指令，Python 的 for 循环对应的就是这条指令。可以看到⾥⾯的逻辑⾮常多，当然也涉及了多个函数调⽤，⽽且函数内部⼜会调⽤其它的函数。如果没有 GIL，那么这些逻辑在执⾏的时候，任何⼀处都可能被打断，发⽣线程调度。</p>
+<p>但是有了 GIL 就不同了，它是施加在字节码层⾯上的互斥锁，保证每次只有⼀个线程执⾏字节码指令。并且不允许指令执⾏到⼀半时发⽣调度，因此 GIL 就保证了每条指令内部的 C 逻辑整体都是原⼦的。⽽如果没有 GIL，那么即使是简单的引⽤计数，在计算上都有可能出问题。事实上，GIL 最初的⽬的就是为了解决引⽤计数的安全性问题。</p>
+<p>因此 GIL 对于 Python 对象的内存管理来说是不可或缺的，但是还有⼀点需要注意，GIL 和 Python 语⾔本身没有什么关系，它只是官⽅在实现 CPython 时，为了⽅便管理内存所引⼊的⼀个实现。⽽其它种类的 Python 解释器则不⼀定需要 GIL，⽐如 JPython。</p>
+<h2 id="gil-有没有可能被移除"><a class="header" href="#gil-有没有可能被移除">GIL 有没有可能被移除</a></h2>
+<p>那么 CPython 中的 GIL 将来是否会被移除呢？因为对于现在的多核 CPU 来说，GIL ⽆疑是进⾏了限制。关于能否移除 GIL，就我本⼈来看短时间内不可能（针对 CPython），这都⼏⼗年了，能移除早就移除了。事实上在 Python 诞⽣没多久，就有⼈发现了这⼀诡异之处，因为当时的⼈发现使⽤多线程在计算上居然没有任何的性能提升，反⽽还⽐单线程慢了⼀点。</p>
+<p>⽽ Python 的官⽅⼈员回复的是：不要使⽤多线程，去使⽤多进程。此时站在上帝视⻆的我们知道，因为 GIL 的存在使得同⼀时刻只有⼀个核被使⽤，所以对于纯计算的代码来说，理论上多线程和单线程是没有区别的。但由于多线程涉及上下⽂的切换，会有⼀些额外开销，反⽽还慢⼀些。</p>
+<p>因此在得知 GIL 的存在之后，有两位勇⼠站了出来表示要移除 GIL，当时 Python 还是 1.5 的版本，⾮常古⽼了。当他们在去掉 GIL 之后，发现多线程的效率相⽐之前确实提升了，但是单线程的效率只有原来的⼀半，这显然是不能接受的。因为把 GIL 去掉了，就意味着需要更细粒度的锁来解决共享数据的安全问题，这就会导致⼤量的加锁、解锁。⽽加锁、解锁对于操作系统来说是⼀个⽐较重量级的操作，所以 GIL 的移除是极其困难的。</p>
+<p>另外还有⼀个关键，就是当 GIL 被移除之后，会使得扩展模块的编写难度⼤⼤增加。因为 GIL 保护的不仅仅是解释器，还有 Python/C API。像很多现有的 C 扩展，在很⼤程度上都依赖 GIL 提供的解决⽅案，如果要移除 GIL，就需要重新解决这些库的线程安全问题。</p>
+<p>⽐如我们熟知的 numpy，numpy 的速度之所以这么快，就是因为底层是 C 写的，然后封装成 Python 的扩展模块。⽽其它的库，像 pandas、scipy、sklearn 都是在 numpy 之上开发的，如果把 GIL 移除了，那么这些库就都不能⽤了。还有深度学习，像 tensorflow、pytorch 等框架所使⽤的底层算法也都不是 Python 编写的，⽽是 C 和 C++，Python 只是起到了⼀个包装器的作⽤。Python 在深度学习领域很⽕，主要是它可以和 C ⽆缝结合，如果 GIL 被移除，那么这些框架也没法⽤了。</p>
+<p>因此在 2024 年的今天，⽣态如此成熟的 Python，⼏乎是不可能摆脱 GIL 了。否则这些知名的科学计算相关的库就要重新洗牌了，可想⽽知这是⼀个什么样的⼯作量。</p>
+<p>补充：这⾥我说 GIL ⽆法被移除其实有⼀些过于绝对，如果在移除 GIL 之后能够保证以下三点，那么 GIL 的移除就是成功的。</p>
+<ul>
+<li>GIL 移除之后不能影响单线程的运⾏速度；</li>
+<li>GIL 移除之后不能影响 IO 密集场景下的多线程运⾏速度；</li>
+<li>GIL 移除之后不能破坏现有的 C 扩展；</li>
+</ul>
+<p>如果这三点能够保证的话，那么 GIL 是可以被移除的，⽽只要有⼀点⽆法保证，那么就⽆法移除 GIL。⽽关于移除 GIL 的尝试，也从来都没有停⽌，但⽆⼀例外都失败了，原因也都是因为在移除 GIL 之后会有性能问题、以及要改变很多的 C API。</p>
+<h2 id="图解-gil"><a class="header" href="#图解-gil">图解 GIL</a></h2>
+<p>Python 启动⼀个线程，底层会启动⼀个 C 线程，最终启动⼀个操作系统的线程。所以 Python 的线程实际上是封装了 C 的线程，进⽽封装了 OS 线程，⼀个 Python 线程对应⼀个 OS 线程。</p>
+<p>实际执⾏的肯定是 OS 线程，⽽ OS 线程 Python 解释器是没有权限控制的，它能控制的只有 Python 线程。假设有 4 个 Python 线程，那么肯定对应 4 个 OS 线程，但是解释器每次只让⼀个 Python 线程调⽤ OS 线程去执⾏，其它的线程只能⼲等着，只有当前的 Python 线程将 GIL 释放了，其它的某个线程在拿到 GIL 时，才可以调⽤相应的 OS 线程去执⾏。</p>
+<p>总结⼀下就是，没有拿到 GIL 的 Python 线程，对应的 OS 线程会处于休眠状态。拿到 GIL 的 Python 线程，对应的 OS 线程会从休眠状态被唤醒。</p>
+<p><img src="./images/280.png" alt="" /></p>
+<p>所以 Python 线程是调⽤ C 的线程、进⽽调⽤操作系统的 OS 线程，⽽ OS 线程在执⾏过程中解释器是控制不了的。因为解释器的控制范围只有 Python 线程，它⽆权⼲预 C 的线程、更⽆权⼲预 OS 线程。</p>
+<p>再次强调：GIL 并不是 Python 语⾔的特性，它是 CPython 开发⼈员为了⽅便内存管理才加上去的。只不过解释器我们⼤部分⽤的都是 CPython，所以很多⼈认为 GIL 是 Python 语⾔本身的⼀个特性，但其实不是的。</p>
+<p>Python 是⼀⻔语⾔，⽽ CPython 是对使⽤ Python 语⾔编写的源代码进⾏解释执⾏的⼀个解释器。⽽解释器不⽌ CPython ⼀种，还有 JPython，但 JPython 就没有 GIL。因此 Python 语⾔本身是和 GIL ⽆关的，只不过我们平时在说 Python 的 GIL 的时候，指的都是 CPython ⾥⾯的 GIL，这⼀点要注意。</p>
+<p><img src="./images/281.png" alt="" /></p>
+<p>所以就类似于上图，⼀个线程执⾏⼀会⼉，另⼀个线程执⾏⼀会⼉，⾄于线程怎么切换、什么时候切换，我们后⾯会说。</p>
+<p>对于 Python ⽽⾔，解释执⾏字节码是其核⼼所在，所以通过 GIL 来互斥不同线程执⾏字节码。如果⼀个线程想要执⾏，就必须拿到 GIL，⽽⼀旦拿到 GIL，其它线程就⽆法执⾏了，如果想执⾏，那么只能等 GIL 释放、被⾃⼰获取之后才可以。并且我们说 GIL 保护的不仅仅是 Python 解释器，还有 Python 的 C API，在使⽤ C/C++ 和 Python 混合开发，涉及到原⽣线程和 Python 线程相互合作时，也需要通过 GIL 进⾏互斥。</p>
+<p>那么问题来了，有了 GIL，在编写多线程代码的时候是不是就意味着不需要加锁了呢？</p>
+<p>答案显然不是的，因为 GIL 保护的是每条字节码不会被打断，⽽很多代码都是⼀⾏对应多条字节码，所以每⾏代码是可以被打断的。⽐如：<font color="blue">a = a + 1</font> 这样⼀条语句，它对应 4 条字节码：LOAD_NAME、LOAD_CONST、BINARY_ADD、STORE_NAME。</p>
+<p>假设此时 a = 8，两个线程 A 和 B 同时执⾏ a = a + 1，线程 A 执⾏的时候已经将 a 和 1 压⼊运⾏时栈，栈⾥⾯的 a 指向的是 8。但还没有执⾏ BINARY_ADD 的时候，发⽣线程切换，轮到线程 B 执⾏，此时 B 得到的 a 显然还是指向 8，因为线程 A 还没有对变量 a 做加法操作。然后 B ⽐较幸运，它⼀次性将这 4 条字节码全部执⾏完了，所以 a 会指向 9。</p>
+<p>然后线程调度再切换回 A，此时会执⾏ BINARY_ADD，不过注意：栈⾥⾯的 a ⽬前指向的还是 8，因此加完之后是 9。所以问题就出现了，本来 a 应该指向10，但是却指向 9，就是因为在执⾏的时候发⽣了线程调度。</p>
+<p>所以我们在编写多线程代码的时候还是需要加锁的，GIL 只是保证每条字节码执⾏的时候不会被打断，但是⼀⾏代码往往对应多条字节码，所以我们会通过 threading.Lock() 再加上⼀把锁。这样即便发⽣了线程调度，但由于在 Python 的层⾯上⼜加了⼀把锁，别的线程依旧⽆法执⾏，这样就保证了数据的安全。</p>
+<h2 id="gil-何时被释放"><a class="header" href="#gil-何时被释放">GIL 何时被释放</a></h2>
+<p>那么问题来了，GIL 啥时候会被释放呢？关于这⼀点，Python 有⼀个⾃⼰的调度机制：</p>
+<ul>
+<li>当遇⻅ IO 阻塞的时候会释放，因为 IO 阻塞是不耗费 CPU 的，所以此时虚拟机会把该线程的锁释放；</li>
+<li>即便是耗费 CPU 的运算，也不会⼀直执⾏，会在执⾏⼀⼩段时间之后释放锁，为了保证其它线程都有机会执⾏，就类似于 CPU 时间⽚轮转的⽅式；</li>
+</ul>
+<p>调度机制虽然简单，但是这背后还隐藏着两个问题：</p>
+<ul>
+<li>在何时挂起线程，选择处于等待状态的下⼀个线程？</li>
+<li>在众多处于等待状态的候选线程中，选择激活哪⼀个线程？</li>
+</ul>
+<p>在 Python 的多线程机制中，这两个问题分别是由不同的层次解决的。对于何时进⾏线程调度的问题，是由 Python ⾃身决定的。思考⼀下操作系统是如何进⾏进程切换的，当⼀个进程运⾏了⼀段时间之后，发⽣了时钟中断，操作系统响应时钟，并开始进⾏进程的调度。</p>
+<p>同样，Python 也是模拟了这样的时钟中断，来激活线程的调度。解释器内部维护着⼀个数值，这个数值就是 Python 内部的时钟，在 Python2 中如果⼀个线程执⾏的字节码指令数达到了这个值，那么会进⾏线程切换，并且这个值在 Python3 中仍然存在。</p>
+<pre><code class="language-Python">import sys
+
+# 默认执⾏ 100 条字节码之后，启动线程调度机制，进⾏切换
+print(sys.getcheckinterval())  # 100
+
+# 但是在 Python3 中，改成了时间间隔
+# 表示⼀个线程在执⾏ 0.005s 之后进⾏切换
+print(sys.getswitchinterval())  # 0.005
+# 上⾯的⽅法我们都可以⼿动设置
+# sys.setcheckinterval(N) # sys.setswitchinterval(N)
+</code></pre>
+<p>sys.getcheckinterval 和 sys.setcheckinterval 在 Python3.8 的时候已经废弃了，因为线程发⽣调度不再取决于执⾏的字节码条数，⽽是时间间隔。</p>
+<p>除了执⾏时间之外，还有就是之前说的遇⻅ IO 阻塞的时候会进⾏切换，所以多线程在 IO 密集型的场景下还是很有⽤处的。说实话如果 IO 都不会⾃动切换的话，那么 Python 的多线程才是真的没有⽤。</p>
+<p>然后⼀个问题就是，Python 在切换的时候会从等待的线程中选择哪⼀个呢？很简单，Python 直接借⽤了底层操作系统提供的调度机制来决定下⼀个获取 GIL 的线程究竟是谁。</p>
+<p>所以⽬前为⽌可以得到如下结论：</p>
+<ul>
+<li>GIL 对于 Python 对象的内存管理来说是不可或缺的；</li>
+<li>GIL 和 Python 语⾔本身没有什么关系，它只是 CPython 为了⽅便管理内存所引⼊的⼀个实现，只不过 CPython 是使⽤最为⼴泛的⼀种 Python 解释器，我们默认指的就是它。但是别的 Python 解释器则不⼀定需要 GIL，⽐如 JPython；</li>
+</ul>
+<p>关于 GIL 到底是个什么东⻄（底层就是⼀个结构体实例），以及为什么要有 GIL，我们已经清楚了。那么重点来了，我们能不能⼿动释放 GIL 呢？</p>
+<p>在 Python ⾥⾯不可以，但在 C ⾥⾯是可以的。因为 GIL 是为了解决 Python 的内存管理⽽引⼊的，但如果是那些不需要和 Python 代码⼀起⼯作的纯 C 代码，那么是可以在没有 GIL 的情况下运⾏的。</p>
+<p>因为 GIL 是字节码级别的互斥锁，显然这是在解释执⾏字节码的时候所施加的。⽽且不仅是 GIL，还有 Python 的动态性，都是在解释字节码的时候动态赋予的。⽽ C 代码经过编译之后直接就是⼆进制码了，所以它相当于绕过了解释执⾏这⼀步，因此也就失去了相应的动态性（换来的是速度的提升）。那么同理，既然能绕过解释执⾏这⼀步，那么就意味着也能绕过 GIL 的限制，因为 GIL 也是在解释执⾏字节码的时候施加的。</p>
+<p>因此当我们在 C 中创建了不绑定任何 Python 对象的 C 级结构时，也就是在处理 C-Only 部分时，可以将全局解释器锁给释放掉。换句话说，我们可以使⽤ C 绕过 GIL，实现基于线程的并⾏。</p>
+<p>注意：GIL 是为了保护 Python 对象的内存管理⽽设置的，如果我们要释放 GIL，那么⼀定⼀定⼀定不能和 Python 对象发⽣任何的交互，必须是纯 C 的数据结构。</p>
+<h2 id="gil-在-c-的层要如何释放"><a class="header" href="#gil-在-c-的层要如何释放">GIL 在 C 的层⾯要如何释放</a></h2>
+<p>⾸先必须澄清⼀点，GIL 只有在多线程的情况下才会出现，如果是单线程，那么 CPython 是不会创建 GIL 的。⽽⼀旦我们启动了多线程，那么 GIL 就被创建了。线程如果想安全地访问 Python 对象，就必须要持有全局解释器锁（GIL），如果没有这个锁，那么多线程基本上算是废了，即便是最简单的操作都有可能发⽣问题。例如两个线程同时引⽤了⼀个对象，那么这个对象的引⽤计数应该增加 2，但可能出现只增加 1 的情况。</p>
+<p>因此存在⼀个铁打不动的规则：单线程除外，如果是多线程，只有获得了 GIL 的线程才能操作 Python 对象或者调⽤ Python / C API。⽽为了保证每个线程都能有机会执⾏，解释器有着⾃⼰的⼀套规则，可以定期迫使线程释放 GIL，让其它线程也有机会执⾏，因为线程都是抢占式的。但当出现了 IO 阻塞，会⽴即强制释放。</p>
+<p>那么问题来了，如果在 C 里面有一段 Python 无关的逻辑，那么这段逻辑完全可以并行执行，此时便可主动释放 GIL，该怎么做呢？用大白话解释就是：</p>
+<p><img src="./images/282.png" alt="" /></p>
+<p>以上在编写扩展模块的时候⾮常常⽤，因此 Python 底层提供了两个宏：</p>
+<pre><code class="language-C">// 从名字上来看，直译就是开始允许多线程（并⾏执⾏）
+// 这⼀步就是释放 GIL，表示这 GIL 不要也罢
+Py_BEGIN_ALLOW_THREADS
+ 
+/* 做⼀些耗时的纯 C 操作，当然 IO 操作也是如此
+   ⽽我们使⽤这两个宏很明显是为了耗时的 C 操作 */ 
+// 执⾏完毕之后，如果要和 Python 对象进⾏交互
+// 那么必须要再度获取 GIL，相当于结束多线程的并⾏执⾏
+Py_END_ALLOW_THREADS
+ 
+// 除了上⾯这两个宏之外，还可以使⽤下⾯这两个宏，效果是⼀样的
+// Py_UNBLOCK_THREADS、Py_BLOCK_THREADS 
+</code></pre>
+<p>我们来看⼀下这两个宏在底层是怎么定义的？</p>
+<pre><code class="language-C">// Include/ceval.h
+#define Py_BEGIN_ALLOW_THREADS { \
+                        PyThreadState *_save; \
+                        _save = PyEval_SaveThread();
+#define Py_END_ALLOW_THREADS    PyEval_RestoreThread(_save); \
+                 }
+</code></pre>
+<p>所以，如果将这两个宏展开的话，那么就是下⾯这个样⼦。</p>
+<p><img src="./images/283.png" alt="" /></p>
+<p>浅蓝⾊的部分就是 Py_BEGIN_ALLOW_THREADS，⻩⾊的部分则是 Py_END_ALLOW_THREADS，它们组成了⼀个新的代码块，我们的纯 C 逻辑也会写在⾥⾯。很明显，这两者必须同时出现，如果只出现⼀个，那么编译时就会出现语法错误，因为⼤括号没有成对出现。</p>
+<ul>
+<li>所以 Py_BEGIN_ALLOW_THREADS 宏会打开⼀个新的代码块（⼤括号的左半部分），并定义⼀个隐藏的局部变量；</li>
+<li>Py_END_ALLOW_THREADS 宏则是关闭这个代码块（⼤括号的右半部分）。</li>
+</ul>
+<p>如果 Python 编译为不⽀持线程的版本（⼏乎没⻅过），它们定义为空。如果⽀持线程，那么代码块会进⾏展开，⽽展开的结果就是上图展示的样⼦。</p>
+<pre><code class="language-C">{
+    PyThreadState *_save;
+    _save = PyEval_SaveThread();
+    // ... ...
+    PyEval_RestoreThread(_save);
+}
+</code></pre>
+<p>我们也可以使⽤更低级的 API 来实现这⼀点：</p>
+<pre><code class="language-c">{
+    PyThreadState *_save;
+    _save = PyThreadState_Swap(NULL); 
+    PyEval_ReleaseLock();
+    // ... ...
+    PyEval_AcquireLock(); 
+    PyThreadState_Swap(_save);
+}
+</code></pre>
+<p>当然低级的 API 会有⼀些微妙的差异，因为锁操作不⼀定保持变量的⼀致性，⽽ PyEval_RestoreThread 可以对这个变量进⾏保存和恢复。同样，如果是不⽀持线程的解释器，那么 PyEval_SaveThread 和 PyEval_RestoreThread 就会不操作锁，然后让 PyEval_ReleaseLock 和 PyEval_AcquireLock 不可⽤，这就使得不⽀持线程的解释器可以动态加载⽀持线程的扩展。</p>
+<p>如果不是很理解没有关系，我们梳理⼀下整个过程。⾸先有⼀个全局变量，它保存了当前活跃线程的线程状态对象（指针），这⾥的活跃线程显然就是获取到 GIL 的线程。换句话说，这个关键的全局变量保存的是谁的状态对象，那么获取到 GIL 的活跃线程就是谁。</p>
+<p>然后是释放 GIL：</p>
+<pre><code class="language-C">{
+    PyThreadState *_save;
+    // PyThreadState_Swap(NULL) 会将保存线程状态对象指针的全局变量设置为 NULL
+    // 也就是不让全局变量再保存⾃身的线程状态对象，因为要释放 GIL 了
+    // 并且该函数设置的时候，还会返回之前保存的线程状态对象（显然对应当前线程）
+    // 这⾥⽤局部变量 _save 保存起来
+    _save = PyThreadState_Swap(NULL);
+
+    // 释放锁，⽽锁⼀旦释放，就会⽴刻被其它线程获取
+    // 其它线程在获取之后，还会将⾃身的线程状态对象设置给那个关键的全局变量
+    // 设置的⽅式依旧是通过 PyThreadState_Swap 函数
+    PyEval_ReleaseLock(); 
+  
+    // ... 当前线程在释放锁之后，就可以和其它线程并⾏执⾏了 ...
+    // ... 但当前线程执⾏的操作，⼀定是不涉及 Python/C API 的纯 C 操作 ... 
+  
+    // 当 C 级操作执⾏完毕之后，需要使⽤ Python/C API 了，那么显然要再度获取锁
+    // 此处会等待获取全局锁 
+    PyEval_AcquireLock();
+    // ⼀旦获取到锁，还要将⾃身的线程状态对象设置给专⻔负责保存的全局变量 
+    PyThreadState_Swap(_save);
+}
+</code></pre>
+<p>所以过程就是这个样⼦，简化⼀下就是五个步骤，⽤⼤⽩话解释就是：</p>
+<ul>
+<li>通过 PyThreadState_Swap 获取当前活跃线程的线程状态对象，同时将保存线程状态对象的全局变量设置为 NULL；</li>
+<li>释放全局锁；</li>
+<li>做⼀些需要并⾏的纯 C 操作；</li>
+<li>获取全局锁；</li>
+<li>调⽤ PyThreadState_Swap 再将全局变量设置为⾃身的线程状态对象；</li>
+</ul>
+<p>以上就是全局解释器锁的释放逻辑，它⽤于保护当前的线程状态对象。但需要注意的是，1 和 2 两个步骤不能颠倒，当然 4 和 5 也是如此。也就是说，我们必须在拿到当前线程状态对象并⽤局部变量保存之后，才能释放锁（因为另⼀个线程会获取锁，全局变量会保存新的线程状态对象）。同理在重新获取锁时，锁必须要先获取，然后才能恢复线程状态对象（将其设置给全局变量）。</p>
+<h2 id="小结"><a class="header" href="#小结">小结</a></h2>
+<p>到目前为止，我们算是以高维的视角理解了什么是 GIL，以及线程切换又是怎么一回事。那么下一篇文章，我们就从源代码的角度，来分析 GIL 到底是如何实现的。</p>
+<hr />
+<p> </p>
+<p><strong>欢迎大家关注我的公众号：古明地觉的编程教室。</strong></p>
+<p><img src="./images/qrcode_for_gh.jpg" alt="" /></p>
+<p><strong>如果觉得文章对你有所帮助，也可以请作者吃个馒头，Thanks♪(･ω･)ﾉ。</strong></p>
+<p><img src="./images/supports.png" alt="" /></p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="86.激活Python虚拟机.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+                            <a rel="next" href="88.线程的创建、销毁、调度，以及GIL的实现原理.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="86.激活Python虚拟机.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+                    <a rel="next" href="88.线程的创建、销毁、调度，以及GIL的实现原理.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+            </nav>
+
+        </div>
+
+        <script type="text/javascript">
+            window.playground_copyable = true;
+        </script>
+        <script src="elasticlunr.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="mark.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="searcher.js" type="text/javascript" charset="utf-8"></script>
+        <script src="clipboard.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="highlight.js" type="text/javascript" charset="utf-8"></script>
+        <script src="book.js" type="text/javascript" charset="utf-8"></script>
+
+        <!-- Custom JS scripts -->
+        <script type="text/javascript" src="theme/custom.js"></script>
+    </body>
+</html>

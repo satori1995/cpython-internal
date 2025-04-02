@@ -1,0 +1,489 @@
+<!DOCTYPE HTML>
+<html lang="zh-cn" class="sidebar-visible no-js light">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>63. 异常是怎么实现的？虚拟机是如何将异常抛出去的？ - CPython3.8 源码探秘</title>
+        <!-- Custom HTML head -->
+        <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff" />
+
+        <link rel="icon" href="favicon.svg">
+        <link rel="shortcut icon" href="favicon.png">
+        <link rel="stylesheet" href="css/variables.css">
+        <link rel="stylesheet" href="css/general.css">
+        <link rel="stylesheet" href="css/chrome.css">
+        <link rel="stylesheet" href="css/print.css" media="print">
+        <!-- Fonts -->
+        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="fonts/fonts.css">
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="highlight.css">
+        <link rel="stylesheet" href="tomorrow-night.css">
+        <link rel="stylesheet" href="ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+        <link rel="stylesheet" href="theme/custom.css">
+        <!-- MathJax -->
+        <script async type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    </head>
+    <body>
+        <!-- Provide site root to javascript -->
+        <script type="text/javascript">
+            var path_to_root = "";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script type="text/javascript">
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script type="text/javascript">
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            var html = document.querySelector('html');
+            html.classList.remove('no-js')
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add('js');
+        </script>
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script type="text/javascript">
+            var html = document.querySelector('html');
+            var sidebar = 'hidden';
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            }
+            html.classList.remove('sidebar-visible');
+            html.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li class="chapter-item expanded "><a href="0.序言.html">0. 序言</a></li><li class="chapter-item expanded "><a href="1.CPython源码长什么样子？.html">1. CPython 源码长什么样子？</a></li><li class="chapter-item expanded "><a href="2.变量和对象，它们之间有什么区别和联系呢？.html">2. 变量和对象，它们之间有什么区别和联系呢？</a></li><li class="chapter-item expanded "><a href="3.Python对象有哪几种，我们可以从哪些角度进行分类呢？.html">3. Python 对象有哪几种，我们可以从哪些角度进行分类呢？</a></li><li class="chapter-item expanded "><a href="4.万丈高楼平地起，一切从PyObject开始.html">4. 万丈高楼平地起，一切从 PyObject 开始</a></li><li class="chapter-item expanded "><a href="5.详解PyTypeObject，Python类型对象的载体.html">5. 详解 PyTypeObject，Python 类型对象的载体</a></li><li class="chapter-item expanded "><a href="6.通过type和object之间的关联，进一步分析类型对象.html">6. 通过 type 和 object 之间的关联，进一步分析类型对象</a></li><li class="chapter-item expanded "><a href="7.当创建一个Python对象时，背后都经历了哪些过程？.html">7. 当创建一个 Python 对象时，背后都经历了哪些过程？</a></li><li class="chapter-item expanded "><a href="8.当调用一个Python对象时，背后都经历了哪些过程？.html">8. 当调用一个 Python 对象时，背后都经历了哪些过程？</a></li><li class="chapter-item expanded "><a href="9.再探泛型API，感受Python对象的设计哲学.html">9. 再探泛型 API，感受 Python 对象的设计哲学</a></li><li class="chapter-item expanded "><a href="10.Python对象的行为是怎么区分的？.html">10. Python 对象的行为是怎么区分的？</a></li><li class="chapter-item expanded "><a href="11.一个Python对象会在何时被销毁？.html">11. 一个 Python 对象会在何时被销毁？</a></li><li class="chapter-item expanded "><a href="12.深度解密Python的浮点数是怎么实现的？.html">12. 深度解密 Python 的浮点数是怎么实现的？</a></li><li class="chapter-item expanded "><a href="13.对象被销毁之后所占的内存一定会释放吗？解密浮点数的缓存池机制.html">13. 对象被销毁之后所占的内存一定会释放吗？解密浮点数的缓存池机制</a></li><li class="chapter-item expanded "><a href="14.浮点数支持的操作是怎么实现的？.html">14. 浮点数支持的操作是怎么实现的？</a></li><li class="chapter-item expanded "><a href="15.解密Python的复数是怎么实现的？它有什么用途呢？.html">15. 解密 Python 的复数是怎么实现的？它有什么用途呢？</a></li><li class="chapter-item expanded "><a href="16.Python的整数是怎么设计的，为什么它不会溢出？.html">16. Python 的整数是怎么设计的，为什么它不会溢出？</a></li><li class="chapter-item expanded "><a href="17.解密Python的小整数对象池.html">17. 解密 Python 的小整数对象池</a></li><li class="chapter-item expanded "><a href="18.两个Python整数之间是如何进行大小比较的？过程并不像我们想的那样简单.html">18. 两个 Python 整数之间是如何进行大小比较的？过程并不像我们想的那样简单</a></li><li class="chapter-item expanded "><a href="19.探究Python整数的加减法，感受大整数的运算哲学与魅力.html">19. 探究 Python 整数的加减法，感受大整数的运算哲学与魅力</a></li><li class="chapter-item expanded "><a href="20.Python的布尔值是怎么实现的，你对它的了解有多深呢？.html">20. Python 的布尔值是怎么实现的，你对它的了解有多深呢？</a></li><li class="chapter-item expanded "><a href="21.Python的None是怎么实现的？.html">21. Python 的 None 是怎么实现的？</a></li><li class="chapter-item expanded "><a href="22.深度解密Python切片的实现原理.html">22.深度解密 Python 切片的实现原理</a></li><li class="chapter-item expanded "><a href="23.bytes对象（字节串）是怎么实现的？解密它的内部原理.html">23. bytes 对象（字节串）是怎么实现的？解密它的内部原理</a></li><li class="chapter-item expanded "><a href="24.bytes对象都支持哪些操作，它们是怎么实现的？.html">24. bytes 对象都支持哪些操作，它们是怎么实现的？</a></li><li class="chapter-item expanded "><a href="25.通过bytes对象的合并，探究缓冲区的奥秘.html">25. 通过 bytes 对象的合并，探究缓冲区的奥秘</a></li><li class="chapter-item expanded "><a href="26.解密bytes对象的缓存池.html">26. 解密 bytes 对象的缓存池</a></li><li class="chapter-item expanded "><a href="27.详解bytearray对象的底层实现.html">27. 详解 bytearray 对象的底层实现</a></li><li class="chapter-item expanded "><a href="28.字符集和字符编码.html">28. 字符集和字符编码</a></li><li class="chapter-item expanded "><a href="29.Python是怎么存储字符串的？.html">29. Python 是怎么存储字符串的？</a></li><li class="chapter-item expanded "><a href="30.解密字符串的底层结构，它是怎么实现的？.html">30. 解密字符串的底层结构，它是怎么实现的？</a></li><li class="chapter-item expanded "><a href="31.字符串的intern机制是怎么一回事？.html">31. 字符串的 intern 机制是怎么一回事？</a></li><li class="chapter-item expanded "><a href="32.聊一聊字符串常见操作的源码实现.html">32. 聊一聊字符串常见操作的源码实现</a></li><li class="chapter-item expanded "><a href="33.列表是怎么实现的？解密列表的数据结构.html">33. 列表是怎么实现的？解密列表的数据结构</a></li><li class="chapter-item expanded "><a href="34.列表是怎么扩容的？.html">34. 列表是怎么扩容的？</a></li><li class="chapter-item expanded "><a href="35.解密列表的创建与销毁，以及缓存池长什么样子？.html">35. 解密列表的创建与销毁，以及缓存池长什么样子？</a></li><li class="chapter-item expanded "><a href="36.列表作为序列型对象都支持哪些操作，它们在底层是怎么实现的？.html">36. 列表作为序列型对象都支持哪些操作，它们在底层是怎么实现的？</a></li><li class="chapter-item expanded "><a href="37.列表都有哪些自定义方法，它们是怎么实现的？.html">37. 列表都有哪些自定义方法，它们是怎么实现的？</a></li><li class="chapter-item expanded "><a href="38.解密元组的实现原理.html">38. 解密元组的实现原理</a></li><li class="chapter-item expanded "><a href="39.聊一聊喜闻乐见的哈希表.html">39. 聊一聊喜闻乐见的哈希表</a></li><li class="chapter-item expanded "><a href="40.字典是怎么实现的，它的底层结构长什么样子？.html">40. 字典是怎么实现的，它的底层结构长什么样子？</a></li><li class="chapter-item expanded "><a href="41.什么是可哈希对象，它的哈希值是怎么计算的？.html">41. 什么是可哈希对象，它的哈希值是怎么计算的？</a></li><li class="chapter-item expanded "><a href="42.字典的key是怎么映射成索引的，索引冲突了又该怎么办？.html">42. 字典的 key 是怎么映射成索引的，索引冲突了又该怎么办？</a></li><li class="chapter-item expanded "><a href="43.哈希表是怎么删除元素的，能直接删除吗？.html">43. 哈希表是怎么删除元素的，能直接删除吗？</a></li><li class="chapter-item expanded "><a href="44.字典是怎么创建的，支持的操作又是如何实现的？.html">44. 字典是怎么创建的，支持的操作又是如何实现的？</a></li><li class="chapter-item expanded "><a href="45.字典的自定义方法是怎么实现的？.html">45. 字典的自定义方法是怎么实现的？</a></li><li class="chapter-item expanded "><a href="46.字典是怎么扩容的？它会经历哪些过程？.html">46. 字典是怎么扩容的？它会经历哪些过程？</a></li><li class="chapter-item expanded "><a href="47.身虽死，道未消，解密字典的缓存池.html">47. 身虽死，道未消，解密字典的缓存池</a></li><li class="chapter-item expanded "><a href="48.解密集合的实现原理.html">48. 解密集合的实现原理</a></li><li class="chapter-item expanded "><a href="49.集合支持的操作有哪些，它们是怎么实现的？.html">49. 集合支持的操作有哪些，它们是怎么实现的？</a></li><li class="chapter-item expanded "><a href="50.迭代器是怎么实现的？.html">50. 迭代器是怎么实现的？</a></li><li class="chapter-item expanded "><a href="51.Python源文件编译之后会得到什么，它的结构是怎样的？和字节码又有什么联系？.html">51. Python 源文件编译之后会得到什么，它的结构是怎样的？和字节码又有什么联系？</a></li><li class="chapter-item expanded "><a href="52.PyCodeObject拾遗.html">52. PyCodeObject 拾遗</a></li><li class="chapter-item expanded "><a href="53.一文让你搞懂pyc文件.html">53. 一文让你搞懂 pyc 文件</a></li><li class="chapter-item expanded "><a href="54.深度解密虚拟机的执行环境：栈帧对象.html">54. 深度解密虚拟机的执行环境：栈帧对象</a></li><li class="chapter-item expanded "><a href="55.名字空间：变量的容身之所.html">55. 名字空间：变量的容身之所</a></li><li class="chapter-item expanded "><a href="56.当查找一个变量时，虚拟机会进行哪些动作？.html">56. 当查找一个变量时，虚拟机会进行哪些动作？</a></li><li class="chapter-item expanded "><a href="57.虚拟机是怎么执行字节码的？背后都经历了哪些过程.html">57. 虚拟机是怎么执行字节码的？背后都经历了哪些过程</a></li><li class="chapter-item expanded "><a href="58.深入源码，进一步考察字节码的执行流程.html">58. 深入源码，进一步考察字节码的执行流程</a></li><li class="chapter-item expanded "><a href="59.局部变量是怎么实现静态查找的，它和local名字空间又有什么联系呢？.html">59. 局部变量是怎么实现静态查找的，它和 local 名字空间又有什么联系呢？</a></li><li class="chapter-item expanded "><a href="60.剖析字节码指令，以及Python赋值语句的原理.html">60. 剖析字节码指令，以及 Python 赋值语句的原理</a></li><li class="chapter-item expanded "><a href="61.流程控制语句if是怎么实现的？.html">61. 流程控制语句 if 是怎么实现的？</a></li><li class="chapter-item expanded "><a href="62.流程控制语句for、while是怎么实现的？.html">62. 流程控制语句 for、while 是怎么实现的？</a></li><li class="chapter-item expanded "><a href="63.异常是怎么实现的？虚拟机是如何将异常抛出去的？.html" class="active">63. 异常是怎么实现的？虚拟机是如何将异常抛出去的？</a></li><li class="chapter-item expanded "><a href="64.虚拟机是如何捕获异常的？.html">64. 虚拟机是如何捕获异常的？</a></li><li class="chapter-item expanded "><a href="65.函数在底层长什么样子？.html">65. 函数在底层长什么样子？</a></li><li class="chapter-item expanded "><a href="66.函数是怎么创建的，背后经历了哪些过程？.html">66. 函数是怎么创建的，背后经历了哪些过程？</a></li><li class="chapter-item expanded "><a href="67.函数在底层是如何调用的？.html">67. 函数在底层是如何调用的？</a></li><li class="chapter-item expanded "><a href="68.函数是如何解析位置参数的？.html">68. 函数是如何解析位置参数的？</a></li><li class="chapter-item expanded "><a href="69.函数是如何解析关键字参数的？.html">69. 函数是如何解析关键字参数的？</a></li><li class="chapter-item expanded "><a href="70.扩展位置参数和扩展关键字参数是如何解析的？.html">70. 扩展位置参数和扩展关键字参数是如何解析的？</a></li><li class="chapter-item expanded "><a href="71.闭包是怎么实现的？.html">71. 闭包是怎么实现的？</a></li><li class="chapter-item expanded "><a href="72.生成器是做什么的，为什么会有生成器？.html">72. 生成器是做什么的，为什么会有生成器？</a></li><li class="chapter-item expanded "><a href="73.源码解密生成器的实现原理.html">73. 源码解密生成器的实现原理</a></li><li class="chapter-item expanded "><a href="74.回顾Python的对象模型.html">74. 回顾 Python 的对象模型</a></li><li class="chapter-item expanded "><a href="75.class概念解析.html">75. class 概念解析</a></li><li class="chapter-item expanded "><a href="76.类型对象的初始化.html">76. 类型对象的初始化</a></li><li class="chapter-item expanded "><a href="77.自定义类对象的底层实现与metaclass.html">77. 自定义类对象的底层实现与 metaclass</a></li><li class="chapter-item expanded "><a href="78.彻底搞懂描述符.html">78. 彻底搞懂描述符</a></li><li class="chapter-item expanded "><a href="79.实例对象是如何创建的？.html">79. 实例对象是如何创建的？</a></li><li class="chapter-item expanded "><a href="80.实例对象的属性访问.html">80. 实例对象的属性访问</a></li><li class="chapter-item expanded "><a href="81.为什么实例在调用方法时会将自身传给self参数.html">81. 为什么实例在调用方法时会将自身传给 self 参数</a></li><li class="chapter-item expanded "><a href="82.模块是如何导入的？.html">82. 模块是如何导入的？</a></li><li class="chapter-item expanded "><a href="83.import机制的黑盒探测.html">83. import 机制的黑盒探测</a></li><li class="chapter-item expanded "><a href="84.import机制是怎么实现的？.html">84. import 机制是怎么实现的？</a></li><li class="chapter-item expanded "><a href="85.Python运行时环境的初始化，解释器在启动时都做了什么？.html">85. Python 运行时环境的初始化，解释器在启动时都做了什么？</a></li><li class="chapter-item expanded "><a href="86.激活Python虚拟机.html">86. 激活 Python 虚拟机</a></li><li class="chapter-item expanded "><a href="87.初识GIL、以及多个线程之间的调度机制.html">87. 初识 GIL、以及多个线程之间的调度机制</a></li><li class="chapter-item expanded "><a href="88.线程的创建、销毁、调度，以及GIL的实现原理.html">88. 线程的创建、销毁、调度，以及 GIL 的实现原理</a></li><li class="chapter-item expanded "><a href="89.解密map、filter、zip底层实现，对比列表解析式.html">89. 解密 map、filter、zip 底层实现，对比列表解析式</a></li><li class="chapter-item expanded "><a href="90.为什么要有协程，协程是如何实现的？.html">90. 为什么要有协程，协程是如何实现的？</a></li><li class="chapter-item expanded "><a href="91.什么是asyncio？如何基于单线程实现并发？事件循环又是怎么工作的？.html">91. 什么是 asyncio？如何基于单线程实现并发？事件循环又是怎么工作的？</a></li><li class="chapter-item expanded "><a href="92.协程、任务、future，以及事件循环.html">92. 协程、任务、future，以及事件循环</a></li><li class="chapter-item expanded "><a href="93.在asyncio中使用Socket.html">93. 在 asyncio 中使用 Socket</a></li><li class="chapter-item expanded "><a href="94.解密asyncio的Future和Task.html">94. 解密 asyncio 的 Future 和 Task</a></li><li class="chapter-item expanded "><a href="95.如何精确控制asyncio中并发运行的多个任务.html">95. 如何精确控制 asyncio 中并发运行的多个任务</a></li><li class="chapter-item expanded "><a href="96.详解asyncio的同步原语.html">96. 详解 asyncio 的同步原语</a></li><li class="chapter-item expanded "><a href="97.在asyncio中引入多进程.html">97. 在 asyncio 中引入多进程</a></li><li class="chapter-item expanded "><a href="98.可执行文件的内存模型，变量的值是放在栈上还是放在堆上.html">98. 可执行文件的内存模型，变量的值是放在栈上还是放在堆上</a></li><li class="chapter-item expanded "><a href="99.Python是如何管理内存的？.html">99. Python 是如何管理内存的？</a></li><li class="chapter-item expanded "><a href="100.Python的垃圾回收机制是怎么实现的？.html">100. Python 的垃圾回收机制是怎么实现的？</a></li><li class="chapter-item expanded "><a href="101.深入源码，探究垃圾回收的秘密.html">101. 深入源码，探究垃圾回收的秘密</a></li><li class="chapter-item expanded "><a href="102.侵入Python虚拟机，动态修改底层数据结构和运行时.html">102. 侵入 Python 虚拟机，动态修改底层数据结构和运行时</a></li><li class="chapter-item expanded "><a href="103.使用Python的ctypes调用C的动态库.html">103. 使用 Python 的 ctypes 调用 C 的动态库</a></li><li class="chapter-item expanded "><a href="104.使用Python的ctypes调用Rust的动态库.html">104. 使用 Python 的 ctypes 调用 Rust 的动态库</a></li><li class="chapter-item expanded "><a href="105.用C写Python.html">105. 用 C 写 Python</a></li><li class="chapter-item expanded "><a href="106.Cython从入门到精通.html">106. Cython 从入门到精通</a></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky bordered">
+                    <div class="left-buttons">
+                        <button id="sidebar-toggle" class="icon-button" type="button" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </button>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light (default)</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">CPython3.8 源码探秘</h1>
+
+                    <div class="right-buttons">
+                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+                        <a href="https://github.com/satori1995/cpython-internal" title="Git repository" aria-label="Git repository">
+                            <i id="git-repository-button" class="fa fa-github"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script type="text/javascript">
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h2 id="楔子"><a class="header" href="#楔子">楔子</a></h2>
+<p>程序在运行的过程中，总是会不可避免地产生异常，此时为了让程序不中断，必须要将异常捕获掉。如果能提前得知可能会发生哪些异常，建议使用精确捕获，如果不知道会发生哪些异常，则使用 Exception 兜底。</p>
+<p>另外异常也可以用来传递信息，比如生成器。</p>
+<pre><code class="language-Python">def gen():
+    yield 1
+    yield 2
+    return &quot;result&quot;
+
+g = gen()
+next(g)
+next(g)
+try:
+    next(g)
+except StopIteration as e:
+    print(f&quot;返回值: {e.value}&quot;)   # 返回值: result
+</code></pre>
+<p>如果想要拿到生成器的返回值，我们需要让它抛出 StopIteration，然后进行捕获，再通过 value 属性拿到返回值。所以，Python 是将生成器的返回值封装到了异常里面。</p>
+<p>之所以举这个例子，目的是想说明，异常并非是让人嗤之以鼻的东西，它也可以作为信息传递的载体。特别是在 Java 语言中，引入了 checked exception，方法的所有者还可以声明自己会抛出什么异常，然后调用者对异常进行处理。在 Java 程序启动时，抛出大量异常都是司空见惯的事情，并在相应的调用堆栈中将信息完整地记录下来。至此，Java 的异常不再是异常，而是一种很普遍的结构，从良性到灾难性都有所使用，异常的严重性由调用者来决定。</p>
+<p>虽然在 Python 里面，异常还没有达到像 Java 异常那么高的地位，但使用频率也是很高的，下面我们就来剖析一下异常是怎么实现的？</p>
+<h2 id="异常的本质是什么"><a class="header" href="#异常的本质是什么">异常的本质是什么？</a></h2>
+<p><font color="blue">Python 解释器 = Python 编译器 + Python 虚拟机</font>，所以异常可以由编译器抛出，也可以由虚拟机剖出。如果是编译器抛出的异常，那么基本上都是 SyntaxError，即语法错误。</p>
+<pre><code class="language-python">try:
+    &gt;&gt;&gt;
+except Exception as e:
+    print(e)
+</code></pre>
+<p>比如上面这段代码，你会发现异常捕获根本没用，因为这是编译阶段就发生的错误，而异常捕获是在运行时进行的。当然语法不对属于低级错误，所以不会留到运行时。</p>
+<p>然后是运行时产生的异常：</p>
+<pre><code class="language-Python">try:
+    1 / 0
+except ZeroDivisionError:
+    print(&quot;Division by zero&quot;)
+</code></pre>
+<p>像这种语法正确，但程序执行时因逻辑出现问题而导致的异常，是可以被捕获的。对于我们来说，关注的显然是运行时产生的异常，比如 TypeError、IndexError 等等。</p>
+<p>那么问题来了，异常本质上是什么呢？我们以列表为例，看看 IndexError 是怎么产生的。</p>
+<pre><code class="language-Python">lst = [1, 2, 3]
+print(lst[3])
+&quot;&quot;&quot;
+IndexError: list index out of range
+&quot;&quot;&quot;
+</code></pre>
+<p>列表的最大索引是 2，但我们访问了索引为 3 的元素，虚拟机就知道不能再执行下去了，否则会访问非法内存。因此虚拟机的做法是：输出异常信息，结束进程。我们通过源码来验证一下：</p>
+<p><img src="./images/197.png" alt="" /></p>
+<p>在获取列表元素时发现索引不合法，就知道要抛出 IndexError 了，于是将异常写入到回溯栈中，并返回 NULL。正常情况下，返回值应该指向一个合法的对象，如果为 NULL，证明出现异常了。</p>
+<p>此时虚拟机会将回溯栈里的异常抛出来（就是我们在控制台看到的那一抹鲜红），然后结束进程，这就是异常的本质。当然异常也是一个 Python 对象，虚拟机在退出前，会写入到 stderr 中。</p>
+<h2 id="异常写入的一些-c-api"><a class="header" href="#异常写入的一些-c-api">异常写入的一些 C API</a></h2>
+<p>当我们用 C 编写 Python 扩展时，如果想设置异常的话，该怎么做呢？首先设置异常之前，我们要知道有哪些异常。在 pyerrors.h 中，虚拟机内置了大量的异常，另外 Python 一切皆对象，因此异常也是一个对象。</p>
+<p><img src="./images/198.png" alt="" /></p>
+<p>有了异常之后，怎么写入呢？关于异常写入，底层也提供了相应的 C API。</p>
+<ul>
+<li>PyErr_SetNone：设置异常，不包含提示信息。</li>
+<li>PyErr_SetObject：设置异常，包含提示信息（Python 字符串）。</li>
+<li>PyErr_SetString：设置异常，包含提示信息（C 字符串）。</li>
+<li>PyErr_Occurred：检测回溯栈中是否有异常产生。</li>
+<li>PyErr_Clear：将回溯栈中的异常清空，相当于 Python 的异常捕获。</li>
+<li>PyErr_Fetch：将回溯栈中的异常清空，同时拿到它的 exc_type、exc_value、exc_tb。</li>
+<li>PyErr_Restore：基于 exc_type、exc_value、exc_tb 设置异常。</li>
+</ul>
+<p>我们以 PyErr_Restore 为例，看看异常的具体设置过程。</p>
+<pre><code class="language-C">// Python/errors.c
+
+// PyErr_SetObject、PyErr_SetString 等等，最终都会调用 PyErr_Restore
+void
+PyErr_Restore(PyObject *type, PyObject *value, PyObject *traceback)
+{
+    // 获取线程状态对象
+    PyThreadState *tstate = _PyThreadState_GET();
+    _PyErr_Restore(tstate, type, value, traceback);
+}
+
+// 将异常设置在线程状态对象中
+void
+_PyErr_Restore(PyThreadState *tstate, PyObject *type, PyObject *value,
+               PyObject *traceback)
+{
+    PyObject *oldtype, *oldvalue, *oldtraceback;
+
+    if (traceback != NULL &amp;&amp; !PyTraceBack_Check(traceback)) {
+        Py_DECREF(traceback);
+        traceback = NULL;
+    }
+    // 获取线程状态对象中已存在的异常（可能为空）
+    oldtype = tstate-&gt;curexc_type;
+    oldvalue = tstate-&gt;curexc_value;
+    oldtraceback = tstate-&gt;curexc_traceback;
+
+    // 将新异常设置在线程状态对象中
+    tstate-&gt;curexc_type = type;
+    tstate-&gt;curexc_value = value;
+    tstate-&gt;curexc_traceback = traceback;
+    
+    // 减少旧异常的引用计数
+    Py_XDECREF(oldtype);
+    Py_XDECREF(oldvalue);
+    Py_XDECREF(oldtraceback);
+}
+</code></pre>
+<p>注意这里的 PyThreadState 对象，它是与线程相关的，但它只是线程信息的一个抽象描述，而真实的线程及状态肯定是由操作系统来维护和管理的。</p>
+<p>但虚拟机在运行的时候总需要另外一些与线程相关的状态和信息，比如是否发生了异常等等，而这些信息显然操作系统是没办法提供的。而 PyThreadState 对象正是 Python 为线程准备的、在虚拟机层面保存线程状态信息的对象（后面简称线程状态对象、或者线程对象）。</p>
+<p>当前活动线程（OS 原生线程）对应的 PyThreadState 对象可以通过 PyThreadState_GET 获得，在得到了线程状态对象之后，就将异常信息存放在里面。</p>
+<blockquote>
+<p>关于线程相关的内容，后续会详细说。</p>
+</blockquote>
+<h2 id="traceback-是什么"><a class="header" href="#traceback-是什么">traceback 是什么？</a></h2>
+<p>帧评估函数里面有一个巨型的 switch，负责执行字节码指令，如果执行出错，那么跳转到 error 标签。</p>
+<p><img src="./images/199.png" alt="" /></p>
+<p>如果在执行指令的时候出现了异常，那么会跳转到 error 这里，否则会跳转到其它地方。另外当出现异常时，会在线程状态对象中将异常信息记录下来，包括异常类型、异常值、回溯栈（traceback），这个 traceback 就是在 error 标签中调用 PyTraceBack_Here 创建的。</p>
+<p>另外可能有人不清楚 traceback 是做什么的，我们举个 Python 的例子。</p>
+<pre><code class="language-python">def h():
+    1 / 0
+
+def g():
+    h()
+
+def f():
+    g()
+
+f()
+&quot;&quot;&quot;
+Traceback (most recent call last):
+  File &quot;/Users/.../main.py&quot;, line 10, in &lt;module&gt;
+    f()
+  File &quot;/Users/.../main.py&quot;, line 8, in f
+    g()
+  File &quot;/Users/.../main.py&quot;, line 5, in g
+    h()
+  File &quot;/Users/.../main.py&quot;, line 2, in h
+    1 / 0
+ZeroDivisionError: division by zero
+&quot;&quot;&quot;
+</code></pre>
+<p>这是脚本运行时产生的错误输出，我们看到了函数调用的信息：比如在源代码的哪一行调用了哪一个函数，那么这些信息是从何而来的呢？没错，显然是 traceback 对象。虚拟机在处理异常的时候，会创建 traceback 对象，在该对象中记录栈帧的信息。虚拟机利用该对象来将栈帧链表中每一个栈帧的状态进行可视化，可视化的结果就是上面输出的异常信息。</p>
+<p>而且我们发现输出的信息也是一个链状的结构，因为每一个栈帧都会对应一个 traceback 对象，这些 traceback 对象之间也会组成一个链表。</p>
+<p>所以当虚拟机开始处理异常的时候，它首先的动作就是创建 traceback 对象，用于记录异常发生时活动栈帧的状态。创建方式是通过 PyTraceBack_Here 函数，它接收一个栈帧作为参数。</p>
+<pre><code class="language-C">// Python/traceback.c
+int
+PyTraceBack_Here(PyFrameObject *frame)
+{
+    // 获取当前的异常对象，拿到它的 exc_type、exc_val、exc_tb
+    PyObject *exc, *val, *tb, *newtb;
+    PyErr_Fetch(&amp;exc, &amp;val, &amp;tb);
+    // 创建新的 traceback 对象，并和旧的 traceback 对象组成链表
+    newtb = _PyTraceBack_FromFrame(tb, frame);
+    if (newtb == NULL) {
+        _PyErr_ChainExceptions(exc, val, tb);
+        return -1;
+    }
+    // 将异常设置在线程状态对象中
+    // 并且异常的 exc_type 和 exc_val 保持不变，但 traceback 是新的 traceback
+    PyErr_Restore(exc, val, newtb);
+    Py_XDECREF(tb);
+    return 0;
+}
+</code></pre>
+<p>那么这个 traceback 对象究竟长什么样呢？</p>
+<pre><code class="language-C">// Include/cpython/traceback.h
+typedef struct _traceback {
+    PyObject_HEAD
+    struct _traceback *tb_next;
+    struct _frame *tb_frame;
+    int tb_lasti;
+    int tb_lineno;
+} PyTracebackObject;
+</code></pre>
+<p>里面有一个 tb_next，所以很容易想到 traceback 也是一个链表结构。其实 traceback 对象的链表结构跟栈帧对象的链表结构是同构的、或者说一一对应的，即一个栈帧对象对应一个 traceback 对象。</p>
+<h2 id="traceback-创建"><a class="header" href="#traceback-创建">traceback 创建</a></h2>
+<p>在 PyTraceBack_Here 函数中我们看到，traceback 对象是通过 _PyTraceBack_FromFrame 创建的，那么秘密就隐藏在这个函数中。</p>
+<pre><code class="language-C">// Python/traceback.c
+_PyTraceBack_FromFrame(PyObject *tb_next, PyFrameObject *frame)
+{
+    assert(tb_next == NULL || PyTraceBack_Check(tb_next));
+    assert(frame != NULL);
+
+    return tb_create_raw((PyTracebackObject *)tb_next, frame, frame-&gt;f_lasti,
+                         PyFrame_GetLineNumber(frame));
+}
+
+static PyObject *
+tb_create_raw(PyTracebackObject *next, PyFrameObject *frame, int lasti,
+              int lineno)
+{
+    PyTracebackObject *tb;
+    if ((next != NULL &amp;&amp; !PyTraceBack_Check(next)) ||
+                    frame == NULL || !PyFrame_Check(frame)) {
+        PyErr_BadInternalCall();
+        return NULL;
+    }
+    // 为 traceback 对象申请内存
+    tb = PyObject_GC_New(PyTracebackObject, &amp;PyTraceBack_Type);
+    if (tb != NULL) {
+        // 设置属性
+        Py_XINCREF(next);
+        tb-&gt;tb_next = next;
+        Py_XINCREF(frame);
+        tb-&gt;tb_frame = frame;
+        tb-&gt;tb_lasti = lasti;
+        tb-&gt;tb_lineno = lineno;
+        PyObject_GC_Track(tb);
+    }
+    return (PyObject *)tb;
+}
+</code></pre>
+<p>tb_next 将两个 traceback 连接了起来，不过这个和栈帧的 f_back 正好相反，f_back 指向的是上一个栈帧，而 tb_next 指向的是下一个 traceback。</p>
+<p>另外在 traceback 中，还通过 tb_frame 字段和对应的 PyFrameObject 对象建立了联系，当然还有最后执行完毕时的字节码偏移量、以及在源代码中对应的行号。</p>
+<h2 id="栈帧展开"><a class="header" href="#栈帧展开">栈帧展开</a></h2>
+<p>traceback 的创建我们知道了，那么它和栈帧对象是怎么联系起来的呢？我们还以之前的代码为例，来解释一下。</p>
+<pre><code class="language-python">def h():
+    1 / 0
+
+def g():
+    h()
+
+def f():
+    g()
+
+f()
+</code></pre>
+<p>当执行到函数 h 的 1 / 0 这行代码时，底层会执行 BINARY_TRUE_DIVIDE 指令。</p>
+<pre><code class="language-C">case TARGET(BINARY_TRUE_DIVIDE): {
+    PyObject *divisor = POP();
+    PyObject *dividend = TOP();
+    // 调用了数值型对象的泛型 API
+    PyObject *quotient = PyNumber_TrueDivide(dividend, divisor);
+    Py_DECREF(dividend);
+    Py_DECREF(divisor);
+    SET_TOP(quotient);
+    if (quotient == NULL)
+        goto error;
+    DISPATCH();
+}
+
+// Objects/abctract.c
+PyObject *
+PyNumber_TrueDivide(PyObject *v, PyObject *w)
+{
+    return binary_op(v, w, NB_SLOT(nb_true_divide), &quot;/&quot;);
+}
+
+#define NB_SLOT(x) offsetof(PyNumberMethods, x)
+// 最终会执行 (&amp;PyLong_Type) -&gt; tp_as_methods -&gt; nb_true_divide
+// 即 long_true_divice 函数，看一下它的逻辑
+
+// Objects/longobject.c
+static PyObject *
+long_true_divide(PyObject *v, PyObject *w)
+{
+    // ...
+    a_size = Py_ABS(Py_SIZE(a));
+    b_size = Py_ABS(Py_SIZE(b));
+    negate = (Py_SIZE(a) &lt; 0) ^ (Py_SIZE(b) &lt; 0);
+    // 如果除数为 0，设置 ZeroDivisionError
+    if (b_size == 0) {
+        PyErr_SetString(PyExc_ZeroDivisionError,
+                        &quot;division by zero&quot;);
+        goto error;
+    }
+    // ...
+    error:
+        return NULL;
+}
+</code></pre>
+<p>由于除数为 0，因此会通过 PyErr_SetString 设置一个异常进去，最终将异常类型、异常值、以及 traceback 保存到线程状态对象中。然后跳转到 error 标签，注意：当前是 long_true_divide 的 error 标签，然后会返回 NULL。</p>
+<p><img src="./images/200.png" alt="" /></p>
+<p>当 long_true_divide 返回 NULL 时，那么变量 quotient 拿到的就是 NULL，由于没有指向一个合法的 PyObject，虚拟机就意识到发生异常了，这时候会跳转到 error 标签。注意：这个 error 标签是帧评估函数里的 error 标签。</p>
+<p><img src="./images/201.png" alt="" /></p>
+<p>在里面会先取出线程状态对象中已有的 traceback 对象，然后以函数 h 的栈帧为参数，创建一个新的 traceback 对象，将两者通过 tb_next 关联起来。最后，再替换掉线程状态对象里面的 traceback 对象。</p>
+<p>在虚拟机意识到有异常抛出，并创建了 traceback 之后，它会在当前栈帧中寻找 try except 语句，来执行开发人员指定的异常捕捉动作。如果没有找到，那么虚拟机将退出当前的活动栈帧，并沿着栈帧链回退到上一个栈帧（这里是函数 g 的栈帧），在上一个栈帧中寻找 try except 语句。</p>
+<p>就像我们之前说的，函数调用会创建栈帧，当函数执行完毕或者出现异常时，会回退到上一级栈帧。一层一层创建、一层一层返回。至于回退的这个动作，则是在 _PyEval_EvalFrameDefault 的最后完成。</p>
+<p><img src="./images/202.png" alt="" /></p>
+<p>当出现异常时，虚拟机会进入 exception_unwind 标签寻找异常捕获逻辑，相关细节下一篇文章再说，这里就让它抛出去。然后来到 exit_returning 标签，将运行时栈清空。最后进入 exit_eval_frame 标签，将当前线程状态对象中的活跃栈帧设置为上一级栈帧，从而完成栈帧回退的动作。</p>
+<p>当栈帧回退时，会进入函数 g 的栈帧，由于返回值为 NULL，所以知道自己调用的函数 h 的内部发生异常了（否则返回值一定会指向一个合法的 PyObject），那么继续寻找异常捕获语句。对于当前这个例子来说，显然是找不到的，于是会从线程状态对象中取出已有的 traceback 对象（函数 h 的栈帧对应的 traceback），然后以函数 g 的栈帧为参数，创建新的 traceback 对象，再将两者通过 tb_next 关联起来，并重新设置到线程状态对象中。</p>
+<p>异常会沿着栈帧链进行反向传播，函数 h 出现的异常被传播到了函数 g 中，显然接下来函数 g 要将异常传播到函数 f 中。因为函数 g 在无法捕获异常时，那么返回值也是 NULL，而函数 f 看到返回值为 NULL 时，同样会去寻找异常捕获语句。但是找不到，于是会从线程状态对象中取出已有的 traceback 对象（此时是函数 g 的栈帧对应的 traceback），然后以函数 f 的栈帧为参数，创建新的 traceback 对象，再将两者通过 tb_next 关联起来，并重新设置到线程状态对象中。</p>
+<p>最后再传播到模块对应的栈帧中，如果还无法捕获发生的异常，那么虚拟机就要将异常抛出来了。</p>
+<p><strong>这个沿着栈帧链不断回退的过程我们称之为<font color="blue">栈帧展开</font>，在栈帧展开的过程中，虚拟机不断地创建与各个栈帧对应的 traceback，并将其链接成链表。</strong></p>
+<p><img src="./images/203.png" alt="" /></p>
+<p>由于没有异常捕获，那么接下来会调用 PyErr_Print。然后在 PyErr_Print 中，虚拟机取出维护的 traceback 链表，并进行遍历，将里面的信息逐个输出到 stderr 当中，最终就是我们在 Python 中看到的异常信息。</p>
+<p>并且打印顺序是：.py文件、函数f、函数g、函数h。因为每一个栈帧对应一个 traceback，而栈帧又是往后退的，因此显然会从 .py文件对应的 traceback 开始打印，然后通过 tb_next 找到函数 f 对应的 traceback，依次下去。当异常信息全部输出完毕之后，解释器就结束运行了。</p>
+<p>因此从链路的开始位置到结束位置，将整个调用过程都输出出来，可以很方便地定位问题出现在哪里。</p>
+<p><img src="./images/204.png" alt="" /></p>
+<p>另外，虽然 traceback 一直在更新（因为要对整个调用链路进行追踪），但是<font color="blue">异常类型</font>和<font color="blue">异常值</font>始终是不变的，就是函数 h 中抛出的 <font color="blue">ZeroDivisionError: division by zero</font>。</p>
+<h2 id="小结"><a class="header" href="#小结">小结</a></h2>
+<p>以上就是虚拟机抛异常的过程，异常在 Python 里面也是一个对象，和其它的实例对象并无本质区别。</p>
+<pre><code class="language-Python">exc = StopIteration(&quot;迭代结束了&quot;)
+print(exc.value)  # 迭代结束了
+print(exc.args)  # ('迭代结束了',)
+
+exc = IndexError(&quot;索引越界了&quot;)
+print(exc.args)  # ('索引越界了',)
+
+exc = Exception(&quot;不知道是啥异常，总之出问题了&quot;)
+print(exc.args)  # ('不知道是啥异常，总之出问题了',)
+
+# 异常都有一个 args 属性，以元组的形式保存传递的参数
+</code></pre>
+<p>所谓抛出异常，就是将错误信息输出到 stderr 中，然后停止进程。并且除了虚拟机内部会抛出异常之外，我们还可以使用 raise 关键字手动引发一个异常。</p>
+<pre><code class="language-Python">def judge_score(score: int):
+    if score &gt; 100 or score &lt; 0:
+        raise ValueError(&quot;Score must be between 0 and 100&quot;)
+</code></pre>
+<p>站在虚拟机的角度，score 取任何值都是合理的，但对于我们来说，希望 score 位于 0 ~ 100。那么当 score 不满足 0 ~ 100 时，就可以手动 raise 一个异常。</p>
+<hr />
+<p> </p>
+<p><strong>欢迎大家关注我的公众号：古明地觉的编程教室。</strong></p>
+<p><img src="./images/qrcode_for_gh.jpg" alt="" /></p>
+<p><strong>如果觉得文章对你有所帮助，也可以请作者吃个馒头，Thanks♪(･ω･)ﾉ。</strong></p>
+<p><img src="./images/supports.png" alt="" /></p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="62.流程控制语句for、while是怎么实现的？.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+                            <a rel="next" href="64.虚拟机是如何捕获异常的？.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="62.流程控制语句for、while是怎么实现的？.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+                    <a rel="next" href="64.虚拟机是如何捕获异常的？.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+            </nav>
+
+        </div>
+
+        <script type="text/javascript">
+            window.playground_copyable = true;
+        </script>
+        <script src="elasticlunr.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="mark.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="searcher.js" type="text/javascript" charset="utf-8"></script>
+        <script src="clipboard.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="highlight.js" type="text/javascript" charset="utf-8"></script>
+        <script src="book.js" type="text/javascript" charset="utf-8"></script>
+
+        <!-- Custom JS scripts -->
+        <script type="text/javascript" src="theme/custom.js"></script>
+    </body>
+</html>
