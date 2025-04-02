@@ -16,3 +16,7 @@ toc = { enable = true, levels = [2, 3] }
 copy-fonts = true
 additional-css = ["theme/custom.css"]
 additional-js = ["theme/custom.js"]
+
+[output.latex]
+latex = true
+optional = true
