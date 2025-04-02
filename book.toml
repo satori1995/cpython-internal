@@ -17,5 +17,6 @@ copy-fonts = true
 additional-css = ["theme/custom.css"]
 additional-js = ["theme/custom.js"]
 
-[output.latex]
-latex = true
+[output.html.print]
+enable = false
+
