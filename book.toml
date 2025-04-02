@@ -22,3 +22,4 @@ enable = false
 
 [output.latex]
 latex = true
+optional = true
