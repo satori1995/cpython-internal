@@ -1,0 +1,1145 @@
+<!DOCTYPE HTML>
+<html lang="zh-cn" class="sidebar-visible no-js light">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>49. 集合支持的操作有哪些，它们是怎么实现的？ - CPython3.8 源码探秘</title>
+        <!-- Custom HTML head -->
+        <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff" />
+
+        <link rel="icon" href="favicon.svg">
+        <link rel="shortcut icon" href="favicon.png">
+        <link rel="stylesheet" href="css/variables.css">
+        <link rel="stylesheet" href="css/general.css">
+        <link rel="stylesheet" href="css/chrome.css">
+        <!-- Fonts -->
+        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="fonts/fonts.css">
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="highlight.css">
+        <link rel="stylesheet" href="tomorrow-night.css">
+        <link rel="stylesheet" href="ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+        <link rel="stylesheet" href="theme/custom.css">
+        <!-- MathJax -->
+        <script async type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    </head>
+    <body>
+        <!-- Provide site root to javascript -->
+        <script type="text/javascript">
+            var path_to_root = "";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script type="text/javascript">
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script type="text/javascript">
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            var html = document.querySelector('html');
+            html.classList.remove('no-js')
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add('js');
+        </script>
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script type="text/javascript">
+            var html = document.querySelector('html');
+            var sidebar = 'hidden';
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            }
+            html.classList.remove('sidebar-visible');
+            html.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li class="chapter-item expanded "><a href="0.序言.html">0. 序言</a></li><li class="chapter-item expanded "><a href="1.CPython源码长什么样子？.html">1. CPython 源码长什么样子？</a></li><li class="chapter-item expanded "><a href="2.变量和对象，它们之间有什么区别和联系呢？.html">2. 变量和对象，它们之间有什么区别和联系呢？</a></li><li class="chapter-item expanded "><a href="3.Python对象有哪几种，我们可以从哪些角度进行分类呢？.html">3. Python 对象有哪几种，我们可以从哪些角度进行分类呢？</a></li><li class="chapter-item expanded "><a href="4.万丈高楼平地起，一切从PyObject开始.html">4. 万丈高楼平地起，一切从 PyObject 开始</a></li><li class="chapter-item expanded "><a href="5.详解PyTypeObject，Python类型对象的载体.html">5. 详解 PyTypeObject，Python 类型对象的载体</a></li><li class="chapter-item expanded "><a href="6.通过type和object之间的关联，进一步分析类型对象.html">6. 通过 type 和 object 之间的关联，进一步分析类型对象</a></li><li class="chapter-item expanded "><a href="7.当创建一个Python对象时，背后都经历了哪些过程？.html">7. 当创建一个 Python 对象时，背后都经历了哪些过程？</a></li><li class="chapter-item expanded "><a href="8.当调用一个Python对象时，背后都经历了哪些过程？.html">8. 当调用一个 Python 对象时，背后都经历了哪些过程？</a></li><li class="chapter-item expanded "><a href="9.再探泛型API，感受Python对象的设计哲学.html">9. 再探泛型 API，感受 Python 对象的设计哲学</a></li><li class="chapter-item expanded "><a href="10.Python对象的行为是怎么区分的？.html">10. Python 对象的行为是怎么区分的？</a></li><li class="chapter-item expanded "><a href="11.一个Python对象会在何时被销毁？.html">11. 一个 Python 对象会在何时被销毁？</a></li><li class="chapter-item expanded "><a href="12.深度解密Python的浮点数是怎么实现的？.html">12. 深度解密 Python 的浮点数是怎么实现的？</a></li><li class="chapter-item expanded "><a href="13.对象被销毁之后所占的内存一定会释放吗？解密浮点数的缓存池机制.html">13. 对象被销毁之后所占的内存一定会释放吗？解密浮点数的缓存池机制</a></li><li class="chapter-item expanded "><a href="14.浮点数支持的操作是怎么实现的？.html">14. 浮点数支持的操作是怎么实现的？</a></li><li class="chapter-item expanded "><a href="15.解密Python的复数是怎么实现的？它有什么用途呢？.html">15. 解密 Python 的复数是怎么实现的？它有什么用途呢？</a></li><li class="chapter-item expanded "><a href="16.Python的整数是怎么设计的，为什么它不会溢出？.html">16. Python 的整数是怎么设计的，为什么它不会溢出？</a></li><li class="chapter-item expanded "><a href="17.解密Python的小整数对象池.html">17. 解密 Python 的小整数对象池</a></li><li class="chapter-item expanded "><a href="18.两个Python整数之间是如何进行大小比较的？过程并不像我们想的那样简单.html">18. 两个 Python 整数之间是如何进行大小比较的？过程并不像我们想的那样简单</a></li><li class="chapter-item expanded "><a href="19.探究Python整数的加减法，感受大整数的运算哲学与魅力.html">19. 探究 Python 整数的加减法，感受大整数的运算哲学与魅力</a></li><li class="chapter-item expanded "><a href="20.Python的布尔值是怎么实现的，你对它的了解有多深呢？.html">20. Python 的布尔值是怎么实现的，你对它的了解有多深呢？</a></li><li class="chapter-item expanded "><a href="21.Python的None是怎么实现的？.html">21. Python 的 None 是怎么实现的？</a></li><li class="chapter-item expanded "><a href="22.深度解密Python切片的实现原理.html">22.深度解密 Python 切片的实现原理</a></li><li class="chapter-item expanded "><a href="23.bytes对象（字节串）是怎么实现的？解密它的内部原理.html">23. bytes 对象（字节串）是怎么实现的？解密它的内部原理</a></li><li class="chapter-item expanded "><a href="24.bytes对象都支持哪些操作，它们是怎么实现的？.html">24. bytes 对象都支持哪些操作，它们是怎么实现的？</a></li><li class="chapter-item expanded "><a href="25.通过bytes对象的合并，探究缓冲区的奥秘.html">25. 通过 bytes 对象的合并，探究缓冲区的奥秘</a></li><li class="chapter-item expanded "><a href="26.解密bytes对象的缓存池.html">26. 解密 bytes 对象的缓存池</a></li><li class="chapter-item expanded "><a href="27.详解bytearray对象的底层实现.html">27. 详解 bytearray 对象的底层实现</a></li><li class="chapter-item expanded "><a href="28.字符集和字符编码.html">28. 字符集和字符编码</a></li><li class="chapter-item expanded "><a href="29.Python是怎么存储字符串的？.html">29. Python 是怎么存储字符串的？</a></li><li class="chapter-item expanded "><a href="30.解密字符串的底层结构，它是怎么实现的？.html">30. 解密字符串的底层结构，它是怎么实现的？</a></li><li class="chapter-item expanded "><a href="31.字符串的intern机制是怎么一回事？.html">31. 字符串的 intern 机制是怎么一回事？</a></li><li class="chapter-item expanded "><a href="32.聊一聊字符串常见操作的源码实现.html">32. 聊一聊字符串常见操作的源码实现</a></li><li class="chapter-item expanded "><a href="33.列表是怎么实现的？解密列表的数据结构.html">33. 列表是怎么实现的？解密列表的数据结构</a></li><li class="chapter-item expanded "><a href="34.列表是怎么扩容的？.html">34. 列表是怎么扩容的？</a></li><li class="chapter-item expanded "><a href="35.解密列表的创建与销毁，以及缓存池长什么样子？.html">35. 解密列表的创建与销毁，以及缓存池长什么样子？</a></li><li class="chapter-item expanded "><a href="36.列表作为序列型对象都支持哪些操作，它们在底层是怎么实现的？.html">36. 列表作为序列型对象都支持哪些操作，它们在底层是怎么实现的？</a></li><li class="chapter-item expanded "><a href="37.列表都有哪些自定义方法，它们是怎么实现的？.html">37. 列表都有哪些自定义方法，它们是怎么实现的？</a></li><li class="chapter-item expanded "><a href="38.解密元组的实现原理.html">38. 解密元组的实现原理</a></li><li class="chapter-item expanded "><a href="39.聊一聊喜闻乐见的哈希表.html">39. 聊一聊喜闻乐见的哈希表</a></li><li class="chapter-item expanded "><a href="40.字典是怎么实现的，它的底层结构长什么样子？.html">40. 字典是怎么实现的，它的底层结构长什么样子？</a></li><li class="chapter-item expanded "><a href="41.什么是可哈希对象，它的哈希值是怎么计算的？.html">41. 什么是可哈希对象，它的哈希值是怎么计算的？</a></li><li class="chapter-item expanded "><a href="42.字典的key是怎么映射成索引的，索引冲突了又该怎么办？.html">42. 字典的 key 是怎么映射成索引的，索引冲突了又该怎么办？</a></li><li class="chapter-item expanded "><a href="43.哈希表是怎么删除元素的，能直接删除吗？.html">43. 哈希表是怎么删除元素的，能直接删除吗？</a></li><li class="chapter-item expanded "><a href="44.字典是怎么创建的，支持的操作又是如何实现的？.html">44. 字典是怎么创建的，支持的操作又是如何实现的？</a></li><li class="chapter-item expanded "><a href="45.字典的自定义方法是怎么实现的？.html">45. 字典的自定义方法是怎么实现的？</a></li><li class="chapter-item expanded "><a href="46.字典是怎么扩容的？它会经历哪些过程？.html">46. 字典是怎么扩容的？它会经历哪些过程？</a></li><li class="chapter-item expanded "><a href="47.身虽死，道未消，解密字典的缓存池.html">47. 身虽死，道未消，解密字典的缓存池</a></li><li class="chapter-item expanded "><a href="48.解密集合的实现原理.html">48. 解密集合的实现原理</a></li><li class="chapter-item expanded "><a href="49.集合支持的操作有哪些，它们是怎么实现的？.html" class="active">49. 集合支持的操作有哪些，它们是怎么实现的？</a></li><li class="chapter-item expanded "><a href="50.迭代器是怎么实现的？.html">50. 迭代器是怎么实现的？</a></li><li class="chapter-item expanded "><a href="51.Python源文件编译之后会得到什么，它的结构是怎样的？和字节码又有什么联系？.html">51. Python 源文件编译之后会得到什么，它的结构是怎样的？和字节码又有什么联系？</a></li><li class="chapter-item expanded "><a href="52.PyCodeObject拾遗.html">52. PyCodeObject 拾遗</a></li><li class="chapter-item expanded "><a href="53.一文让你搞懂pyc文件.html">53. 一文让你搞懂 pyc 文件</a></li><li class="chapter-item expanded "><a href="54.深度解密虚拟机的执行环境：栈帧对象.html">54. 深度解密虚拟机的执行环境：栈帧对象</a></li><li class="chapter-item expanded "><a href="55.名字空间：变量的容身之所.html">55. 名字空间：变量的容身之所</a></li><li class="chapter-item expanded "><a href="56.当查找一个变量时，虚拟机会进行哪些动作？.html">56. 当查找一个变量时，虚拟机会进行哪些动作？</a></li><li class="chapter-item expanded "><a href="57.虚拟机是怎么执行字节码的？背后都经历了哪些过程.html">57. 虚拟机是怎么执行字节码的？背后都经历了哪些过程</a></li><li class="chapter-item expanded "><a href="58.深入源码，进一步考察字节码的执行流程.html">58. 深入源码，进一步考察字节码的执行流程</a></li><li class="chapter-item expanded "><a href="59.局部变量是怎么实现静态查找的，它和local名字空间又有什么联系呢？.html">59. 局部变量是怎么实现静态查找的，它和 local 名字空间又有什么联系呢？</a></li><li class="chapter-item expanded "><a href="60.剖析字节码指令，以及Python赋值语句的原理.html">60. 剖析字节码指令，以及 Python 赋值语句的原理</a></li><li class="chapter-item expanded "><a href="61.流程控制语句if是怎么实现的？.html">61. 流程控制语句 if 是怎么实现的？</a></li><li class="chapter-item expanded "><a href="62.流程控制语句for、while是怎么实现的？.html">62. 流程控制语句 for、while 是怎么实现的？</a></li><li class="chapter-item expanded "><a href="63.异常是怎么实现的？虚拟机是如何将异常抛出去的？.html">63. 异常是怎么实现的？虚拟机是如何将异常抛出去的？</a></li><li class="chapter-item expanded "><a href="64.虚拟机是如何捕获异常的？.html">64. 虚拟机是如何捕获异常的？</a></li><li class="chapter-item expanded "><a href="65.函数在底层长什么样子？.html">65. 函数在底层长什么样子？</a></li><li class="chapter-item expanded "><a href="66.函数是怎么创建的，背后经历了哪些过程？.html">66. 函数是怎么创建的，背后经历了哪些过程？</a></li><li class="chapter-item expanded "><a href="67.函数在底层是如何调用的？.html">67. 函数在底层是如何调用的？</a></li><li class="chapter-item expanded "><a href="68.函数是如何解析位置参数的？.html">68. 函数是如何解析位置参数的？</a></li><li class="chapter-item expanded "><a href="69.函数是如何解析关键字参数的？.html">69. 函数是如何解析关键字参数的？</a></li><li class="chapter-item expanded "><a href="70.扩展位置参数和扩展关键字参数是如何解析的？.html">70. 扩展位置参数和扩展关键字参数是如何解析的？</a></li><li class="chapter-item expanded "><a href="71.闭包是怎么实现的？.html">71. 闭包是怎么实现的？</a></li><li class="chapter-item expanded "><a href="72.生成器是做什么的，为什么会有生成器？.html">72. 生成器是做什么的，为什么会有生成器？</a></li><li class="chapter-item expanded "><a href="73.源码解密生成器的实现原理.html">73. 源码解密生成器的实现原理</a></li><li class="chapter-item expanded "><a href="74.回顾Python的对象模型.html">74. 回顾 Python 的对象模型</a></li><li class="chapter-item expanded "><a href="75.class概念解析.html">75. class 概念解析</a></li><li class="chapter-item expanded "><a href="76.类型对象的初始化.html">76. 类型对象的初始化</a></li><li class="chapter-item expanded "><a href="77.自定义类对象的底层实现与metaclass.html">77. 自定义类对象的底层实现与 metaclass</a></li><li class="chapter-item expanded "><a href="78.彻底搞懂描述符.html">78. 彻底搞懂描述符</a></li><li class="chapter-item expanded "><a href="79.实例对象是如何创建的？.html">79. 实例对象是如何创建的？</a></li><li class="chapter-item expanded "><a href="80.实例对象的属性访问.html">80. 实例对象的属性访问</a></li><li class="chapter-item expanded "><a href="81.为什么实例在调用方法时会将自身传给self参数.html">81. 为什么实例在调用方法时会将自身传给 self 参数</a></li><li class="chapter-item expanded "><a href="82.模块是如何导入的？.html">82. 模块是如何导入的？</a></li><li class="chapter-item expanded "><a href="83.import机制的黑盒探测.html">83. import 机制的黑盒探测</a></li><li class="chapter-item expanded "><a href="84.import机制是怎么实现的？.html">84. import 机制是怎么实现的？</a></li><li class="chapter-item expanded "><a href="85.Python运行时环境的初始化，解释器在启动时都做了什么？.html">85. Python 运行时环境的初始化，解释器在启动时都做了什么？</a></li><li class="chapter-item expanded "><a href="86.激活Python虚拟机.html">86. 激活 Python 虚拟机</a></li><li class="chapter-item expanded "><a href="87.初识GIL、以及多个线程之间的调度机制.html">87. 初识 GIL、以及多个线程之间的调度机制</a></li><li class="chapter-item expanded "><a href="88.线程的创建、销毁、调度，以及GIL的实现原理.html">88. 线程的创建、销毁、调度，以及 GIL 的实现原理</a></li><li class="chapter-item expanded "><a href="89.解密map、filter、zip底层实现，对比列表解析式.html">89. 解密 map、filter、zip 底层实现，对比列表解析式</a></li><li class="chapter-item expanded "><a href="90.为什么要有协程，协程是如何实现的？.html">90. 为什么要有协程，协程是如何实现的？</a></li><li class="chapter-item expanded "><a href="91.什么是asyncio？如何基于单线程实现并发？事件循环又是怎么工作的？.html">91. 什么是 asyncio？如何基于单线程实现并发？事件循环又是怎么工作的？</a></li><li class="chapter-item expanded "><a href="92.协程、任务、future，以及事件循环.html">92. 协程、任务、future，以及事件循环</a></li><li class="chapter-item expanded "><a href="93.在asyncio中使用Socket.html">93. 在 asyncio 中使用 Socket</a></li><li class="chapter-item expanded "><a href="94.解密asyncio的Future和Task.html">94. 解密 asyncio 的 Future 和 Task</a></li><li class="chapter-item expanded "><a href="95.如何精确控制asyncio中并发运行的多个任务.html">95. 如何精确控制 asyncio 中并发运行的多个任务</a></li><li class="chapter-item expanded "><a href="96.详解asyncio的同步原语.html">96. 详解 asyncio 的同步原语</a></li><li class="chapter-item expanded "><a href="97.在asyncio中引入多进程.html">97. 在 asyncio 中引入多进程</a></li><li class="chapter-item expanded "><a href="98.可执行文件的内存模型，变量的值是放在栈上还是放在堆上.html">98. 可执行文件的内存模型，变量的值是放在栈上还是放在堆上</a></li><li class="chapter-item expanded "><a href="99.Python是如何管理内存的？.html">99. Python 是如何管理内存的？</a></li><li class="chapter-item expanded "><a href="100.Python的垃圾回收机制是怎么实现的？.html">100. Python 的垃圾回收机制是怎么实现的？</a></li><li class="chapter-item expanded "><a href="101.深入源码，探究垃圾回收的秘密.html">101. 深入源码，探究垃圾回收的秘密</a></li><li class="chapter-item expanded "><a href="102.侵入Python虚拟机，动态修改底层数据结构和运行时.html">102. 侵入 Python 虚拟机，动态修改底层数据结构和运行时</a></li><li class="chapter-item expanded "><a href="103.使用Python的ctypes调用C的动态库.html">103. 使用 Python 的 ctypes 调用 C 的动态库</a></li><li class="chapter-item expanded "><a href="104.使用Python的ctypes调用Rust的动态库.html">104. 使用 Python 的 ctypes 调用 Rust 的动态库</a></li><li class="chapter-item expanded "><a href="105.用C写Python.html">105. 用 C 写 Python</a></li><li class="chapter-item expanded "><a href="106.Cython从入门到精通.html">106. Cython 从入门到精通</a></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky bordered">
+                    <div class="left-buttons">
+                        <button id="sidebar-toggle" class="icon-button" type="button" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </button>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light (default)</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">CPython3.8 源码探秘</h1>
+
+                    <div class="right-buttons">
+                        <a href="https://github.com/satori1995/cpython-internal" title="Git repository" aria-label="Git repository">
+                            <i id="git-repository-button" class="fa fa-github"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script type="text/javascript">
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h2 id="楔子"><a class="header" href="#楔子">楔子</a></h2>
+<p>本篇文章来聊一聊集合支持的操作，比如元素的添加、删除，以及集合的扩容等等。并且集合还支持交集、并集、差集等运算，它们又是如何实现的呢？下面就一起来看一看。</p>
+<h2 id="add-方法添加元素"><a class="header" href="#add-方法添加元素">add 方法：添加元素</a></h2>
+<p>调用 add 方法可以向集合添加一个元素，在底层会执行 set_add 函数。</p>
+<pre><code class="language-C">// Objects/setobject.c
+static PyObject *
+set_add(PySetObject *so, PyObject *key)
+{
+    // 调用了 set_add_key 函数
+    if (set_add_key(so, key))
+        return NULL;
+    // 返回 None
+    Py_RETURN_NONE;
+}
+
+static int
+set_add_key(PySetObject *so, PyObject *key)
+{
+    Py_hash_t hash;
+
+    // 计算哈希值，由于字符串内部会缓存自身的哈希值，因此需要判断一下
+    // 如果 key 不是字符串，或者 key 是字符串、但哈希值为 -1（尚未计算过）
+    // 那么计算哈希值，但如果计算之后的结果是 -1，说明对象不支持哈希
+    if (!PyUnicode_CheckExact(key) ||
+        (hash = ((PyASCIIObject *) key)-&gt;hash) == -1) {
+        hash = PyObject_Hash(key);
+        if (hash == -1)
+            return -1;
+    }
+    // 调用 set_add_entry
+    return set_add_entry(so, key, hash);
+}
+</code></pre>
+<p>假设有一个集合 so，那么 so.add(&quot;abc&quot;) 最终等价于 <font color="blue">set_add_entry(so, &quot;abc&quot;, hash(&quot;abc&quot;))</font>，所以核心逻辑位于 set_add_entry 里面，看一下它的实现，代码比较长。</p>
+<pre><code class="language-C">// Objects/setobject.c
+static int
+set_add_entry(PySetObject *so, PyObject *key, Py_hash_t hash)
+{
+    setentry *table;
+    setentry *freeslot;
+    setentry *entry;
+    size_t perturb;
+    size_t mask;
+    size_t i;
+    size_t j;
+    int cmp;
+
+    // 增加 key 的引用计数，当然这里的 key 指的就是集合的元素
+    Py_INCREF(key);
+
+  restart:
+    // mask 等于哈希表的容量减 1
+    mask = so-&gt;mask;
+    // 和字典一样，让 hash &amp; mask 计算出一个索引
+    i = (size_t)hash &amp; mask;
+    
+    // 获取对应的 entry，里面包含了元素 key 和哈希值
+    // 如果 key == NULL，说明该位置还没有存储元素
+    // 此时就找到了合适的位置，跳转到 found_unused 标签
+    entry = &amp;so-&gt;table[i];
+    if (entry-&gt;key == NULL)
+        goto found_unused;
+
+    freeslot = NULL;
+    // perturb 初始等于哈希值
+    perturb = hash;
+
+    while (1) {
+        // 到这里说明指定的位置已经存储了元素，那么判断哈希值是否相同
+        // 如果哈希值不同，那么 key 一定不相同
+        // 如果哈希值相同，那么 key 不一定相同
+        if (entry-&gt;hash == hash) {
+            // 所以当哈希值相等时，还要比较新添加的 key 和已存在的 key 是否相同
+            PyObject *startkey = entry-&gt;key;
+            assert(startkey != dummy);
+          、// 这里的 startkey 和 key 都是 C 的变量，它们都是指针
+            // 如果两者相等，说明指向的是同一个对象，那么直接判定为相等，于是跳转到 found_active 标签
+            if (startkey == key)  // 相当于 Python 的 is
+                goto found_active;
+            // 如果 startkey 和 key 不等，说明指向的不是同一个对象
+            // 那么比较值是否相等，相当于 Python 的 ==
+            // 这里是针对字符串的一个快分支
+            if (PyUnicode_CheckExact(startkey)
+                &amp;&amp; PyUnicode_CheckExact(key)
+                &amp;&amp; _PyUnicode_EQ(startkey, key))
+                goto found_active;
+            table = so-&gt;table;
+            Py_INCREF(startkey);
+            // 如果 key 不是字符串，则执行通用比较逻辑
+            cmp = PyObject_RichCompareBool(startkey, key, Py_EQ);
+            Py_DECREF(startkey);
+            // cmp &gt; 0，说明结果为真，即两个 key 的值相等
+            // 跳转到 found_active 标签
+            if (cmp &gt; 0)
+                goto found_active;
+            // cmp &lt; 0 表示执行比较操作时出现错误，基本不会发生
+            if (cmp &lt; 0)
+                goto comparison_error;
+            // 到这里说明两个 key 虽然映射出的索引是一样的，但它们的值不相等
+            // 那么要怎么办呢？显然要看下一个 entry 是否可用
+            // 然后下面这三行代码估计让人有些费解，所做的事情如下
+            // 如果在查询的过程中，哈希表扩容了，或者 key 发生了改变，那么跳转到 restart 标签重新执行
+            // 但因为 GIL 的存在，实际不会发生
+            if (table != so-&gt;table || entry-&gt;key != startkey)
+                goto restart;
+            mask = so-&gt;mask;
+        }
+        /* 如果是 Unused 态的 entry，那么 
+         *     entry-&gt;key == NULL
+         *     entry-&gt;hash == 0
+         *
+         * 如果是 Dummy 态的 entry，那么
+         *     entry-&gt;key == dummy
+         *     entry-&gt;hash == -1
+         *
+         * 如果是 Active 态的 entry，那么
+         *     entry-&gt;key == some key
+         *     entry-&gt;hash == some hash
+         */
+        // 说明 entry 处于 dummy 态，将它赋值给 freeslot
+        else if (entry-&gt;hash == -1)
+            freeslot = entry;
+        // 关于这一步是做什么的，一会儿解释
+        if (i + LINEAR_PROBES &lt;= mask) {
+            for (j = 0 ; j &lt; LINEAR_PROBES ; j++) {
+                entry++;
+                if (entry-&gt;hash == 0 &amp;&amp; entry-&gt;key == NULL)
+                    goto found_unused_or_dummy;
+                if (entry-&gt;hash == hash) {
+                    PyObject *startkey = entry-&gt;key;
+                    assert(startkey != dummy);
+                    if (startkey == key)
+                        goto found_active;
+                    if (PyUnicode_CheckExact(startkey)
+                        &amp;&amp; PyUnicode_CheckExact(key)
+                        &amp;&amp; _PyUnicode_EQ(startkey, key))
+                        goto found_active;
+                    table = so-&gt;table;
+                    Py_INCREF(startkey);
+                    cmp = PyObject_RichCompareBool(startkey, key, Py_EQ);
+                    Py_DECREF(startkey);
+                    if (cmp &gt; 0)
+                        goto found_active;
+                    if (cmp &lt; 0)
+                        goto comparison_error;
+                    if (table != so-&gt;table || entry-&gt;key != startkey)
+                        goto restart;
+                    mask = so-&gt;mask;
+                }
+                else if (entry-&gt;hash == -1)
+                    freeslot = entry;
+            }
+        }
+        // 到这里说明 (&amp;so-&gt;table[i])-&gt;key 和添加的 key 不相等，即出现了索引冲突
+        // 那么要改变规则，重新映射，直到映射出一个可用的位置
+        perturb &gt;&gt;= PERTURB_SHIFT;
+        i = (i * 5 + 1 + perturb) &amp; mask;
+
+        entry = &amp;so-&gt;table[i];
+        if (entry-&gt;key == NULL)
+            goto found_unused_or_dummy;
+    }
+
+  found_unused_or_dummy:
+    // 如果 freeslot == NULL，说明没有撞上 Dummy 态的 entry
+    // 跳转到 found_unused 标签
+    if (freeslot == NULL)
+        goto found_unused;
+    // 否则说明撞上了 Dummy 态的 entry
+    // 集合的长度加 1，或者说 Active 态的 entry 个数加 1
+    so-&gt;used++;
+    // 更新 key 和 hash
+    freeslot-&gt;key = key;
+    freeslot-&gt;hash = hash;
+    return 0;
+
+  found_unused:
+    // 执行到这里，说明找到了新的可用位置
+    // 那么不光 used 要加 1，fill 也要加 1
+    so-&gt;fill++;
+    so-&gt;used++;
+    // 更新 key 和 hash
+    entry-&gt;key = key;
+    entry-&gt;hash = hash;
+    // 如果哈希表的 entry 的个数（Active 态 + Dummy 态）没超过 mask * 3 / 5
+    // 那么目前的容量是合理的，直接返回
+    if ((size_t)so-&gt;fill*5 &lt; mask*3)
+        return 0;
+    // 否则进行扩容，因为扩容的时候会丢弃 Dummy 的 entry
+    // 所以扩容之后的容量取决于 used，而不是 fill
+    // 如果 used 大于 50000，那么 2 倍扩容，否则 4 倍扩容
+    return set_table_resize(so, so-&gt;used&gt;50000 ? so-&gt;used*2 : so-&gt;used*4);
+
+  found_active:
+    // 执行到这里，说明添加的元素已经存在了
+    // 那么减少 key 的引用计数，然后返回
+    Py_DECREF(key);
+    return 0;
+
+  comparison_error:
+    // 执行比较操作时出现错误，应该抛出异常，但这一步基本不会发生
+    Py_DECREF(key);
+    return -1;
+}
+</code></pre>
+<p>所以整个过程和字典是类似的，依旧是将哈希值和 mask 按位与，得到索引，通过索引找到对应的 entry。接下来对 entry 分情况讨论。</p>
+<p><font color="darkblue"><strong>如果 <code>entry-&gt;key == NULL</code>。</strong></font></p>
+<p>说明找到了可用的 entry，那么直接跳转到 found_unused 标签，然后修改 entry 的 key 和 hash 字段，这样新元素就添加成功了。</p>
+<p><font color="darkblue"><strong>如果 <code>entry-&gt;hash == hash</code>。</strong></font></p>
+<p>说明找到的 entry 处于 Active 态，那么比较两个 key 是否相等。如果相等，证明添加的元素已存在，则不插入，直接减少引用计数，因为不是字典，不存在更新一说。但如果两个 key 不相等，说明出现索引冲突，那么要映射出一个新的索引，并且映射的方式和字典也是一样的。</p>
+<pre><code class="language-C">perturb &gt;&gt;= PERTURB_SHIFT;
+i = (i * 5 + 1 + perturb) &amp; mask;
+</code></pre>
+<p>但字典和集合有一处不同，就是集合这里多了一个 for 循环。</p>
+<pre><code class="language-C">// Objects/setobject.c
+#define LINEAR_PROBES 9
+
+static int
+set_add_entry(PySetObject *so, PyObject *key, Py_hash_t hash)
+{
+    // ...
+
+    while (1) {
+        // ...
+        
+        // 当前映射出的索引为 i，如果 i + 9 没有超过 mask，那么循环 9 次
+        if (i + LINEAR_PROBES &lt;= mask) {
+            for (j = 0 ; j &lt; LINEAR_PROBES ; j++) {
+                entry++;
+                if (entry-&gt;hash == 0 &amp;&amp; entry-&gt;key == NULL)
+                    goto found_unused_or_dummy;
+                if (entry-&gt;hash == hash) {
+                    PyObject *startkey = entry-&gt;key;
+                    assert(startkey != dummy);
+                    if (startkey == key)
+                        goto found_active;
+                    if (PyUnicode_CheckExact(startkey)
+                        &amp;&amp; PyUnicode_CheckExact(key)
+                        &amp;&amp; _PyUnicode_EQ(startkey, key))
+                        goto found_active;
+                    table = so-&gt;table;
+                    Py_INCREF(startkey);
+                    cmp = PyObject_RichCompareBool(startkey, key, Py_EQ);
+                    Py_DECREF(startkey);
+                    if (cmp &gt; 0)
+                        goto found_active;
+                    if (cmp &lt; 0)
+                        goto comparison_error;
+                    if (table != so-&gt;table || entry-&gt;key != startkey)
+                        goto restart;
+                    mask = so-&gt;mask;
+                }
+                else if (entry-&gt;hash == -1)
+                    freeslot = entry;
+            }
+        }
+        // ...
+    }
+
+    // ...
+}
+</code></pre>
+<p>当映射出的索引相同、但 key 不相同时，说明出现了索引冲突，对于字典来说，会立即重新映射，找到一个新的索引。而集合由于只用一个数组存储，可以有更好的做法。我们知道 CPU 是有缓存的，像 L1 Cache 加载数据会一次性加载 64 字节，称为一个 cache line。所以通过索引遍历包含 16 个 int32 的数组，每次 i++ 和每次 i += 4 的耗时是差不多的。</p>
+<p>对于集合来说，因为映射出的索引是随机的，使得对应的 entry 可能不在 cache 中，从而导致 CPU 下一次要重新读取。所以 Python 引入了 LINEAR_PROBES，从当前的 entry 开始，向后查找 9 个 entry。如果还找不到可用位置，然后才重新计算，从而提高 cache 的稳定性。</p>
+<p><font color="darkblue"><strong>如果 <code>entry-&gt;hash == -1</code>，或者说 <code>entry-&gt;key == dummy</code>。</strong></font></p>
+<p>说明撞上了一个 Dummy 态的 entry，但估计有人又注意到了一个问题。</p>
+<p><img src="./images/137.png" alt="" /></p>
+<p>就是在发现 Dummy 态的 entry 之后，为啥没有立即跳转到 found_unused_or_dummy 标签，而是要继续循环呢？</p>
+<p>很简单，我们假设在发现 Dummy 态的 entry 之后立即跳转，看看会有什么后果。首先向集合添加一个元素 x，再添加一个元素 y，但 y 和 x 映射出的索引相同，那么在添加 y 的时候，会形成一条探测链，对应的元素就是 <code>x-&gt;y</code>。然后再将 x 删除，那么 <code>x-&gt;y</code> 就变成了 <code>dummy-&gt;y</code>。这时候如果再重新添加一个元素 y，那么肯定会撞上 Dummy 态的 entry，于是 <code>dummy-&gt;y</code> 就变成了 <code>y-&gt;y</code>。</p>
+<p>所以当发现 Dummy 态的 entry 之后，如果立即跳转，就会无法消除集合的重复元素。因此正确的做法是先用变量保存起来，这里赋值给了 freeslot，然后继续查找。如果找到了相同的元素，那么就不添加了，因为集合中的元素是唯一的。但如果最后找到的 entry 的 key 为空，说明元素不存在，此时才能跳转到 found_unused_or_dummy 标签，然后对 freeslot 进行判断。如果不为空，说明撞上了 Dummy 态的 entry，那么直接复用该 entry 即可。</p>
+<p>以上就是集合添加元素的过程，当然如果找到的是 Unused 态的 entry，还要判断容量的问题。如果 <font color="blue">Active 态 + Dummy 态</font>的 entry 个数不小于 3/5*mask，那么扩容，扩容的规则是判断 Active 态的 entry 个数是否大于 50000，是的话就 2 倍扩容，否则 4 倍扩容；</p>
+<h2 id="pop-方法弹出元素"><a class="header" href="#pop-方法弹出元素">pop 方法：弹出元素</a></h2>
+<p>调用 pop 方法，可以从集合中弹出一个元素，在底层会执行 set_pop 方法。</p>
+<pre><code class="language-C">// Objects/setobject.c
+
+static PyObject *
+set_pop(PySetObject *so, PyObject *Py_UNUSED(ignored))
+{
+    // so-&gt;table 是指向 entry 数组首元素的指针
+    // so-&gt;finger 是做什么的，稍后解释，总之它是一个整数
+    // so-&gt;mask 等于 entry 数组的长度减 1，用于将取模运算优化成按位与运算
+
+    // 因此 so-&gt;finger &amp; so-&gt;mask 会得到一个 0 ~ mask 之间的整数，我们记为 n
+    // 显然这里的变量 entry 会指向 entry 数组中索引 n 的元素
+    setentry *entry = so-&gt;table + (so-&gt;finger &amp; so-&gt;mask);
+    // 变量 limit 则指向 entry 数组中最后一个元素（索引为 mask）
+    setentry *limit = so-&gt;table + so-&gt;mask;
+    PyObject *key;
+    // 如果集合长度为 0，那么 pop 方法会抛出 KeyError
+    if (so-&gt;used == 0) {
+        PyErr_SetString(PyExc_KeyError, &quot;pop from an empty set&quot;);
+        return NULL;
+    }
+    // entry 有三种状态，但显然弹出的 entry 一定是 Active 态
+    // 所以如果 entry 处于 Unused 或 Dummy 态，直接下一轮循环
+    while (entry-&gt;key == NULL || entry-&gt;key==dummy) {
+        entry++;
+        // 我们记 so-&gt;finger &amp; so-&gt;mask 的结果为 n
+        // 所以相当于从 entry 数组中索引为 n 的位置开始遍历
+        // 如果遍历到最后一个位置，也没找到 Active 态的 entry，那么从头开始遍历
+        if (entry &gt; limit)
+            entry = so-&gt;table;  // 让变量 entry 指向 entry 数组的首元素
+        // 所以不难发现，整个过程是先遍历 entry 数组中 [n: limit] 的部分
+        // 如果没有找到 Active 态 entry，那么将 entry 重置为 so-&gt;table，从头开始遍历
+        // 因为执行到这里，说明 so-&gt;used 大于 0，即集合的长度大于 0
+        // 那么当 entry &gt; limit 时，在 entry 数组 [0: n] 的部分，一定存在 Active 态的 entry
+    }
+    // pop 方法会返回弹出的元素，所以获取 entry-&gt;key
+    key = entry-&gt;key;
+    // 元素被弹出了，对应的 entry 要进行伪删除，所谓的伪删除就是设置一个特殊的墓碑值
+    // 所以将 entry-&gt;key 设置为 dummy，将 entry-&gt;hash 设置为 -1
+    entry-&gt;key = dummy;
+    entry-&gt;hash = -1;
+    // 集合的长度减 1
+    so-&gt;used--;
+    // 将 finger 更新为被删除的 entry 在 entry 数组中的索引加 1
+    so-&gt;finger = entry - so-&gt;table + 1;   /* next place to start */
+    return key;
+}
+</code></pre>
+<p>所以删除的过程还是很简单的，如果不考虑 finger 字段，你就可以简单理解为遍历整个 entry 数组，找到 Active 态的 entry，然后删除即可。只是这么做会导致每次 pop 时，都要重头开始遍历数组。</p>
+<p>而当引入了 finger 字段之后，由于该字段初始为 0，所以第一次 pop 时，会从数组的头部开始遍历。假设删除的是数组中索引为 n 的 entry，那么删除之后 finger 字段会被赋值为 n + 1，那么下一次 pop 就会从数组中索引为 n + 1 的 entry 开始遍历。</p>
+<p>我们通过 ctypes 来验证这一点：</p>
+<pre><code class="language-python">from ctypes import *
+
+class PyObject(Structure):
+    _fields_ = [
+        (&quot;ob_refcnt&quot;, c_ssize_t),
+        (&quot;ob_type&quot;, c_void_p),
+    ]
+
+class SetEntry(Structure):
+    _fields_ = [
+        (&quot;key&quot;, POINTER(PyObject)),
+        (&quot;hash&quot;, c_longlong)
+    ]
+
+class PySetObject(PyObject):
+    _fields_ = [
+        (&quot;fill&quot;, c_ssize_t),
+        (&quot;used&quot;, c_ssize_t),
+        (&quot;mask&quot;, c_ssize_t),
+        (&quot;table&quot;, POINTER(SetEntry)),
+        (&quot;hash&quot;, c_long),
+        (&quot;finger&quot;, c_ssize_t),
+        (&quot;smalltable&quot;, (SetEntry * 8)),
+        (&quot;weakreflist&quot;, POINTER(PyObject)),
+    ]
+
+
+s = {11, 22, 33, 44}
+# 获取 PySetObject 结构体实例
+py_set_obj = PySetObject.from_address(id(s))
+# 遍历 smalltable，打印索引和 key 的哈希值
+# 对于整数来说，它的哈希值等于自身
+for index, entry in enumerate(py_set_obj.smalltable):
+    print(index, entry.hash)
+&quot;&quot;&quot;
+0 0
+1 33
+2 0
+3 11
+4 44
+5 0
+6 22
+7 0
+&quot;&quot;&quot;
+# finger 初始为 0，因此在 pop 元素的时候会从头开始遍历数组
+# 找到第一个 Active 态的 entry
+print(py_set_obj.finger)
+&quot;&quot;&quot;
+0
+&quot;&quot;&quot;
+
+# 显然第一次 pop 出的元素是 33
+print(s.pop())
+&quot;&quot;&quot;
+33
+&quot;&quot;&quot;
+for index, entry in enumerate(py_set_obj.smalltable):
+    print(index, entry.hash)
+&quot;&quot;&quot;
+0 0
+1 -1
+2 0
+3 11
+4 44
+5 0
+6 22
+7 0
+&quot;&quot;&quot;
+# 因为被伪删除了
+# 所以索引为 1 的 entry-&gt;key 会被设置为 NULL，entry-&gt;hash 被设置为 -1
+# 至于 finger 则等于 1 + 1，下一次 pop 时，会从索引为 2 的位置开始遍历
+print(py_set_obj.finger)
+&quot;&quot;&quot;
+2
+&quot;&quot;&quot;
+
+# 那么同理，再次 pop 的时候，会弹出 11，然后 finger 变为 3 + 1 = 4
+print(s.pop())
+&quot;&quot;&quot;
+11
+&quot;&quot;&quot;
+print(py_set_obj.finger)
+&quot;&quot;&quot;
+4
+&quot;&quot;&quot;
+</code></pre>
+<p>以上就是 finger 字段的作用，它避免了每次都要从头遍历 entry 数组。从这里也不难发现，当一个集合不断执行 pop 方法，将所有元素依次弹出时，这些元素的顺序和直接遍历 entry 数组拿到的元素的顺序是一致的。</p>
+<pre><code class="language-Python">item1 = 22333
+item2 = 177
+item3 = 520
+item4 = 10086
+# 将它们映射成索引，由于是 4 个元素，因此哈希表容量为 8
+index1 = item1 &amp; 7
+index2 = item2 &amp; 7
+index3 = item3 &amp; 7
+index4 = item4 &amp; 7
+print(index1, index2, index3, index4)
+&quot;&quot;&quot;
+5 1 0 6
+&quot;&quot;&quot;
+# 所以如果将 item1、item2、item3、item4 放到集合中
+# 不管怎么排列，最终都是下面这个结果
+# item3 会位于 entry 数组中索引为 0 的位置
+# item2 会位于 entry 数组中索引为 1 的位置
+# item1 会位于 entry 数组中索引为 5 的位置
+# item4 会位于 entry 数组中索引为 6 的位置
+
+# 所以不管是弹出元素，还是遍历元素，亦或是直接打印集合
+# 元素顺序一定是 item3、item2、item1、item4
+s1 = {item1, item2, item3, item4}
+s2 = {item2, item1, item4, item3}
+s3 = {item3, item1, item2, item4}
+s4 = {item4, item3, item2, item1}
+print(s1)  # {520, 177, 22333, 10086}
+print(s2)  # {520, 177, 22333, 10086}
+print(s3)  # {520, 177, 22333, 10086}
+print(s4)  # {520, 177, 22333, 10086}
+print(
+    item3, item2, item1, item4
+)  # 520 177 22333 10086
+</code></pre>
+<p>怎么样，是不是对集合又有了更深刻的认识了呢？</p>
+<h2 id="remove-方法删除指定元素"><a class="header" href="#remove-方法删除指定元素">remove 方法：删除指定元素</a></h2>
+<p>remove 方法可以接收参数，删除集合中指定的元素。除了 remove，还有一个 discard 方法，这两个方法的作用一模一样，都是用来删除指定元素。区别就是当删除的元素不存在时，remove 方法会抛出 KeyError，而 discard 方法不会。</p>
+<p>remove 方法在底层对应 set_remove 函数，discard 方法在底层对应 set_discard 函数，而 set_remove 函数只比 set_discard 函数多了一个 if 判断，我们来看一下。</p>
+<p><img src="./images/138.png" alt="" /></p>
+<p>以上是 set_remove 函数，注意图中绿色方框的部分，如果要删除的元素不存在，那么 rv 会等于 DISCARD_NOTFOUND，于是抛出 KeyError。</p>
+<p>如果将绿色方框里的 if 逻辑删掉，得到的就是 set_discard 函数的源码。所以这两个函数做的事情是一样的，区别就是 set_remove 会多做一层检测，当删除的元素不存在时，set_remove 会主动抛出一个 KeyError，而 set_discard 函数则什么也不做。</p>
+<p>所以这里我们只看 set_remove 函数即可。</p>
+<pre><code class="language-C">// Objects/setobject.c
+
+#define DISCARD_NOTFOUND 0
+#define DISCARD_FOUND 1
+
+static PyObject *
+set_remove(PySetObject *so, PyObject *key)
+{
+    // 要删除的 key，或者说元素
+    // 当然啦，从 C 的层面来看，删除 key 其实就是删除数组中该 key 对应的 entry
+    // 只不过这个删除是伪删除，即写入一个特殊的墓碑值
+    PyObject *tmpkey;
+    int rv;
+    // rv 表示删除结果，显然删除逻辑由 set_discard_key 函数实现
+    // 如果 rv &lt; 0，表示删除元素时出现错误，比如传入了一个不可哈希的对象
+    // 如果 rv == 0，表示要删除的元素在集合中不存在
+    // 如果 rv == 1，表示成功将元素从集合中删除
+    rv = set_discard_key(so, key);
+    if (rv &lt; 0) {
+        // 当传入一个不可哈希对象时，会抛出 TypeError
+        // 我们知道集合也是不可哈希的，但如果要删除的 key 是集合类型
+        // 那么解释器会额外做一个兜底操作，我们一会儿通过 Python 代码演示
+        if (!PySet_Check(key) || !PyErr_ExceptionMatches(PyExc_TypeError))
+            return NULL;
+        // 将回溯栈里的异常清空
+        PyErr_Clear();
+        // 基于集合里的元素创建不可变集合
+        tmpkey = make_new_set(&amp;PyFrozenSet_Type, key);
+        if (tmpkey == NULL)
+            return NULL;
+        // 然后尝试删除这个不可变集合，如果还删除失败，则报错
+        rv = set_discard_key(so, tmpkey);
+        Py_DECREF(tmpkey);
+        if (rv &lt; 0)
+            return NULL;
+    }
+    // 如果 rv == DISCARD_NOTFOUND，表示要删除的元素不存在
+    if (rv == DISCARD_NOTFOUND) {
+        _PyErr_SetKeyError(key);  // 抛出 KeyError
+        return NULL;
+    }
+    Py_RETURN_NONE;
+}
+</code></pre>
+<p>我们看到当元素删除失败时，如果 key 是集合类型，那么解释器会做一个兜底操作，这是什么意思呢？我们演示一遍。</p>
+<pre><code class="language-python">try:
+    s = {[1, 2, 3]}  # 列表不可哈希
+except TypeError as e:
+    print(e)
+&quot;&quot;&quot;
+unhashable type: 'list'
+&quot;&quot;&quot;
+
+try:
+    s = {{1, 2, 3}}  # 同样，集合也不可哈希
+except TypeError as e:
+    print(e)
+&quot;&quot;&quot;
+unhashable type: 'set'
+&quot;&quot;&quot;
+
+# 当我们尝试 remove 列表时，依旧会抛出相同的错误
+s = {1, 2, 3}
+try:
+    s.remove([])
+except TypeError as e:
+    print(e)
+&quot;&quot;&quot;
+unhashable type: 'list'
+&quot;&quot;&quot;
+
+# 但 remove 一个集合就不同了
+s = {
+    frozenset({1, 2, 3}),
+    frozenset({4, 5, 6}),
+}
+# 不可变集合是可哈希对象，因此它可以放在集合中，也可以被删除
+s.remove(frozenset({1, 2, 3}))
+# 但删除可变集合理论上应该和删除列表一样，抛出 TypeError: unhashable type: 'set'
+# 而事实上异常也确实产生了，保存在回溯栈中，但是从源码中我们看到，解释器会多做一个检测
+# 如果删除的 key 是集合类型，并且栈里的异常是 TypeError，那么将异常清空
+# 然后基于集合创建不可变集合，并尝试删除这个不可变集合
+s.remove({4, 5, 6})
+# 所以这里 s.remove({4, 5, 6}) 等价于 s.remove(frozenset({4, 5, 6}))
+print(s)
+&quot;&quot;&quot;
+set()
+&quot;&quot;&quot;
+# 我们看到 s 里面的两个不可变集合被删除了
+</code></pre>
+<p>好，我们回到 set_remove 函数，它在删除元素时会调用 set_discard_key 函数，显然删除指定元素的核心逻辑位于此函数中，我们看一下它做了什么。</p>
+<pre><code class="language-C">// Objects/setobject.c
+
+static int
+set_discard_key(PySetObject *so, PyObject *key)
+{
+    Py_hash_t hash;
+    // 计算哈希值
+    if (!PyUnicode_CheckExact(key) ||
+        (hash = ((PyASCIIObject *) key)-&gt;hash) == -1) {
+        hash = PyObject_Hash(key);
+        if (hash == -1)
+            return -1;
+    }
+    // 调用 set_discard_entry 函数
+    // 传入三个参数：集合、要删除的 key、以及 key 的哈希值
+    return set_discard_entry(so, key, hash);
+}
+
+static int
+set_discard_entry(PySetObject *so, PyObject *key, Py_hash_t hash)
+{
+    setentry *entry;
+    PyObject *old_key;
+    // 将 key 映射成索引，并获取该索引对应的 entry 的指针
+    entry = set_lookkey(so, key, hash);
+    // 因为 entry 数组申请好之后，内部的每个 entry 都拥有一块合法的内存
+    // 所以指针不可能为 NULL，如果为 NULL，证明内部出问题了
+    if (entry == NULL)  // 基本不会发生
+        return -1;
+    // 如果 entry-&gt;key 为 NULL，证明要删除的 key 不存在，返回 DISCARD_NOTFOUND
+    // 当 set_remove 函数发现返回的是 DISCARD_NOTFOUND，会抛出 KeyError
+    if (entry-&gt;key == NULL)
+        return DISCARD_NOTFOUND;
+    // 否则说明 key 存在
+    old_key = entry-&gt;key;
+    // 因为被删除了，所以将 entry-&gt;key、entry-&gt;hash 设置为 dummy 和 -1
+    entry-&gt;key = dummy;
+    entry-&gt;hash = -1;
+    // 集合长度减 1
+    so-&gt;used--;
+    // 减少 key 指向对象的引用计数，因为集合不再持有对它的引用
+    Py_DECREF(old_key);
+    // 返回 DISCARD_FOUND
+    return DISCARD_FOUND;
+}
+</code></pre>
+<p>以上就是 set_remove 函数删除指定元素的具体细节，逻辑并不复杂。但是里面出现了一个 set_lookkey 函数，它的作用是将哈希值映射成索引，并返回指定的 entry。至于该函数的逻辑也很简单，它和 set_add 函数里面的逻辑是重复的。</p>
+<pre><code class="language-C">static setentry *
+set_lookkey(PySetObject *so, PyObject *key, Py_hash_t hash)
+{
+    setentry *table;
+    setentry *entry;
+    size_t perturb;
+    size_t mask = so-&gt;mask;
+    size_t i = (size_t)hash &amp; mask; /* Unsigned for defined overflow behavior */
+    size_t j;
+    int cmp;
+
+    entry = &amp;so-&gt;table[i];
+    if (entry-&gt;key == NULL)
+        return entry;
+
+    perturb = hash;
+
+    while (1) {
+        if (entry-&gt;hash == hash) {
+            PyObject *startkey = entry-&gt;key;
+            /* startkey cannot be a dummy because the dummy hash field is -1 */
+            assert(startkey != dummy);
+            if (startkey == key)
+                return entry;
+            if (PyUnicode_CheckExact(startkey)
+                &amp;&amp; PyUnicode_CheckExact(key)
+                &amp;&amp; _PyUnicode_EQ(startkey, key))
+                return entry;
+            table = so-&gt;table;
+            Py_INCREF(startkey);
+            cmp = PyObject_RichCompareBool(startkey, key, Py_EQ);
+            Py_DECREF(startkey);
+            if (cmp &lt; 0)                                          /* unlikely */
+                return NULL;
+            if (table != so-&gt;table || entry-&gt;key != startkey)     /* unlikely */
+                return set_lookkey(so, key, hash);
+            if (cmp &gt; 0)                                          /* likely */
+                return entry;
+            mask = so-&gt;mask;                 /* help avoid a register spill */
+        }
+
+        if (i + LINEAR_PROBES &lt;= mask) {
+            for (j = 0 ; j &lt; LINEAR_PROBES ; j++) {
+                entry++;
+                if (entry-&gt;hash == 0 &amp;&amp; entry-&gt;key == NULL)
+                    return entry;
+                if (entry-&gt;hash == hash) {
+                    PyObject *startkey = entry-&gt;key;
+                    assert(startkey != dummy);
+                    if (startkey == key)
+                        return entry;
+                    if (PyUnicode_CheckExact(startkey)
+                        &amp;&amp; PyUnicode_CheckExact(key)
+                        &amp;&amp; _PyUnicode_EQ(startkey, key))
+                        return entry;
+                    table = so-&gt;table;
+                    Py_INCREF(startkey);
+                    cmp = PyObject_RichCompareBool(startkey, key, Py_EQ);
+                    Py_DECREF(startkey);
+                    if (cmp &lt; 0)
+                        return NULL;
+                    if (table != so-&gt;table || entry-&gt;key != startkey)
+                        return set_lookkey(so, key, hash);
+                    if (cmp &gt; 0)
+                        return entry;
+                    mask = so-&gt;mask;
+                }
+            }
+        }
+
+        perturb &gt;&gt;= PERTURB_SHIFT;
+        i = (i * 5 + 1 + perturb) &amp; mask;
+
+        entry = &amp;so-&gt;table[i];
+        if (entry-&gt;key == NULL)
+            return entry;
+    }
+}
+</code></pre>
+<p>显然该函数的逻辑在介绍 set_add 函数的时候就说过了。</p>
+<ul>
+<li>如果 <code>entry-&gt;key</code> 为空，说明找到了 Unused 态的 entry，即 key 不存在，那么直接将 entry 返回即可。</li>
+<li>如果 <code>entry-&gt;key</code> 不为空，那么比较 <code>entry-&gt;hash</code> 和传入的 hash 是否相等，如果哈希值不相等，那么 key 一定不相等，说明出现了索引冲突。当然啦，如果 entry 处于 Dummy 态，那么哈希值肯定也不相等，但不管哪一种，都要重新映射。</li>
+<li>如果哈希值相等，那么比较 key 是否相等，如果 key 相等，说明查找的 key 存在于集合中，那么返回对应的 entry。如果 key 不相等，则重新映射。</li>
+</ul>
+<h2 id="copy-方法拷贝一个集合"><a class="header" href="#copy-方法拷贝一个集合">copy 方法：拷贝一个集合</a></h2>
+<p>调用 copy 方法可以拷贝一个集合，在底层会执行 set_copy 方法。</p>
+<pre><code class="language-C">// Objects/setobject.c
+
+static PyObject *
+set_copy(PySetObject *so, PyObject *Py_UNUSED(ignored))
+{
+    return make_new_set_basetype(Py_TYPE(so), (PyObject *)so);
+}
+
+static PyObject *
+make_new_set_basetype(PyTypeObject *type, PyObject *iterable)
+{
+    if (type != &amp;PySet_Type &amp;&amp; type != &amp;PyFrozenSet_Type) {
+        if (PyType_IsSubtype(type, &amp;PySet_Type))
+            type = &amp;PySet_Type;
+        else
+            type = &amp;PyFrozenSet_Type;
+    }
+    return make_new_set(type, iterable);
+}
+
+static PyObject *
+make_new_set(PyTypeObject *type, PyObject *iterable)
+{
+    PySetObject *so;
+    // 为集合申请内存
+    so = (PySetObject *)type-&gt;tp_alloc(type, 0);
+    if (so == NULL)
+        return NULL;
+    // 字段初始化，显然刚创建的集合的容量为 8
+    so-&gt;fill = 0;
+    so-&gt;used = 0;
+    so-&gt;mask = PySet_MINSIZE - 1;
+    so-&gt;table = so-&gt;smalltable;
+    so-&gt;hash = -1;
+    so-&gt;finger = 0;
+    so-&gt;weakreflist = NULL;
+    // 调用 set_update_internal 函数，将可迭代对象的元素添加到集合中
+    if (iterable != NULL) {
+        if (set_update_internal(so, iterable)) {
+            Py_DECREF(so);
+            return NULL;
+        }
+    }
+
+    return (PyObject *)so;
+}
+
+static int
+set_update_internal(PySetObject *so, PyObject *other)
+{   
+    // 参数 so 表示集合，other 表示可迭代对象
+    PyObject *key, *it;
+    // 如果 other 的类型也是集合（或者不可变集合），那么调用 set_merge 函数
+    if (PyAnySet_Check(other))
+        return set_merge(so, other);
+    // 否则检测 other 是否为字典
+    if (PyDict_CheckExact(other)) {
+        PyObject *value;
+        Py_ssize_t pos = 0;
+        Py_hash_t hash;
+        Py_ssize_t dictsize = PyDict_GET_SIZE(other);
+
+        // 判断 so-&gt;fill + dictsize 是否达到了 so-&gt;mask 的 3/5
+        // 如果达到了，那么扩容
+        if (dictsize &lt; 0)
+            return -1;
+        if ((so-&gt;fill + dictsize)*5 &gt;= so-&gt;mask*3) {
+            if (set_table_resize(so, (so-&gt;used + dictsize)*2) != 0)
+                return -1;
+        }
+        // 遍历字典，将字典的 key 和 hash 包装成 entry，添加到数组中，value 丢弃
+        // 这里调用的是 set_add_entry 函数，我们介绍集合的 add 方法时说过
+        while (_PyDict_Next(other, &amp;pos, &amp;key, &amp;value, &amp;hash)) {
+            if (set_add_entry(so, key, hash))
+                return -1;
+        }
+        return 0;
+    }
+    // 到这里说明 other 不是字典，那么迭代出来的整体就是 key
+    // 基于可迭代对象创建迭代器
+    it = PyObject_GetIter(other);
+    if (it == NULL)
+        return -1;
+    // 将元素迭代出来
+    while ((key = PyIter_Next(it)) != NULL) {
+        // 调用 set_add_key 函数，它内部会先计算 key 的哈希值
+        // 然后调用 set_add_entry 函数，添加元素
+        if (set_add_key(so, key)) {
+            Py_DECREF(it);
+            Py_DECREF(key);
+            return -1;
+        }
+        Py_DECREF(key);
+    }
+    Py_DECREF(it);
+    if (PyErr_Occurred())
+        return -1;
+    return 0;
+}
+</code></pre>
+<p>以上就是集合的 copy 方法的底层实现，非常简单。说白了就是先创建一个新的集合，然后调用 set_update_internal 函数将老集合里面的元素拷贝过去。当然啦，该函数可以拷贝任意可迭代对象里的元素，不仅仅是集合。只是当可迭代对象是集合时，会单独调用 set_merge 函数，如果不是集合，那么会直接遍历。</p>
+<h2 id="update-方法合并多个可迭代对象"><a class="header" href="#update-方法合并多个可迭代对象">update 方法：合并多个可迭代对象</a></h2>
+<p>调用 update 方法，可以合并多个可迭代对象，举例说明。</p>
+<pre><code class="language-Python">s = {1, 2, 3}
+s.update([4, 5, 6], (7, 8, 9))
+print(s)
+&quot;&quot;&quot;
+{1, 2, 3, 4, 5, 6, 7, 8, 9}
+&quot;&quot;&quot;
+</code></pre>
+<p>相信你已经知道底层是怎么做的了，获取每个可迭代对象，然后调用 set_update_internal 函数即可。那么底层是不是这么做的呢？我们来看一下，update 方法在底层对应 set_update 函数。</p>
+<pre><code class="language-c">// Objects/setobject.c
+
+static PyObject *
+set_update(PySetObject *so, PyObject *args)
+{
+    Py_ssize_t i;
+
+    for (i=0 ; i&lt;PyTuple_GET_SIZE(args) ; i++) {
+        PyObject *other = PyTuple_GET_ITEM(args, i);
+        if (set_update_internal(so, other))
+            return NULL;
+    }
+    Py_RETURN_NONE;
+}
+</code></pre>
+<p>跟我们分析的一样，非常简单。</p>
+<p>另外集合还有一个 union 方法，功能和 update 方法类似，但它会返回一个新的集合。</p>
+<pre><code class="language-Python">s1 = {1, 2, 3}
+s1.update([4, 5, 6], (7, 8, 9))
+print(s1)
+&quot;&quot;&quot;
+{1, 2, 3, 4, 5, 6, 7, 8, 9}
+&quot;&quot;&quot;
+
+s2 = {1, 2, 3}
+s2_new = s2.union([4, 5, 6], (7, 8, 9))
+print(s2)
+print(s2_new)
+&quot;&quot;&quot;
+{1, 2, 3}
+{1, 2, 3, 4, 5, 6, 7, 8, 9}
+&quot;&quot;&quot;
+</code></pre>
+<p>update 方法会原地修改，而 union 方法会返回新的集合，不会影响原有的集合。</p>
+<h2 id="其它的一些方法"><a class="header" href="#其它的一些方法">其它的一些方法</a></h2>
+<p>集合还有一些常用的方法，只不过我们更倾向于使用操作符的形式。</p>
+<ul>
+<li>s1 &amp; s2：对两个集合做交集运算，返回新的集合，里面包含同时出现在 s1 和 s2 当中的元素；</li>
+<li>s1 | s2：对两个集合做并集运算，返回新的集合，里面包含出现在 s1 或 s2 当中的元素；</li>
+<li>s1 - s2：对两个集合做差集运算，返回新的集合，里面包含出现在 s1 当中、但没有出现在 s2 当中的元素；</li>
+<li>s1 ^ s2：对两个集合做对称差集运算，返回新的集合，里面包含只出现在 s1 当中、或只出现在 s2 当中的元素；</li>
+<li>s1 == s2：判断两个集合的元素是否完全相同；</li>
+<li>s1 &gt;= s2：判断 s2 是否是 s1 的子集，如果是，那么 s2 - s1 == {}。</li>
+<li>s1 &lt;= s2：判断 s1 是否是 s2 的子集，如果是，那么 s1 - s2 == {}。</li>
+<li>s1 &gt; s2：判断 s2 是否是 s1 的真子集；</li>
+<li>s1 &lt; s2：判断 s1 是否是 s2 的真子集；</li>
+</ul>
+<p>注意：在使用这些操作符时，两侧的 s1 和 s2 都要求是集合类型。但如果使用操作符对应的方法，那么则不要求 s2 是集合类型，只要是可迭代对象即可。</p>
+<pre><code class="language-Python"># 做交集运算
+s = {&quot;a&quot;, &quot;b&quot;, &quot;c&quot;}
+print(s.intersection(&quot;bcd&quot;))
+&quot;&quot;&quot;
+{'b', 'c'}
+&quot;&quot;&quot;
+# print(s &amp; &quot;bcd&quot;)  # TypeError
+</code></pre>
+<p>这些方法都非常的有用，可以自己测试一下，加深一遍印象。至于这些方法的底层实现，感兴趣也可以去 Objects/setobject.c 中探索一番，方法都定义在 set_methods 数组中。这里我们就以集合的交集运算为例，看一下实现过程。</p>
+<pre><code class="language-C">// Objects/setobject.c
+
+// 判断集合是否包含某个元素
+static int
+set_contains_entry(PySetObject *so, PyObject *key, Py_hash_t hash)
+{
+    setentry *entry;
+    // 调用 set_lookkey，返回 entry
+    // 如果 entry-&gt;key 不为空，证明元素存在，否则不存在
+    entry = set_lookkey(so, key, hash);
+    if (entry != NULL)
+        return entry-&gt;key != NULL;
+    return -1;
+}
+
+// 两个集合做交集运算，返回新的集合
+static PyObject *
+set_intersection(PySetObject *so, PyObject *other)
+{
+    PySetObject *result;
+    PyObject *key, *it, *tmp;
+    Py_hash_t hash;
+    int rv;
+    // 快分支：如果两个集合相等，那么直接把其中一个拷贝一份
+    if ((PyObject *)so == other)
+        return set_copy(so, NULL);
+    // 否则创建一个新的空集合
+    result = (PySetObject *)make_new_set_basetype(Py_TYPE(so), NULL);
+    if (result == NULL)
+        return NULL;
+    // 如果 other 是集合
+    if (PyAnySet_Check(other)) {
+        Py_ssize_t pos = 0;
+        setentry *entry;
+        // 如果 len(other) &gt; len(so)，那么两者交换位置，也就是遍历元素较少的集合
+        if (PySet_GET_SIZE(other) &gt; PySet_GET_SIZE(so)) {
+            tmp = (PyObject *)so;
+            so = (PySetObject *)other;
+            other = tmp;
+        }
+        // 遍历集合 other
+        while (set_next((PySetObject *)other, &amp;pos, &amp;entry)) {
+            key = entry-&gt;key;
+            hash = entry-&gt;hash;
+            // 判断 key 是否存在于集合 so 中
+            rv = set_contains_entry(so, key, hash);
+            if (rv &lt; 0) {
+                Py_DECREF(result);
+                return NULL;
+            }
+            // 如果存在，那么添加到新集合 result 中
+            if (rv) {
+                if (set_add_entry(result, key, hash)) {
+                    Py_DECREF(result);
+                    return NULL;
+                }
+            }
+        }
+        return (PyObject *)result;
+    }
+    
+    // 如果 other 不是集合，那么获取它的迭代器
+    it = PyObject_GetIter(other);
+    if (it == NULL) {
+        Py_DECREF(result);
+        return NULL;
+    }
+    // 直接迭代内部的元素，以下逻辑和上面类似
+    while ((key = PyIter_Next(it)) != NULL) {
+        hash = PyObject_Hash(key);
+        if (hash == -1)
+            goto error;
+        // 如果 key 在 so 中存在，那么添加到 result 中
+        rv = set_contains_entry(so, key, hash);
+        if (rv &lt; 0)
+            goto error;
+        if (rv) {
+            if (set_add_entry(result, key, hash))
+                goto error;
+        }
+        Py_DECREF(key);
+    }
+    Py_DECREF(it);
+    if (PyErr_Occurred()) {
+        Py_DECREF(result);
+        return NULL;
+    }
+    return (PyObject *)result;
+  error:
+    Py_DECREF(it);
+    Py_DECREF(result);
+    Py_DECREF(key);
+    return NULL;
+}
+</code></pre>
+<p>以上就是集合的交集运算，至于其它的运算操作也是类似的，感兴趣可以看一下。</p>
+<h2 id="小结"><a class="header" href="#小结">小结</a></h2>
+<p>关于集合相关的内容我们就介绍完了，当然到目前为止，Python 的内置数据结构也基本介绍完了。回顾一下我们介绍了哪些数据结构：</p>
+<ul>
+<li>浮点数；</li>
+<li>整数；</li>
+<li>复数；</li>
+<li>布尔值</li>
+<li>None；</li>
+<li>切片；</li>
+<li>bytes 对象；</li>
+<li>bytearray 对象；</li>
+<li>字符串；</li>
+<li>列表；</li>
+<li>元组；</li>
+<li>字典；</li>
+<li>集合；</li>
+</ul>
+<p>以上这些结构都是内置的，当然还有一些数据结构是定义在标准库里面的，我们后面再说。</p>
+<p>下一篇文章来介绍迭代器。</p>
+<hr />
+<p> </p>
+<p><strong>欢迎大家关注我的公众号：古明地觉的编程教室。</strong></p>
+<p><img src="./images/qrcode_for_gh.jpg" alt="" /></p>
+<p><strong>如果觉得文章对你有所帮助，也可以请作者吃个馒头，Thanks♪(･ω･)ﾉ。</strong></p>
+<p><img src="./images/supports.png" alt="" /></p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="48.解密集合的实现原理.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+                            <a rel="next" href="50.迭代器是怎么实现的？.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="48.解密集合的实现原理.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+                    <a rel="next" href="50.迭代器是怎么实现的？.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+            </nav>
+
+        </div>
+
+        <script type="text/javascript">
+            window.playground_copyable = true;
+        </script>
+        <script src="elasticlunr.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="mark.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="searcher.js" type="text/javascript" charset="utf-8"></script>
+        <script src="clipboard.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="highlight.js" type="text/javascript" charset="utf-8"></script>
+        <script src="book.js" type="text/javascript" charset="utf-8"></script>
+
+        <!-- Custom JS scripts -->
+        <script type="text/javascript" src="theme/custom.js"></script>
+    </body>
+</html>

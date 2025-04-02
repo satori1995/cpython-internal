@@ -1,0 +1,477 @@
+<!DOCTYPE HTML>
+<html lang="zh-cn" class="sidebar-visible no-js light">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>42. 字典的 key 是怎么映射成索引的，索引冲突了又该怎么办？ - CPython3.8 源码探秘</title>
+        <!-- Custom HTML head -->
+        <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff" />
+
+        <link rel="icon" href="favicon.svg">
+        <link rel="shortcut icon" href="favicon.png">
+        <link rel="stylesheet" href="css/variables.css">
+        <link rel="stylesheet" href="css/general.css">
+        <link rel="stylesheet" href="css/chrome.css">
+        <!-- Fonts -->
+        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="fonts/fonts.css">
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="highlight.css">
+        <link rel="stylesheet" href="tomorrow-night.css">
+        <link rel="stylesheet" href="ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+        <link rel="stylesheet" href="theme/custom.css">
+        <!-- MathJax -->
+        <script async type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    </head>
+    <body>
+        <!-- Provide site root to javascript -->
+        <script type="text/javascript">
+            var path_to_root = "";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script type="text/javascript">
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script type="text/javascript">
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            var html = document.querySelector('html');
+            html.classList.remove('no-js')
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add('js');
+        </script>
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script type="text/javascript">
+            var html = document.querySelector('html');
+            var sidebar = 'hidden';
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            }
+            html.classList.remove('sidebar-visible');
+            html.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li class="chapter-item expanded "><a href="0.序言.html">0. 序言</a></li><li class="chapter-item expanded "><a href="1.CPython源码长什么样子？.html">1. CPython 源码长什么样子？</a></li><li class="chapter-item expanded "><a href="2.变量和对象，它们之间有什么区别和联系呢？.html">2. 变量和对象，它们之间有什么区别和联系呢？</a></li><li class="chapter-item expanded "><a href="3.Python对象有哪几种，我们可以从哪些角度进行分类呢？.html">3. Python 对象有哪几种，我们可以从哪些角度进行分类呢？</a></li><li class="chapter-item expanded "><a href="4.万丈高楼平地起，一切从PyObject开始.html">4. 万丈高楼平地起，一切从 PyObject 开始</a></li><li class="chapter-item expanded "><a href="5.详解PyTypeObject，Python类型对象的载体.html">5. 详解 PyTypeObject，Python 类型对象的载体</a></li><li class="chapter-item expanded "><a href="6.通过type和object之间的关联，进一步分析类型对象.html">6. 通过 type 和 object 之间的关联，进一步分析类型对象</a></li><li class="chapter-item expanded "><a href="7.当创建一个Python对象时，背后都经历了哪些过程？.html">7. 当创建一个 Python 对象时，背后都经历了哪些过程？</a></li><li class="chapter-item expanded "><a href="8.当调用一个Python对象时，背后都经历了哪些过程？.html">8. 当调用一个 Python 对象时，背后都经历了哪些过程？</a></li><li class="chapter-item expanded "><a href="9.再探泛型API，感受Python对象的设计哲学.html">9. 再探泛型 API，感受 Python 对象的设计哲学</a></li><li class="chapter-item expanded "><a href="10.Python对象的行为是怎么区分的？.html">10. Python 对象的行为是怎么区分的？</a></li><li class="chapter-item expanded "><a href="11.一个Python对象会在何时被销毁？.html">11. 一个 Python 对象会在何时被销毁？</a></li><li class="chapter-item expanded "><a href="12.深度解密Python的浮点数是怎么实现的？.html">12. 深度解密 Python 的浮点数是怎么实现的？</a></li><li class="chapter-item expanded "><a href="13.对象被销毁之后所占的内存一定会释放吗？解密浮点数的缓存池机制.html">13. 对象被销毁之后所占的内存一定会释放吗？解密浮点数的缓存池机制</a></li><li class="chapter-item expanded "><a href="14.浮点数支持的操作是怎么实现的？.html">14. 浮点数支持的操作是怎么实现的？</a></li><li class="chapter-item expanded "><a href="15.解密Python的复数是怎么实现的？它有什么用途呢？.html">15. 解密 Python 的复数是怎么实现的？它有什么用途呢？</a></li><li class="chapter-item expanded "><a href="16.Python的整数是怎么设计的，为什么它不会溢出？.html">16. Python 的整数是怎么设计的，为什么它不会溢出？</a></li><li class="chapter-item expanded "><a href="17.解密Python的小整数对象池.html">17. 解密 Python 的小整数对象池</a></li><li class="chapter-item expanded "><a href="18.两个Python整数之间是如何进行大小比较的？过程并不像我们想的那样简单.html">18. 两个 Python 整数之间是如何进行大小比较的？过程并不像我们想的那样简单</a></li><li class="chapter-item expanded "><a href="19.探究Python整数的加减法，感受大整数的运算哲学与魅力.html">19. 探究 Python 整数的加减法，感受大整数的运算哲学与魅力</a></li><li class="chapter-item expanded "><a href="20.Python的布尔值是怎么实现的，你对它的了解有多深呢？.html">20. Python 的布尔值是怎么实现的，你对它的了解有多深呢？</a></li><li class="chapter-item expanded "><a href="21.Python的None是怎么实现的？.html">21. Python 的 None 是怎么实现的？</a></li><li class="chapter-item expanded "><a href="22.深度解密Python切片的实现原理.html">22.深度解密 Python 切片的实现原理</a></li><li class="chapter-item expanded "><a href="23.bytes对象（字节串）是怎么实现的？解密它的内部原理.html">23. bytes 对象（字节串）是怎么实现的？解密它的内部原理</a></li><li class="chapter-item expanded "><a href="24.bytes对象都支持哪些操作，它们是怎么实现的？.html">24. bytes 对象都支持哪些操作，它们是怎么实现的？</a></li><li class="chapter-item expanded "><a href="25.通过bytes对象的合并，探究缓冲区的奥秘.html">25. 通过 bytes 对象的合并，探究缓冲区的奥秘</a></li><li class="chapter-item expanded "><a href="26.解密bytes对象的缓存池.html">26. 解密 bytes 对象的缓存池</a></li><li class="chapter-item expanded "><a href="27.详解bytearray对象的底层实现.html">27. 详解 bytearray 对象的底层实现</a></li><li class="chapter-item expanded "><a href="28.字符集和字符编码.html">28. 字符集和字符编码</a></li><li class="chapter-item expanded "><a href="29.Python是怎么存储字符串的？.html">29. Python 是怎么存储字符串的？</a></li><li class="chapter-item expanded "><a href="30.解密字符串的底层结构，它是怎么实现的？.html">30. 解密字符串的底层结构，它是怎么实现的？</a></li><li class="chapter-item expanded "><a href="31.字符串的intern机制是怎么一回事？.html">31. 字符串的 intern 机制是怎么一回事？</a></li><li class="chapter-item expanded "><a href="32.聊一聊字符串常见操作的源码实现.html">32. 聊一聊字符串常见操作的源码实现</a></li><li class="chapter-item expanded "><a href="33.列表是怎么实现的？解密列表的数据结构.html">33. 列表是怎么实现的？解密列表的数据结构</a></li><li class="chapter-item expanded "><a href="34.列表是怎么扩容的？.html">34. 列表是怎么扩容的？</a></li><li class="chapter-item expanded "><a href="35.解密列表的创建与销毁，以及缓存池长什么样子？.html">35. 解密列表的创建与销毁，以及缓存池长什么样子？</a></li><li class="chapter-item expanded "><a href="36.列表作为序列型对象都支持哪些操作，它们在底层是怎么实现的？.html">36. 列表作为序列型对象都支持哪些操作，它们在底层是怎么实现的？</a></li><li class="chapter-item expanded "><a href="37.列表都有哪些自定义方法，它们是怎么实现的？.html">37. 列表都有哪些自定义方法，它们是怎么实现的？</a></li><li class="chapter-item expanded "><a href="38.解密元组的实现原理.html">38. 解密元组的实现原理</a></li><li class="chapter-item expanded "><a href="39.聊一聊喜闻乐见的哈希表.html">39. 聊一聊喜闻乐见的哈希表</a></li><li class="chapter-item expanded "><a href="40.字典是怎么实现的，它的底层结构长什么样子？.html">40. 字典是怎么实现的，它的底层结构长什么样子？</a></li><li class="chapter-item expanded "><a href="41.什么是可哈希对象，它的哈希值是怎么计算的？.html">41. 什么是可哈希对象，它的哈希值是怎么计算的？</a></li><li class="chapter-item expanded "><a href="42.字典的key是怎么映射成索引的，索引冲突了又该怎么办？.html" class="active">42. 字典的 key 是怎么映射成索引的，索引冲突了又该怎么办？</a></li><li class="chapter-item expanded "><a href="43.哈希表是怎么删除元素的，能直接删除吗？.html">43. 哈希表是怎么删除元素的，能直接删除吗？</a></li><li class="chapter-item expanded "><a href="44.字典是怎么创建的，支持的操作又是如何实现的？.html">44. 字典是怎么创建的，支持的操作又是如何实现的？</a></li><li class="chapter-item expanded "><a href="45.字典的自定义方法是怎么实现的？.html">45. 字典的自定义方法是怎么实现的？</a></li><li class="chapter-item expanded "><a href="46.字典是怎么扩容的？它会经历哪些过程？.html">46. 字典是怎么扩容的？它会经历哪些过程？</a></li><li class="chapter-item expanded "><a href="47.身虽死，道未消，解密字典的缓存池.html">47. 身虽死，道未消，解密字典的缓存池</a></li><li class="chapter-item expanded "><a href="48.解密集合的实现原理.html">48. 解密集合的实现原理</a></li><li class="chapter-item expanded "><a href="49.集合支持的操作有哪些，它们是怎么实现的？.html">49. 集合支持的操作有哪些，它们是怎么实现的？</a></li><li class="chapter-item expanded "><a href="50.迭代器是怎么实现的？.html">50. 迭代器是怎么实现的？</a></li><li class="chapter-item expanded "><a href="51.Python源文件编译之后会得到什么，它的结构是怎样的？和字节码又有什么联系？.html">51. Python 源文件编译之后会得到什么，它的结构是怎样的？和字节码又有什么联系？</a></li><li class="chapter-item expanded "><a href="52.PyCodeObject拾遗.html">52. PyCodeObject 拾遗</a></li><li class="chapter-item expanded "><a href="53.一文让你搞懂pyc文件.html">53. 一文让你搞懂 pyc 文件</a></li><li class="chapter-item expanded "><a href="54.深度解密虚拟机的执行环境：栈帧对象.html">54. 深度解密虚拟机的执行环境：栈帧对象</a></li><li class="chapter-item expanded "><a href="55.名字空间：变量的容身之所.html">55. 名字空间：变量的容身之所</a></li><li class="chapter-item expanded "><a href="56.当查找一个变量时，虚拟机会进行哪些动作？.html">56. 当查找一个变量时，虚拟机会进行哪些动作？</a></li><li class="chapter-item expanded "><a href="57.虚拟机是怎么执行字节码的？背后都经历了哪些过程.html">57. 虚拟机是怎么执行字节码的？背后都经历了哪些过程</a></li><li class="chapter-item expanded "><a href="58.深入源码，进一步考察字节码的执行流程.html">58. 深入源码，进一步考察字节码的执行流程</a></li><li class="chapter-item expanded "><a href="59.局部变量是怎么实现静态查找的，它和local名字空间又有什么联系呢？.html">59. 局部变量是怎么实现静态查找的，它和 local 名字空间又有什么联系呢？</a></li><li class="chapter-item expanded "><a href="60.剖析字节码指令，以及Python赋值语句的原理.html">60. 剖析字节码指令，以及 Python 赋值语句的原理</a></li><li class="chapter-item expanded "><a href="61.流程控制语句if是怎么实现的？.html">61. 流程控制语句 if 是怎么实现的？</a></li><li class="chapter-item expanded "><a href="62.流程控制语句for、while是怎么实现的？.html">62. 流程控制语句 for、while 是怎么实现的？</a></li><li class="chapter-item expanded "><a href="63.异常是怎么实现的？虚拟机是如何将异常抛出去的？.html">63. 异常是怎么实现的？虚拟机是如何将异常抛出去的？</a></li><li class="chapter-item expanded "><a href="64.虚拟机是如何捕获异常的？.html">64. 虚拟机是如何捕获异常的？</a></li><li class="chapter-item expanded "><a href="65.函数在底层长什么样子？.html">65. 函数在底层长什么样子？</a></li><li class="chapter-item expanded "><a href="66.函数是怎么创建的，背后经历了哪些过程？.html">66. 函数是怎么创建的，背后经历了哪些过程？</a></li><li class="chapter-item expanded "><a href="67.函数在底层是如何调用的？.html">67. 函数在底层是如何调用的？</a></li><li class="chapter-item expanded "><a href="68.函数是如何解析位置参数的？.html">68. 函数是如何解析位置参数的？</a></li><li class="chapter-item expanded "><a href="69.函数是如何解析关键字参数的？.html">69. 函数是如何解析关键字参数的？</a></li><li class="chapter-item expanded "><a href="70.扩展位置参数和扩展关键字参数是如何解析的？.html">70. 扩展位置参数和扩展关键字参数是如何解析的？</a></li><li class="chapter-item expanded "><a href="71.闭包是怎么实现的？.html">71. 闭包是怎么实现的？</a></li><li class="chapter-item expanded "><a href="72.生成器是做什么的，为什么会有生成器？.html">72. 生成器是做什么的，为什么会有生成器？</a></li><li class="chapter-item expanded "><a href="73.源码解密生成器的实现原理.html">73. 源码解密生成器的实现原理</a></li><li class="chapter-item expanded "><a href="74.回顾Python的对象模型.html">74. 回顾 Python 的对象模型</a></li><li class="chapter-item expanded "><a href="75.class概念解析.html">75. class 概念解析</a></li><li class="chapter-item expanded "><a href="76.类型对象的初始化.html">76. 类型对象的初始化</a></li><li class="chapter-item expanded "><a href="77.自定义类对象的底层实现与metaclass.html">77. 自定义类对象的底层实现与 metaclass</a></li><li class="chapter-item expanded "><a href="78.彻底搞懂描述符.html">78. 彻底搞懂描述符</a></li><li class="chapter-item expanded "><a href="79.实例对象是如何创建的？.html">79. 实例对象是如何创建的？</a></li><li class="chapter-item expanded "><a href="80.实例对象的属性访问.html">80. 实例对象的属性访问</a></li><li class="chapter-item expanded "><a href="81.为什么实例在调用方法时会将自身传给self参数.html">81. 为什么实例在调用方法时会将自身传给 self 参数</a></li><li class="chapter-item expanded "><a href="82.模块是如何导入的？.html">82. 模块是如何导入的？</a></li><li class="chapter-item expanded "><a href="83.import机制的黑盒探测.html">83. import 机制的黑盒探测</a></li><li class="chapter-item expanded "><a href="84.import机制是怎么实现的？.html">84. import 机制是怎么实现的？</a></li><li class="chapter-item expanded "><a href="85.Python运行时环境的初始化，解释器在启动时都做了什么？.html">85. Python 运行时环境的初始化，解释器在启动时都做了什么？</a></li><li class="chapter-item expanded "><a href="86.激活Python虚拟机.html">86. 激活 Python 虚拟机</a></li><li class="chapter-item expanded "><a href="87.初识GIL、以及多个线程之间的调度机制.html">87. 初识 GIL、以及多个线程之间的调度机制</a></li><li class="chapter-item expanded "><a href="88.线程的创建、销毁、调度，以及GIL的实现原理.html">88. 线程的创建、销毁、调度，以及 GIL 的实现原理</a></li><li class="chapter-item expanded "><a href="89.解密map、filter、zip底层实现，对比列表解析式.html">89. 解密 map、filter、zip 底层实现，对比列表解析式</a></li><li class="chapter-item expanded "><a href="90.为什么要有协程，协程是如何实现的？.html">90. 为什么要有协程，协程是如何实现的？</a></li><li class="chapter-item expanded "><a href="91.什么是asyncio？如何基于单线程实现并发？事件循环又是怎么工作的？.html">91. 什么是 asyncio？如何基于单线程实现并发？事件循环又是怎么工作的？</a></li><li class="chapter-item expanded "><a href="92.协程、任务、future，以及事件循环.html">92. 协程、任务、future，以及事件循环</a></li><li class="chapter-item expanded "><a href="93.在asyncio中使用Socket.html">93. 在 asyncio 中使用 Socket</a></li><li class="chapter-item expanded "><a href="94.解密asyncio的Future和Task.html">94. 解密 asyncio 的 Future 和 Task</a></li><li class="chapter-item expanded "><a href="95.如何精确控制asyncio中并发运行的多个任务.html">95. 如何精确控制 asyncio 中并发运行的多个任务</a></li><li class="chapter-item expanded "><a href="96.详解asyncio的同步原语.html">96. 详解 asyncio 的同步原语</a></li><li class="chapter-item expanded "><a href="97.在asyncio中引入多进程.html">97. 在 asyncio 中引入多进程</a></li><li class="chapter-item expanded "><a href="98.可执行文件的内存模型，变量的值是放在栈上还是放在堆上.html">98. 可执行文件的内存模型，变量的值是放在栈上还是放在堆上</a></li><li class="chapter-item expanded "><a href="99.Python是如何管理内存的？.html">99. Python 是如何管理内存的？</a></li><li class="chapter-item expanded "><a href="100.Python的垃圾回收机制是怎么实现的？.html">100. Python 的垃圾回收机制是怎么实现的？</a></li><li class="chapter-item expanded "><a href="101.深入源码，探究垃圾回收的秘密.html">101. 深入源码，探究垃圾回收的秘密</a></li><li class="chapter-item expanded "><a href="102.侵入Python虚拟机，动态修改底层数据结构和运行时.html">102. 侵入 Python 虚拟机，动态修改底层数据结构和运行时</a></li><li class="chapter-item expanded "><a href="103.使用Python的ctypes调用C的动态库.html">103. 使用 Python 的 ctypes 调用 C 的动态库</a></li><li class="chapter-item expanded "><a href="104.使用Python的ctypes调用Rust的动态库.html">104. 使用 Python 的 ctypes 调用 Rust 的动态库</a></li><li class="chapter-item expanded "><a href="105.用C写Python.html">105. 用 C 写 Python</a></li><li class="chapter-item expanded "><a href="106.Cython从入门到精通.html">106. Cython 从入门到精通</a></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky bordered">
+                    <div class="left-buttons">
+                        <button id="sidebar-toggle" class="icon-button" type="button" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </button>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light (default)</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">CPython3.8 源码探秘</h1>
+
+                    <div class="right-buttons">
+                        <a href="https://github.com/satori1995/cpython-internal" title="Git repository" aria-label="Git repository">
+                            <i id="git-repository-button" class="fa fa-github"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script type="text/javascript">
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h2 id="楔子"><a class="header" href="#楔子">楔子</a></h2>
+<p>两个对象的哈希值相等，那么映射出的索引肯定相同。而如果哈希值不相等，映射出的索引也有可能相同，因为与哈希值空间相比，哈希表的槽位是非常有限的。如果不同的对象在经过映射之后，生成的索引相同，或者说它们被映射到了同一个槽，那么便发生了<font color="blue">索引冲突</font>。</p>
+<p><img src="./images/115.png" alt="" /></p>
+<p>解决索引冲突的常用方法有两种：分离链接法和开放寻址法。</p>
+<p>分离链接法比较简单，如果有多个键值对映射到同一槽位，那么就用链表将它们串起来。然后是开放寻址法，这也是 Python 使用的方法，我们详细介绍一下。</p>
+<h2 id="开放寻址法"><a class="header" href="#开放寻址法">开放寻址法</a></h2>
+<p>首先将 key 映射成索引，但如果发现该索引对应的哈希槽被占了，那么就尝试另一个。</p>
+<p><img src="./images/116.png" alt="" /></p>
+<p>new_key 被映射到了索引为 5 的槽，但是该槽已经存储了键值对数组的索引，即该槽被占了。如果是分离链接法，那么会使用链表将两个 entry 串起来，但开放寻址法则是选择一个新的槽，也就是重新找个坑。</p>
+<p>那么问题来了，新的槽要怎么找呢？一般来说，会在首槽的基础上增加一个偏移量，得到新的槽，如果还冲突，那么继续增加偏移量，直到找到一个可用的槽。总的来说就是一个不断探测的过程，每一次探测都会尝试增加偏移量。</p>
+<p>所以新的问题又产生了，每次增加的偏移量是多少呢？其实这个问题取决于具体实现，如果偏移量是线性增加的，我们称之为<font color="blue">线性探测</font>；如果偏移量是平方增加的，我们称之为<font color="blue">平方探测</font>。</p>
+<p>但不管是线性探测，还是平方探测，其实都不够好。因为偏移量始终是以一种固定的模式增加，这就导致映射到同一槽位的两个 key 的探测序列是相同的。</p>
+<p><img src="./images/117.png" alt="" /></p>
+<p>比如这里的 key1 和 key2，它们的哈希值不同，但都映射到了索引为 2 的槽，这是完全正常的，因为哈希表的槽位有限。而由于偏移量的增加方式是固定的，比如这里每次都增加 2，再加上首槽相同，因此它们的探测序列也相同，显然这会导致后续出现多次冲突。</p>
+<p>所以 Python 对此进行了优化，探测函数在发现索引冲突时，不会简单地增加一个偏移量，而是会参考对象的哈希值，计算下一个候选位置，这就大大降低了冲突的可能性。</p>
+<p>Python 的这种做法被称为<font color="blue">迭代探测</font>，当然迭代探测也属于开放寻址法的一种。所以当出现索引冲突时，Python 并不是简简单单地加上一个偏移量，而是使用专门设计的探测函数进行二次探查，也就是之前说的<font color="blue">改变规则、重新映射</font>，然后在函数内部会参考对象的哈希值来计算出一个新的索引。</p>
+<p><img src="./images/118.png" alt="" /></p>
+<p>在 dictobject.c 文件开头有着大量的注释，对字典进行了全局性的概括，当然具体细节我们都会详细说明。</p>
+<h2 id="探测函数"><a class="header" href="#探测函数">探测函数</a></h2>
+<p>当存储键值对时，要将 key 映射成索引，这个索引就是哈希索引数组的索引。至于具体的映射过程由探测函数负责，即 PyDictKeysObject 结构体内部的 dk_lookup 字段。</p>
+<p>Python 为哈希表搜索提供了多种探测函数：</p>
+<ul>
+<li>lookdict_unicode：专门针对 key 为字符串的 entry。</li>
+<li>lookdict_index：专门针对 key 为整数的 entry。</li>
+<li>lookdict：通用逻辑，可以把 lookdict_unicode、lookdict_index 看成 lookdict 的特殊实现，只不过 key 是整数和字符串的场景非常常见，因此为其单独实现了一个函数。</li>
+</ul>
+<p>我们这里重点看一下 lookdict 的函数实现，不过在介绍之前，先来看几个宏。</p>
+<pre><code class="language-c">// Objects/dictobject.c
+
+// 获取哈希表的长度，或者说哈希索引数组的长度
+#define DK_SIZE(dk) ((dk)-&gt;dk_size)
+
+// 哈希表的长度减 1，将 key 的哈希值和它按位与，便可将 key 映射成索引
+// 因为 dk_size 满足 2 的 n 次方，所以 hash % dk_size 等价于 hash &amp; (dk_size - 1)
+#define DK_MASK(dk) (((dk)-&gt;dk_size)-1)
+
+// 获取哈希索引数组中每个元素的大小，数组的长度不同，每个元素的大小不同
+// dk_size &lt;= 255，每个元素 1 字节
+// 256 &lt;= dk_size &lt;= 65535，每个元素 2 字节
+// 65536 &lt;= dk_size &lt;= 4294967295，每个元素 4 字节
+// dk_size &gt;= 4294967296，每个元素 8 字节
+// 由于字典的键值对个数基本不会超过 4294967295，所以我们认为元素的大小就是 1、2 或者 4 字节
+#define DK_IXSIZE(dk)                          \
+    (DK_SIZE(dk) &lt;= 0xff ?                     \
+        1 : DK_SIZE(dk) &lt;= 0xffff ?            \
+            2 : DK_SIZE(dk) &lt;= 0xffffffff ?    \
+                4 : sizeof(int64_t))
+
+// 获取紧跟在 PyDictKeysObject 结构体后面的键值对数组
+// 这个和前面介绍字符串时，获取 PyASCIIObject 结构体后面的字符数组是类似的
+// 主要是利用 C 语言指针的技巧（甚至都不能算技巧），这里再来详细介绍一下
+// 假设有一个 int *a，那么 a + 3 和 a[3] 是等价的，都会向后偏移 3 个 int，即 12 字节
+// 那么问题来了，对于任意类型的指针 T *p，如果想向后偏移 n 个字节，该怎么做呢？
+// 很简单，将 p 加上 n / sizeof(T) 即可，但问题是 n / sizeof(T) 不一定是个整数啊
+// 因此我们可以将指针转成 int8_t *，然后再加上 n，这样就会偏移 sizeof(int8_t) * n 个字节，即 n 个字节
+// 比如 ((int8_t *)p) + n 或者 ((int8_t *)p)[n]
+// 然后再来看 DK_ENTRIES 这个宏的逻辑，由于键值对数组紧跟在哈希索引数组后面
+// 所以通过 (dk)-&gt;dk_indices 获取哈希索引数组，然后转成 int8_t * 类型
+// 而 DK_SIZE(dk) * DK_IXSIZE(dk) 显然是哈希索引数组所占的内存大小
+// 然后让 (int8_t*)((dk)-&gt;dk_indices) 向后偏移这些字节，不就定位到键值对数组的首元素了吗
+#define DK_ENTRIES(dk) \
+    ((PyDictKeyEntry*)(&amp;((int8_t*)((dk)-&gt;dk_indices))[DK_SIZE(dk) * DK_IXSIZE(dk)]))
+
+// Objects/dict-common.h
+#define DKIX_EMPTY (-1)
+#define DKIX_DUMMY (-2)  /* Used internally */
+#define DKIX_ERROR (-3)
+</code></pre>
+<p>以上就是常用的几个宏，然后来看探测函数 lookdict 的逻辑。</p>
+<pre><code class="language-c">// Objects/dictobject.c
+
+#define PERTURB_SHIFT 5
+
+// 基于哈希索引数组的索引，获取指定的哈希槽里面存储的键值对数组的索引
+static inline Py_ssize_t
+dictkeys_get_index(PyDictKeysObject *keys, Py_ssize_t i)
+{
+    // 哈希表的长度
+    Py_ssize_t s = DK_SIZE(keys);
+    // 键值对数组的索引
+    Py_ssize_t ix;
+    // 如果哈希表的长度小于 1 &lt;&lt; 8，哈希索引数组的每个元素占 1 字节
+    if (s &lt;= 0xff) {
+        int8_t *indices = (int8_t*)(keys-&gt;dk_indices);
+        ix = indices[i];
+    }
+    // 如果哈希表的长度小于 1 &lt;&lt; 16，哈希索引数组的每个元素占 2 字节
+    // 指针类型要转成 int16_t *，这样获取元素时会获取两个字节
+    else if (s &lt;= 0xffff) {
+        int16_t *indices = (int16_t*)(keys-&gt;dk_indices);
+        ix = indices[i];
+    }
+    // 如果哈希表的长度大于等于 1 &lt;&lt; 32，哈希索引数组的每个元素占 8 字节（no way）
+#if SIZEOF_VOID_P &gt; 4
+    else if (s &gt; 0xffffffff) {
+        int64_t *indices = (int64_t*)(keys-&gt;dk_indices);
+        ix = indices[i];
+    }
+#endif
+    // 否则哈希索引数组的每个元素占 4 字节
+    else {
+        int32_t *indices = (int32_t*)(keys-&gt;dk_indices);
+        ix = indices[i];
+    }
+    assert(ix &gt;= DKIX_DUMMY);
+    // 返回键值对数组的索引
+    return ix;
+}
+
+// 探测函数
+static Py_ssize_t _Py_HOT_FUNCTION
+lookdict(PyDictObject *mp, PyObject *key,
+         Py_hash_t hash, PyObject **value_addr)
+{
+    // 将 key 映射成索引，这个索引就是哈希索引数组的索引
+    /* 参数 mp：指向字典的指针
+     * 参数 key：指向键的指针
+     * 参数 hash：键的哈希值
+     * 参数 value_addr：值的二级指针
+     */    
+  
+    size_t i, mask, perturb;
+    PyDictKeysObject *dk;
+    PyDictKeyEntry *ep0;
+
+top:
+    // 指向 PyDictKeysObject 对象
+    dk = mp-&gt;ma_keys;
+    // 获取 PyDictKeysObject 内部的 dk_entries，即键值对数组
+    ep0 = DK_ENTRIES(dk);
+    // 哈希表的长度减 1
+    mask = DK_MASK(dk);
+    // perturb，初始值等于参数 hash，即 key 的哈希值
+    perturb = hash;
+    // 将哈希值和 mask 按位与，计算出哈希索引数组的索引
+    i = (size_t)hash &amp; mask;
+    for (;;) {
+        // 基于哈希索引数组的索引，从指定的哈希槽中获取键值对数组的索引
+        Py_ssize_t ix = dictkeys_get_index(dk, i);
+        // 哈希索引数组里面的元素初始为 -1，如果 ix == -1
+        // 证明当前 key 映射出的哈希槽，还没有存储键值对数组的某个索引
+        // 这就意味着当前要查找的 key 不存在，此时直接返回 -1 即可
+        if (ix == DKIX_EMPTY) {
+            *value_addr = NULL;
+            return ix;
+        }
+        // 如果 ix &gt;= 0，说明确实存储了一个合法的键值对数组的索引
+        if (ix &gt;= 0) {
+            // ep0 是键值对数组，基于索引 ix 获取里面的键值对
+            PyDictKeyEntry *ep = &amp;ep0[ix];
+            assert(ep-&gt;me_key != NULL);
+            // ep-&gt;me_key 和变量 key 都是指针
+            // 如果这两者相等，说明指向了同一个对象（字符串），显然查找的 key 已在字典中
+            if (ep-&gt;me_key == key) {
+                // 该函数不光要返回索引，还要返回 value，但 C 是单返回值语言，怎么办呢？
+                // 只需要在调用函数时传个指针过来即可，会在函数内部进行修改
+                // 由于 Python 的变量、容器存储的元素本身就是指针，所以 value_addr 是个二级指针
+                *value_addr = ep-&gt;me_value;
+                // 返回键值对数组的索引
+                return ix;
+            }
+            // 如果 ep-&gt;me_key != key，说明两者指向的不是同一个对象
+            // 那么就比较两个对象本身以及哈希值是否相等，如果相等，也表示 key 已存在
+            if (ep-&gt;me_hash == hash) {  // 先保证哈希值相等
+                PyObject *startkey = ep-&gt;me_key;
+                Py_INCREF(startkey);
+                // cmp 大于 0 说明比较结果为真，等于 0 说明比较结果为假，小于 0 说明比较时出现错误
+                int cmp = PyObject_RichCompareBool(startkey, key, Py_EQ);
+                Py_DECREF(startkey);
+                if (cmp &lt; 0) {
+                    *value_addr = NULL;
+                    return DKIX_ERROR;
+                }     
+                // 可能有人觉得这里的 if 是不是有点多余，这肯定百分百成立啊
+                // 其实这一步主要是为了检测字典是否被修改（不用关注）
+                if (dk == mp-&gt;ma_keys &amp;&amp; ep-&gt;me_key == startkey) {
+                    // 如果 cmp &gt; 0，说明两个对象相等，那么修改 *value_addr，返回 ix
+                    if (cmp &gt; 0) {
+                        *value_addr = ep-&gt;me_value;
+                        return ix;
+                    }
+                }
+                else {
+                    // 字典如果被修改，那么重头来，这里不用关注
+                    goto top;
+                }
+            }
+        }
+        // 走到这里说明 ix 是合法的，但是对应的 entry-&gt;me_key 和当前要查找的 key 不相等
+        // 显然出现了索引冲突，于是将哈希值右移 5 位
+        perturb &gt;&gt;= PERTURB_SHIFT;
+        // 然后加上 i*5 + 1，并重新和 mask 按位与，得到新的哈希索引数组的索引
+        // 也就是之前说的，改变规则、重新映射
+        i = (i*5 + perturb + 1) &amp; mask;
+    }
+    Py_UNREACHABLE();
+}
+</code></pre>
+<p>以上就是 lookdict 函数的逻辑，至于 lookdict_index 和 lookdict_unicode 与之是类似的。</p>
+<p>我们将逻辑再描述一遍，首先 perturb 初始等于 key 的哈希值，mask 等于哈希表的长度减一，然后执行 <font color="blue">perturb &amp; mask</font> 便可得到一个索引。这个过程就是我们说的索引映射，映射出的索引便是<font color="blue">哈希索引数组的索引</font>，然后该索引对应的哈希槽又存储了一个<font color="red">索引</font>，这个索引是<font color="red">键值对数组的索引</font>。</p>
+<p><img src="./images/119.png" alt="" /></p>
+<p>哈希索引数组里面的一个位置我们称之为一个槽，如果映射出来的索引对应的哈希槽中存储的<font color="blue">键值对数组的索引</font>小于 0，说明该 key 对应的键值对还没有被存储过，那么直接返回初始值 -1 即可。</p>
+<p>如果存储的键值对数组的索引（源码中的 ix）大于等于 0，说明已经存储了一个键值对，它的 key 和查找的 key 映射出的索引是相同的。然后比较 key 是否相等，如果相等，说明已经找到了，那么直接返回 ix 即可。如果 key 不相等，说明出现索引冲突了，那么要改变策略，重新映射。</p>
+<pre><code class="language-c">perturb &gt;&gt;= PERTURB_SHIFT;
+i = mask &amp; (i*5 + perturb + 1);
+</code></pre>
+<p>变量 i 便是映射出的哈希索引数组的索引，但发生冲突了，于是将 perturb 右移 5 位，然后加上 <font color="blue">perturb + i * 5 + 1</font>，再和 mask 按位与计算出新的 i。至于为什么要选择这种做法，这是 Python 官方经过多次实践得出来的结论。</p>
+<p>当 lookdict 执行完之后，外界就拿到了指定的 key 对应的键值对数组的索引，并且也能拿到 key 对应的 value（key 若不存在就是 NULL）。但是还没结束，我们看到 lookdict 返回的是变量 ix，而变量 i 才是我们需要的。</p>
+<p><font color="blue">变量 i</font> 表示<font color="blue">槽</font>的索引，变量 ix 表示该<font color="blue">槽</font>存储的键值对数组的索引。由于我们是要寻找指定的槽，那么返回的应该是<font color="blue">槽的位置</font>、也就是<font color="blue">变量 i</font> 才对啊，为啥要返回<font color="blue">变量 ix</font> 呢？别急，往下看。</p>
+<pre><code class="language-C">#define DKIX_EMPTY (-1)
+</code></pre>
+<p>初始状态下，槽存储的都是 -1，表示当前槽是可用的。如果存储的索引大于等于 0，则表示该槽已经被占用了，当 key 不相等时会改变规则重新映射。总之最终的结果是：</p>
+<ul>
+<li>如果 key 存在，那么返回的 ix 就是该 key 对应的键值对在键值对数组中的索引，此时 ix 大于等于 0；</li>
+<li>如果 key 不存在，那么返回的 ix 就是哈希槽的初始值 -1。</li>
+</ul>
+<p>所以 lookdict 函数只是告诉我们当前 key 在哈希表中是否存在，如果要获取槽的索引，即 lookdict 里面的<font color="blue">变量 i</font>，那么还需要另外两个函数。</p>
+<ul>
+<li>find_empty_slot：如果 lookdict 返回的 ix 小于 0，说明 key 不存在，那么调用该函数返回槽的索引。</li>
+<li>lookdict_index：如果 lookdict 返回的 ix 大于等于 0，说明 key 存在，那么调用该函数返回槽的索引。</li>
+</ul>
+<p>所以这两个函数做的事情是一样的，都是返回槽的索引，我们看一下具体实现。</p>
+<pre><code class="language-C">// Objects/dictobject.c
+
+static Py_ssize_t
+find_empty_slot(PyDictKeysObject *keys, Py_hash_t hash)
+{
+    assert(keys != NULL);
+
+    const size_t mask = DK_MASK(keys);
+    // 获取槽的索引 i
+    size_t i = hash &amp; mask;
+    // 获取槽存储的索引 ix
+    Py_ssize_t ix = dictkeys_get_index(keys, i);
+    // 不停映射，直到 ix 小于 0
+    // 因为调用该函数时已经说明 key 不存在了
+    // 所以最终一定会映射到一个空槽
+    for (size_t perturb = hash; ix &gt;= 0;) {
+        perturb &gt;&gt;= PERTURB_SHIFT;
+        // 映射的逻辑是相同的
+        i = (i*5 + perturb + 1) &amp; mask;
+        ix = dictkeys_get_index(keys, i);
+    }
+    // 当 ix 小于 0 时，便找到了槽的索引
+    return i;
+}
+
+static Py_ssize_t
+lookdict_index(PyDictKeysObject *k, Py_hash_t hash, Py_ssize_t index)
+{
+    size_t mask = DK_MASK(k);
+    size_t perturb = (size_t)hash;
+    size_t i = (size_t)hash &amp; mask;
+
+    for (;;) {
+        // 基于槽的索引 i，获取槽存储的索引 ix
+        Py_ssize_t ix = dictkeys_get_index(k, i);
+        // 参数 index 就是 lookdict 函数返回的 ix
+        // 如果 ix 和 index 是相等的，说明此时的 i 就是要获取的槽的索引
+        if (ix == index) {
+            return i;
+        }
+        if (ix == DKIX_EMPTY) {
+            return DKIX_EMPTY;
+        }
+        // 整个映射逻辑都是一样的
+        // 因为在 lookdict 函数中只返回了 ix，即参数 index
+        // 所以要按照相同的规则再映射一次，如果映射出的 ix 和 index 相等
+        // 那么我们就找到了槽的索引 i，并且索引为 i 的槽存储的就是 index
+        perturb &gt;&gt;= PERTURB_SHIFT;
+        i = mask &amp; (i*5 + perturb + 1);
+    }
+    Py_UNREACHABLE();
+}
+</code></pre>
+<p>所以我们说的探测函数应该是 lookdict 和 find_empty_slot、lookdict_index 的组合。</p>
+<ul>
+<li>lookdict 负责返回<font color="red">槽存储的索引</font>，用于判断 key 是否存在。</li>
+<li>find_empty_slot、lookdict_index 则负责返回<font color="red">槽的索引</font>，即 key 最终被映射到了哪一个槽。</li>
+</ul>
+<p>另外还有一点，我们之前说索引冲突时，会执行探测函数计算新的存储位置。其实不管有没有发生冲突，即使存储键值对的时候哈希表是空的，也要执行探测函数，毕竟探测函数的目的就是基于哈希值映射出一个合适的槽。如果探测函数执行的时候发现索引冲突了，也就是槽里的索引 <font color="blue">ix &gt;= 0</font>，并且 key 还不相等，那么会改变规则重新映射。</p>
+<p>因此在存储某个键值对时，无论索引冲突多少次，探测函数只会执行一次。在探测函数里面，会不断尝试解决冲突，直到映射出一个可用的槽。</p>
+<h2 id="小结"><a class="header" href="#小结">小结</a></h2>
+<p>以上就是索引映射的具体逻辑，以及出现冲突是怎么解决的。就是先用哈希函数计算出 key 的哈希值，然后作为参数传递到探测函数中。在探测函数里面，会将哈希值和 mask 按位与，得到索引。如果索引冲突了，那么会改变规则，这里的规则如下：</p>
+<pre><code class="language-C">// 将哈希值右移 PERTURB_SHIFT 个位
+perturb &gt;&gt;= PERTURB_SHIFT;
+// 然后将哈希值加上 i*5 + 1，这个 i 就是当前冲突的索引
+// 运算之后的结果再和 mask 按位与，得到一个新的 i
+// 然后判断变量 i 对应的槽是否可用，不可用则重复当前逻辑，直到出现一个可用的槽
+i = (i*5 + perturb + 1) &amp; mask;
+</code></pre>
+<p>所以 Python 在索引冲突时，并不像线性探测和平方探测那样，简单地加一个固定的偏移量，而是参考对象的哈希值计算出一个新的索引。</p>
+<hr />
+<p> </p>
+<p><strong>欢迎大家关注我的公众号：古明地觉的编程教室。</strong></p>
+<p><img src="./images/qrcode_for_gh.jpg" alt="" /></p>
+<p><strong>如果觉得文章对你有所帮助，也可以请作者吃个馒头，Thanks♪(･ω･)ﾉ。</strong></p>
+<p><img src="./images/supports.png" alt="" /></p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="41.什么是可哈希对象，它的哈希值是怎么计算的？.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+                            <a rel="next" href="43.哈希表是怎么删除元素的，能直接删除吗？.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="41.什么是可哈希对象，它的哈希值是怎么计算的？.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+                    <a rel="next" href="43.哈希表是怎么删除元素的，能直接删除吗？.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+            </nav>
+
+        </div>
+
+        <script type="text/javascript">
+            window.playground_copyable = true;
+        </script>
+        <script src="elasticlunr.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="mark.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="searcher.js" type="text/javascript" charset="utf-8"></script>
+        <script src="clipboard.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="highlight.js" type="text/javascript" charset="utf-8"></script>
+        <script src="book.js" type="text/javascript" charset="utf-8"></script>
+
+        <!-- Custom JS scripts -->
+        <script type="text/javascript" src="theme/custom.js"></script>
+    </body>
+</html>

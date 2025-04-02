@@ -1,0 +1,610 @@
+<!DOCTYPE HTML>
+<html lang="zh-cn" class="sidebar-visible no-js light">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>51. Python 源文件编译之后会得到什么，它的结构是怎样的？和字节码又有什么联系？ - CPython3.8 源码探秘</title>
+        <!-- Custom HTML head -->
+        <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff" />
+
+        <link rel="icon" href="favicon.svg">
+        <link rel="shortcut icon" href="favicon.png">
+        <link rel="stylesheet" href="css/variables.css">
+        <link rel="stylesheet" href="css/general.css">
+        <link rel="stylesheet" href="css/chrome.css">
+        <!-- Fonts -->
+        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="fonts/fonts.css">
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="highlight.css">
+        <link rel="stylesheet" href="tomorrow-night.css">
+        <link rel="stylesheet" href="ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+        <link rel="stylesheet" href="theme/custom.css">
+        <!-- MathJax -->
+        <script async type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    </head>
+    <body>
+        <!-- Provide site root to javascript -->
+        <script type="text/javascript">
+            var path_to_root = "";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script type="text/javascript">
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script type="text/javascript">
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            var html = document.querySelector('html');
+            html.classList.remove('no-js')
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add('js');
+        </script>
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script type="text/javascript">
+            var html = document.querySelector('html');
+            var sidebar = 'hidden';
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            }
+            html.classList.remove('sidebar-visible');
+            html.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li class="chapter-item expanded "><a href="0.序言.html">0. 序言</a></li><li class="chapter-item expanded "><a href="1.CPython源码长什么样子？.html">1. CPython 源码长什么样子？</a></li><li class="chapter-item expanded "><a href="2.变量和对象，它们之间有什么区别和联系呢？.html">2. 变量和对象，它们之间有什么区别和联系呢？</a></li><li class="chapter-item expanded "><a href="3.Python对象有哪几种，我们可以从哪些角度进行分类呢？.html">3. Python 对象有哪几种，我们可以从哪些角度进行分类呢？</a></li><li class="chapter-item expanded "><a href="4.万丈高楼平地起，一切从PyObject开始.html">4. 万丈高楼平地起，一切从 PyObject 开始</a></li><li class="chapter-item expanded "><a href="5.详解PyTypeObject，Python类型对象的载体.html">5. 详解 PyTypeObject，Python 类型对象的载体</a></li><li class="chapter-item expanded "><a href="6.通过type和object之间的关联，进一步分析类型对象.html">6. 通过 type 和 object 之间的关联，进一步分析类型对象</a></li><li class="chapter-item expanded "><a href="7.当创建一个Python对象时，背后都经历了哪些过程？.html">7. 当创建一个 Python 对象时，背后都经历了哪些过程？</a></li><li class="chapter-item expanded "><a href="8.当调用一个Python对象时，背后都经历了哪些过程？.html">8. 当调用一个 Python 对象时，背后都经历了哪些过程？</a></li><li class="chapter-item expanded "><a href="9.再探泛型API，感受Python对象的设计哲学.html">9. 再探泛型 API，感受 Python 对象的设计哲学</a></li><li class="chapter-item expanded "><a href="10.Python对象的行为是怎么区分的？.html">10. Python 对象的行为是怎么区分的？</a></li><li class="chapter-item expanded "><a href="11.一个Python对象会在何时被销毁？.html">11. 一个 Python 对象会在何时被销毁？</a></li><li class="chapter-item expanded "><a href="12.深度解密Python的浮点数是怎么实现的？.html">12. 深度解密 Python 的浮点数是怎么实现的？</a></li><li class="chapter-item expanded "><a href="13.对象被销毁之后所占的内存一定会释放吗？解密浮点数的缓存池机制.html">13. 对象被销毁之后所占的内存一定会释放吗？解密浮点数的缓存池机制</a></li><li class="chapter-item expanded "><a href="14.浮点数支持的操作是怎么实现的？.html">14. 浮点数支持的操作是怎么实现的？</a></li><li class="chapter-item expanded "><a href="15.解密Python的复数是怎么实现的？它有什么用途呢？.html">15. 解密 Python 的复数是怎么实现的？它有什么用途呢？</a></li><li class="chapter-item expanded "><a href="16.Python的整数是怎么设计的，为什么它不会溢出？.html">16. Python 的整数是怎么设计的，为什么它不会溢出？</a></li><li class="chapter-item expanded "><a href="17.解密Python的小整数对象池.html">17. 解密 Python 的小整数对象池</a></li><li class="chapter-item expanded "><a href="18.两个Python整数之间是如何进行大小比较的？过程并不像我们想的那样简单.html">18. 两个 Python 整数之间是如何进行大小比较的？过程并不像我们想的那样简单</a></li><li class="chapter-item expanded "><a href="19.探究Python整数的加减法，感受大整数的运算哲学与魅力.html">19. 探究 Python 整数的加减法，感受大整数的运算哲学与魅力</a></li><li class="chapter-item expanded "><a href="20.Python的布尔值是怎么实现的，你对它的了解有多深呢？.html">20. Python 的布尔值是怎么实现的，你对它的了解有多深呢？</a></li><li class="chapter-item expanded "><a href="21.Python的None是怎么实现的？.html">21. Python 的 None 是怎么实现的？</a></li><li class="chapter-item expanded "><a href="22.深度解密Python切片的实现原理.html">22.深度解密 Python 切片的实现原理</a></li><li class="chapter-item expanded "><a href="23.bytes对象（字节串）是怎么实现的？解密它的内部原理.html">23. bytes 对象（字节串）是怎么实现的？解密它的内部原理</a></li><li class="chapter-item expanded "><a href="24.bytes对象都支持哪些操作，它们是怎么实现的？.html">24. bytes 对象都支持哪些操作，它们是怎么实现的？</a></li><li class="chapter-item expanded "><a href="25.通过bytes对象的合并，探究缓冲区的奥秘.html">25. 通过 bytes 对象的合并，探究缓冲区的奥秘</a></li><li class="chapter-item expanded "><a href="26.解密bytes对象的缓存池.html">26. 解密 bytes 对象的缓存池</a></li><li class="chapter-item expanded "><a href="27.详解bytearray对象的底层实现.html">27. 详解 bytearray 对象的底层实现</a></li><li class="chapter-item expanded "><a href="28.字符集和字符编码.html">28. 字符集和字符编码</a></li><li class="chapter-item expanded "><a href="29.Python是怎么存储字符串的？.html">29. Python 是怎么存储字符串的？</a></li><li class="chapter-item expanded "><a href="30.解密字符串的底层结构，它是怎么实现的？.html">30. 解密字符串的底层结构，它是怎么实现的？</a></li><li class="chapter-item expanded "><a href="31.字符串的intern机制是怎么一回事？.html">31. 字符串的 intern 机制是怎么一回事？</a></li><li class="chapter-item expanded "><a href="32.聊一聊字符串常见操作的源码实现.html">32. 聊一聊字符串常见操作的源码实现</a></li><li class="chapter-item expanded "><a href="33.列表是怎么实现的？解密列表的数据结构.html">33. 列表是怎么实现的？解密列表的数据结构</a></li><li class="chapter-item expanded "><a href="34.列表是怎么扩容的？.html">34. 列表是怎么扩容的？</a></li><li class="chapter-item expanded "><a href="35.解密列表的创建与销毁，以及缓存池长什么样子？.html">35. 解密列表的创建与销毁，以及缓存池长什么样子？</a></li><li class="chapter-item expanded "><a href="36.列表作为序列型对象都支持哪些操作，它们在底层是怎么实现的？.html">36. 列表作为序列型对象都支持哪些操作，它们在底层是怎么实现的？</a></li><li class="chapter-item expanded "><a href="37.列表都有哪些自定义方法，它们是怎么实现的？.html">37. 列表都有哪些自定义方法，它们是怎么实现的？</a></li><li class="chapter-item expanded "><a href="38.解密元组的实现原理.html">38. 解密元组的实现原理</a></li><li class="chapter-item expanded "><a href="39.聊一聊喜闻乐见的哈希表.html">39. 聊一聊喜闻乐见的哈希表</a></li><li class="chapter-item expanded "><a href="40.字典是怎么实现的，它的底层结构长什么样子？.html">40. 字典是怎么实现的，它的底层结构长什么样子？</a></li><li class="chapter-item expanded "><a href="41.什么是可哈希对象，它的哈希值是怎么计算的？.html">41. 什么是可哈希对象，它的哈希值是怎么计算的？</a></li><li class="chapter-item expanded "><a href="42.字典的key是怎么映射成索引的，索引冲突了又该怎么办？.html">42. 字典的 key 是怎么映射成索引的，索引冲突了又该怎么办？</a></li><li class="chapter-item expanded "><a href="43.哈希表是怎么删除元素的，能直接删除吗？.html">43. 哈希表是怎么删除元素的，能直接删除吗？</a></li><li class="chapter-item expanded "><a href="44.字典是怎么创建的，支持的操作又是如何实现的？.html">44. 字典是怎么创建的，支持的操作又是如何实现的？</a></li><li class="chapter-item expanded "><a href="45.字典的自定义方法是怎么实现的？.html">45. 字典的自定义方法是怎么实现的？</a></li><li class="chapter-item expanded "><a href="46.字典是怎么扩容的？它会经历哪些过程？.html">46. 字典是怎么扩容的？它会经历哪些过程？</a></li><li class="chapter-item expanded "><a href="47.身虽死，道未消，解密字典的缓存池.html">47. 身虽死，道未消，解密字典的缓存池</a></li><li class="chapter-item expanded "><a href="48.解密集合的实现原理.html">48. 解密集合的实现原理</a></li><li class="chapter-item expanded "><a href="49.集合支持的操作有哪些，它们是怎么实现的？.html">49. 集合支持的操作有哪些，它们是怎么实现的？</a></li><li class="chapter-item expanded "><a href="50.迭代器是怎么实现的？.html">50. 迭代器是怎么实现的？</a></li><li class="chapter-item expanded "><a href="51.Python源文件编译之后会得到什么，它的结构是怎样的？和字节码又有什么联系？.html" class="active">51. Python 源文件编译之后会得到什么，它的结构是怎样的？和字节码又有什么联系？</a></li><li class="chapter-item expanded "><a href="52.PyCodeObject拾遗.html">52. PyCodeObject 拾遗</a></li><li class="chapter-item expanded "><a href="53.一文让你搞懂pyc文件.html">53. 一文让你搞懂 pyc 文件</a></li><li class="chapter-item expanded "><a href="54.深度解密虚拟机的执行环境：栈帧对象.html">54. 深度解密虚拟机的执行环境：栈帧对象</a></li><li class="chapter-item expanded "><a href="55.名字空间：变量的容身之所.html">55. 名字空间：变量的容身之所</a></li><li class="chapter-item expanded "><a href="56.当查找一个变量时，虚拟机会进行哪些动作？.html">56. 当查找一个变量时，虚拟机会进行哪些动作？</a></li><li class="chapter-item expanded "><a href="57.虚拟机是怎么执行字节码的？背后都经历了哪些过程.html">57. 虚拟机是怎么执行字节码的？背后都经历了哪些过程</a></li><li class="chapter-item expanded "><a href="58.深入源码，进一步考察字节码的执行流程.html">58. 深入源码，进一步考察字节码的执行流程</a></li><li class="chapter-item expanded "><a href="59.局部变量是怎么实现静态查找的，它和local名字空间又有什么联系呢？.html">59. 局部变量是怎么实现静态查找的，它和 local 名字空间又有什么联系呢？</a></li><li class="chapter-item expanded "><a href="60.剖析字节码指令，以及Python赋值语句的原理.html">60. 剖析字节码指令，以及 Python 赋值语句的原理</a></li><li class="chapter-item expanded "><a href="61.流程控制语句if是怎么实现的？.html">61. 流程控制语句 if 是怎么实现的？</a></li><li class="chapter-item expanded "><a href="62.流程控制语句for、while是怎么实现的？.html">62. 流程控制语句 for、while 是怎么实现的？</a></li><li class="chapter-item expanded "><a href="63.异常是怎么实现的？虚拟机是如何将异常抛出去的？.html">63. 异常是怎么实现的？虚拟机是如何将异常抛出去的？</a></li><li class="chapter-item expanded "><a href="64.虚拟机是如何捕获异常的？.html">64. 虚拟机是如何捕获异常的？</a></li><li class="chapter-item expanded "><a href="65.函数在底层长什么样子？.html">65. 函数在底层长什么样子？</a></li><li class="chapter-item expanded "><a href="66.函数是怎么创建的，背后经历了哪些过程？.html">66. 函数是怎么创建的，背后经历了哪些过程？</a></li><li class="chapter-item expanded "><a href="67.函数在底层是如何调用的？.html">67. 函数在底层是如何调用的？</a></li><li class="chapter-item expanded "><a href="68.函数是如何解析位置参数的？.html">68. 函数是如何解析位置参数的？</a></li><li class="chapter-item expanded "><a href="69.函数是如何解析关键字参数的？.html">69. 函数是如何解析关键字参数的？</a></li><li class="chapter-item expanded "><a href="70.扩展位置参数和扩展关键字参数是如何解析的？.html">70. 扩展位置参数和扩展关键字参数是如何解析的？</a></li><li class="chapter-item expanded "><a href="71.闭包是怎么实现的？.html">71. 闭包是怎么实现的？</a></li><li class="chapter-item expanded "><a href="72.生成器是做什么的，为什么会有生成器？.html">72. 生成器是做什么的，为什么会有生成器？</a></li><li class="chapter-item expanded "><a href="73.源码解密生成器的实现原理.html">73. 源码解密生成器的实现原理</a></li><li class="chapter-item expanded "><a href="74.回顾Python的对象模型.html">74. 回顾 Python 的对象模型</a></li><li class="chapter-item expanded "><a href="75.class概念解析.html">75. class 概念解析</a></li><li class="chapter-item expanded "><a href="76.类型对象的初始化.html">76. 类型对象的初始化</a></li><li class="chapter-item expanded "><a href="77.自定义类对象的底层实现与metaclass.html">77. 自定义类对象的底层实现与 metaclass</a></li><li class="chapter-item expanded "><a href="78.彻底搞懂描述符.html">78. 彻底搞懂描述符</a></li><li class="chapter-item expanded "><a href="79.实例对象是如何创建的？.html">79. 实例对象是如何创建的？</a></li><li class="chapter-item expanded "><a href="80.实例对象的属性访问.html">80. 实例对象的属性访问</a></li><li class="chapter-item expanded "><a href="81.为什么实例在调用方法时会将自身传给self参数.html">81. 为什么实例在调用方法时会将自身传给 self 参数</a></li><li class="chapter-item expanded "><a href="82.模块是如何导入的？.html">82. 模块是如何导入的？</a></li><li class="chapter-item expanded "><a href="83.import机制的黑盒探测.html">83. import 机制的黑盒探测</a></li><li class="chapter-item expanded "><a href="84.import机制是怎么实现的？.html">84. import 机制是怎么实现的？</a></li><li class="chapter-item expanded "><a href="85.Python运行时环境的初始化，解释器在启动时都做了什么？.html">85. Python 运行时环境的初始化，解释器在启动时都做了什么？</a></li><li class="chapter-item expanded "><a href="86.激活Python虚拟机.html">86. 激活 Python 虚拟机</a></li><li class="chapter-item expanded "><a href="87.初识GIL、以及多个线程之间的调度机制.html">87. 初识 GIL、以及多个线程之间的调度机制</a></li><li class="chapter-item expanded "><a href="88.线程的创建、销毁、调度，以及GIL的实现原理.html">88. 线程的创建、销毁、调度，以及 GIL 的实现原理</a></li><li class="chapter-item expanded "><a href="89.解密map、filter、zip底层实现，对比列表解析式.html">89. 解密 map、filter、zip 底层实现，对比列表解析式</a></li><li class="chapter-item expanded "><a href="90.为什么要有协程，协程是如何实现的？.html">90. 为什么要有协程，协程是如何实现的？</a></li><li class="chapter-item expanded "><a href="91.什么是asyncio？如何基于单线程实现并发？事件循环又是怎么工作的？.html">91. 什么是 asyncio？如何基于单线程实现并发？事件循环又是怎么工作的？</a></li><li class="chapter-item expanded "><a href="92.协程、任务、future，以及事件循环.html">92. 协程、任务、future，以及事件循环</a></li><li class="chapter-item expanded "><a href="93.在asyncio中使用Socket.html">93. 在 asyncio 中使用 Socket</a></li><li class="chapter-item expanded "><a href="94.解密asyncio的Future和Task.html">94. 解密 asyncio 的 Future 和 Task</a></li><li class="chapter-item expanded "><a href="95.如何精确控制asyncio中并发运行的多个任务.html">95. 如何精确控制 asyncio 中并发运行的多个任务</a></li><li class="chapter-item expanded "><a href="96.详解asyncio的同步原语.html">96. 详解 asyncio 的同步原语</a></li><li class="chapter-item expanded "><a href="97.在asyncio中引入多进程.html">97. 在 asyncio 中引入多进程</a></li><li class="chapter-item expanded "><a href="98.可执行文件的内存模型，变量的值是放在栈上还是放在堆上.html">98. 可执行文件的内存模型，变量的值是放在栈上还是放在堆上</a></li><li class="chapter-item expanded "><a href="99.Python是如何管理内存的？.html">99. Python 是如何管理内存的？</a></li><li class="chapter-item expanded "><a href="100.Python的垃圾回收机制是怎么实现的？.html">100. Python 的垃圾回收机制是怎么实现的？</a></li><li class="chapter-item expanded "><a href="101.深入源码，探究垃圾回收的秘密.html">101. 深入源码，探究垃圾回收的秘密</a></li><li class="chapter-item expanded "><a href="102.侵入Python虚拟机，动态修改底层数据结构和运行时.html">102. 侵入 Python 虚拟机，动态修改底层数据结构和运行时</a></li><li class="chapter-item expanded "><a href="103.使用Python的ctypes调用C的动态库.html">103. 使用 Python 的 ctypes 调用 C 的动态库</a></li><li class="chapter-item expanded "><a href="104.使用Python的ctypes调用Rust的动态库.html">104. 使用 Python 的 ctypes 调用 Rust 的动态库</a></li><li class="chapter-item expanded "><a href="105.用C写Python.html">105. 用 C 写 Python</a></li><li class="chapter-item expanded "><a href="106.Cython从入门到精通.html">106. Cython 从入门到精通</a></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky bordered">
+                    <div class="left-buttons">
+                        <button id="sidebar-toggle" class="icon-button" type="button" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </button>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light (default)</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">CPython3.8 源码探秘</h1>
+
+                    <div class="right-buttons">
+                        <a href="https://github.com/satori1995/cpython-internal" title="Git repository" aria-label="Git repository">
+                            <i id="git-repository-button" class="fa fa-github"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script type="text/javascript">
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h2 id="楔子"><a class="header" href="#楔子">楔子</a></h2>
+<p>当我们执行一个 py 文件的时候，只需要在命令行中输入 <font color="blue">python xxx.py</font> 即可，但你有没有想过这背后的流程是怎样的呢？</p>
+<p>首先 py 文件不是一上来就直接执行的，而是会先有一个编译的过程，整个步骤如下：</p>
+<p><img src="./images/140.png" alt="" /></p>
+<p>这里我们看到了 Python 编译器、Python 虚拟机，而且我们平常还会说 Python 解释器，那么三者之间有什么区别呢？</p>
+<p><img src="./images/141.png" alt="" /></p>
+<p>Python 编译器负责将 Python 源代码编译成 PyCodeObject 对象，然后交给 Python 虚拟机来执行。</p>
+<p>那么 Python 编译器和 Python 虚拟机都在什么地方呢？如果打开 Python 的安装目录，会发现有一个 python.exe，点击的时候会通过它来启动一个终端。但问题是这个文件大小还不到 100K，不可能容纳一个编译器加一个虚拟机，所以它下面还有一个 python38.dll。没错，编译器、虚拟机都藏身于 python38.dll 当中。</p>
+<p>因此 Python 虽然是解释型语言，但也有编译的过程。源代码会被编译器编译成 PyCodeObject 对象，然后再交给虚拟机来执行。而之所以要存在编译，是为了让虚拟机能更快速地执行，比如在编译阶段常量都会提前分配好，而且还可以尽早检测出语法上的错误。</p>
+<h2 id="pyc-文件是什么"><a class="header" href="#pyc-文件是什么">pyc 文件是什么</a></h2>
+<p>在 Python 开发时，我们肯定都见过这个 pyc 文件，它一般位于 __pycache__ 目录中，那么 pyc 文件和 PyCodeObject 之间有什么关系呢？</p>
+<p>首先我们都知道字节码，虚拟机的执行实际上就是对字节码不断解析的一个过程。然而除了字节码之外，还应该包含一些其它的信息，这些信息也是 Python 运行的时候所必需的，比如常量、变量名等等。</p>
+<p>因此我们常听到 py 文件被编译成字节码，这句话其实不太严谨，因为字节码只是一个 PyBytesObject 对象、或者说一段字节序列。但很明显，光有字节码是不够的，还有很多的静态信息也需要被收集起来，它们整体被称为 PyCodeObject，然后 PyCodeObject 对象中有一个字段 co_code，它是一个指针，指向了这段字节序列。但是这个对象除了有指向字节码的 co_code 字段之外，还有很多其它字段，负责保存代码涉及到的常量、变量（名字、符号）等等。</p>
+<p>所以虽然编写的是 py 文件，但虚拟机执行的是编译后的 PyCodeObject 对象。但是问题来了，难道每一次执行都要将源文件编译一遍吗？如果没有对源文件进行修改的话，那么完全可以使用上一次的编译结果。相信此时你能猜到 pyc 文件是干什么的了，它就是负责保存编译之后的 PyCodeObject 对象。</p>
+<p>现在我们知道了，pyc 文件里面保存的内容是 PyCodeObject 对象。对于 Python 编译器来说，PyCodeObject 对象是对源代码编译之后的结果，而 pyc 文件则是这个对象在硬盘上的表现形式。</p>
+<p>当下一次运行的时候，Python 解释器会根据 pyc 文件中记录的编译结果，直接建立内存中的 PyCodeObject 对象，而不需要再重新编译了，当然前提是没有对源文件进行修改。</p>
+<h2 id="pycodeobject-底层结构"><a class="header" href="#pycodeobject-底层结构">PyCodeObject 底层结构</a></h2>
+<p>既然 PyCodeObject 对象是源代码的编译结果，那么搞清楚它的底层结构就至关重要，下面来看一下它长什么样子。</p>
+<pre><code class="language-C">// Include/cpython/code.h
+
+typedef struct {
+    PyObject_HEAD
+    int co_argcount;
+    int co_posonlyargcount;
+    int co_kwonlyargcount;
+    int co_nlocals;
+    int co_stacksize;
+    int co_flags;          
+    int co_firstlineno;    
+    PyObject *co_code;     
+    PyObject *co_consts;   
+    PyObject *co_names;    
+    PyObject *co_varnames; 
+    PyObject *co_freevars; 
+    PyObject *co_cellvars; 
+    Py_ssize_t *co_cell2arg;
+    PyObject *co_filename;
+    PyObject *co_name;
+    PyObject *co_lnotab;
+    void *co_zombieframe;
+    PyObject *co_weakreflist;
+    void *co_extra;
+    unsigned char *co_opcache_map;
+    _PyOpcache *co_opcache;
+    int co_opcache_flag;
+    unsigned char co_opcache_size;
+} PyCodeObject;
+</code></pre>
+<p>这里面的每一个字段，我们一会儿都会详细介绍，并通过代码逐一演示。总之 Python 编译器在对源代码进行编译的时候，针对每一个 code block（代码块），都会创建一个 PyCodeObject 与之对应。但多少代码才算得上是一个 block 呢？事实上，Python 有一个简单而清晰的规则：当进入一个新的名字空间，或者说作用域时，就算是进入一个新的 block 了。举个例子：</p>
+<pre><code class="language-python">class A:
+    a = 123
+
+def foo():
+    a = []
+</code></pre>
+<p>我们仔细观察一下上面这段代码，它在编译完之后会有三个 PyCodeObject 对象，一个是对应整个 py 文件（模块）的，一个是对应 class A 的，一个是对应 def foo 的。因为这是三个不同的作用域，所以会有三个 PyCodeObject 对象。</p>
+<p>所以一个 code block 对应一个作用域、同时也对应一个 PyCodeObject 对象。Python 的类、函数、模块都有自己独立的作用域，因此在编译时也都会有一个 PyCodeObject 对象与之对应。</p>
+<h2 id="pycodeobject-字段解析"><a class="header" href="#pycodeobject-字段解析">PyCodeObject 字段解析</a></h2>
+<p>PyCodeObject 我们知道它是干什么的了，那如何才能拿到这个对象呢？首先该对象在 Python 里面的类型是 &lt;class 'code'&gt;，但是底层没有将这个类暴露给我们，因此 code 这个名字在 Python 里面只是一个没有定义的变量罢了。</p>
+<p>但我们可以通过其它的方式进行获取，比如函数。</p>
+<pre><code class="language-Python">def func():
+    pass
+
+print(func.__code__)  # &lt;code object ......
+print(type(func.__code__))  # &lt;class 'code'&gt;
+</code></pre>
+<p>我们可以通过函数的 __code__ 属性拿到底层对应的 PyCodeObject 对象，当然也可以获取里面的字段，下面就来演示一下，并详细介绍每个字段的含义。</p>
+<p><font color="darkblue"><strong>PyObject_HEAD：对象的头部信息</strong></font></p>
+<p>我们看到 Python 真的一切皆对象，源代码编译之后的结果也是一个对象。</p>
+<p><font color="darkblue"><strong>co_argcount：可以通过位置参数传递的参数个数</strong></font></p>
+<pre><code class="language-Python">def foo(a, b, c=3):
+    pass
+print(foo.__code__.co_argcount)  # 3
+
+def bar(a, b, *args):
+    pass
+print(bar.__code__.co_argcount)  # 2
+
+def func(a, b, *args, c):
+    pass
+print(func.__code__.co_argcount)  # 2
+</code></pre>
+<p>函数 foo 中的参数 a、b、c 都可以通过位置参数传递，所以结果是 3。而函数 bar 则是两个，这里不包括 *args。最后函数 func 显然也是两个，因为参数 c 只能通过关键字参数传递。</p>
+<p><font color="darkblue"><strong>co_posonlyargcount：只能通过位置参数传递的参数个数，Python3.8 新增</strong></font></p>
+<pre><code class="language-Python">def foo(a, b, c):
+    pass
+print(foo.__code__.co_posonlyargcount)  # 0
+
+def bar(a, b, /, c):
+    pass
+print(bar.__code__.co_posonlyargcount)  # 2
+</code></pre>
+<p>注意：这里是只能通过位置参数传递的参数个数。对于 foo 而言，里面的三个参数既可以通过位置参数、也可以通过关键字参数传递，所以个数是 0。而函数 bar，里面的 a、b 只能通过位置参数传递，所以个数是 2。</p>
+<p><font color="darkblue"><strong>co_kwonlyargcount：只能通过关键字参数传递的参数个数</strong></font></p>
+<pre><code class="language-Python">def foo(a, b=1, c=2, *, d, e):
+    pass
+print(foo.__code__.co_kwonlyargcount)  # 2
+</code></pre>
+<p>这里是 d 和 e，它们必须通过关键字参数传递。</p>
+<p><font color="darkblue"><strong>co_nlocals：代码块中局部变量的个数，也包括参数</strong></font></p>
+<pre><code class="language-Python">def foo(a, b, *args, c, **kwargs):
+    name = &quot;xxx&quot;
+    age = 16
+    gender = &quot;f&quot;
+    c = 33
+
+print(foo.__code__.co_varnames)
+&quot;&quot;&quot;
+('a', 'b', 'c', 'args', 'kwargs', 'name', 'age', 'gender')
+&quot;&quot;&quot;
+print(foo.__code__.co_nlocals)
+&quot;&quot;&quot;
+8
+&quot;&quot;&quot;
+</code></pre>
+<p>co_varnames 保存的是代码块的局部变量，显然 co_nlocals 就是它的长度。并且我们看到在编译之后，函数的局部变量就已经确定了，因为它们是静态存储的。</p>
+<p><font color="darkblue"><strong>co_stacksize：执行该段代码块所需要的栈空间</strong></font></p>
+<pre><code class="language-Python">def foo(a, b, c):
+    name = &quot;xxx&quot;
+    age = 16
+    gender = &quot;f&quot;
+    c = 33
+
+print(foo.__code__.co_stacksize)  # 1
+</code></pre>
+<p>这个暂时不需要太关注，后续介绍栈帧的时候会详细说明。</p>
+<p><font color="darkblue"><strong>co_flags：函数标识</strong></font></p>
+<p>先来提出一个问题：</p>
+<pre><code class="language-Python">def some_func():
+    return &quot;hello world&quot;
+
+def some_gen():
+    yield
+    return &quot;hello world&quot;
+
+print(some_func.__class__)
+print(some_gen.__class__)
+&quot;&quot;&quot;
+&lt;class 'function'&gt;
+&lt;class 'function'&gt;
+&quot;&quot;&quot;
+
+print(some_func())
+&quot;&quot;&quot;
+hello world
+&quot;&quot;&quot;
+print(some_gen())
+&quot;&quot;&quot;
+&lt;generator object some_gen at 0x1028a80b0&gt;
+&quot;&quot;&quot;
+</code></pre>
+<p>调用 some_func 会将代码执行完毕，调用 some_gen 会返回生成器，但问题是这两者都是函数类型，为什么执行的时候会有不同的表现呢？可能有人觉得这还不简单，Python 具有词法作用域，由于 some_func 里面没有出现 yield 关键字，所以是普通函数，而 some_gen 里面出现了 yield，所以是生成器函数。</p>
+<p>从源代码来看确实如此，但源代码是要编译成 PyCodeObject 对象的，在编译之后，函数内部是否出现 yield 关键字这一信息要怎么体现呢？答案便是通过 co_flags 字段。</p>
+<p>然后解释器内部定义了一系列的标志位，通过和 co_flags 字段按位与，便可判断函数是否具备指定特征。常见的标志位如下：</p>
+<pre><code class="language-C">// Include/code.h
+
+// 函数参数是否包含 *args
+#define CO_VARARGS      0x0004
+// 函数参数是否包含 **kwargs
+#define CO_VARKEYWORDS  0x0008
+// 函数是否是内层函数
+#define CO_NESTED       0x0010
+// 函数是否是生成器函数
+#define CO_GENERATOR    0x0020
+// 函数是否是协程函数
+#define CO_COROUTINE            0x0080
+// 函数是否是异步生成器函数
+#define CO_ASYNC_GENERATOR      0x0200
+</code></pre>
+<p>我们实际测试一下，比如检测函数的参数类型：</p>
+<pre><code class="language-python">CO_VARARGS = 0x0004
+CO_VARKEYWORDS = 0x0008
+CO_NESTED = 0x0010
+
+
+def foo(*args):
+    pass
+
+def bar():
+    pass
+
+# 因为 foo 的参数包含 *args，所以和 CO_VARARGS 按位与的结果为真
+# 而 bar 的参数不包含 *args，所以结果为假
+print(foo.__code__.co_flags &amp; CO_VARARGS)  # 4
+print(bar.__code__.co_flags &amp; CO_VARARGS)  # 0
+
+
+def foo(**kwargs):
+    pass
+
+def bar():
+    pass
+
+print(foo.__code__.co_flags &amp; CO_VARKEYWORDS)  # 8
+print(bar.__code__.co_flags &amp; CO_VARKEYWORDS)  # 0
+
+
+def foo():
+    def bar():
+        pass
+    return bar
+
+# foo 是外层函数，所以和 CO_NESTED 按位与的结果为假
+# foo() 返回的是内层函数，所以和 CO_NESTED 按位与的结果为真
+print(foo.__code__.co_flags &amp; CO_NESTED)  # 0
+print(foo().__code__.co_flags &amp; CO_NESTED)  # 16
+</code></pre>
+<p>当然啦，co_flags 还可以检测一个函数的类型。比如函数内部出现了 yield，那么它就是一个生成器函数，调用之后会得到一个生成器；使用 async def 定义，那么它就是一个协程函数，调用之后会得到一个协程。</p>
+<p>这些在词法分析的时候就可以检测出来，编译之后会体现在 co_flags 字段中。</p>
+<pre><code class="language-Python">CO_GENERATOR = 0x0020
+CO_COROUTINE = 0x0080
+CO_ASYNC_GENERATOR = 0x0200
+
+# 如果是生成器函数，那么 co_flags &amp; 0x20 为真
+def foo1():
+    yield
+print(foo1.__code__.co_flags &amp; 0x20)  # 32
+
+# 如果是协程函数，那么 co_flags &amp; 0x80 为真
+async def foo2():
+    pass
+print(foo2.__code__.co_flags &amp; 0x80)  # 128
+# 显然 foo2 不是生成器函数，所以 co_flags &amp; 0x20 为假
+print(foo2.__code__.co_flags &amp; 0x20)  # 0
+
+# 如果是异步生成器函数，那么 co_flags &amp; 0x200 为真
+async def foo3():
+    yield
+print(foo3.__code__.co_flags &amp; 0x200)  # 512
+# 显然它不是生成器函数、也不是协程函数
+# 因此和 0x20、0x80 按位与之后，结果都为假
+print(foo3.__code__.co_flags &amp; 0x20)  # 0
+print(foo3.__code__.co_flags &amp; 0x80)  # 0
+</code></pre>
+<p>在判断函数种类时，这种方式是最优雅的。</p>
+<p><font color="darkblue"><strong>co_firstlineno：代码块的起始位置在源文件中的哪一行</strong></font></p>
+<pre><code class="language-python">def foo(a, b, c):
+    pass
+
+# 显然是文件的第一行
+# 或者理解为 def 所在的行
+print(foo.__code__.co_firstlineno)  # 1
+</code></pre>
+<p>如果函数出现了调用呢？</p>
+<pre><code class="language-Python">def foo():
+    return bar
+
+def bar():
+    pass
+
+print(foo().__code__.co_firstlineno)  # 4
+</code></pre>
+<p>如果执行 foo，那么会返回函数 bar，因此结果是 <font color="blue">def bar():</font> 所在的行数。所以每个函数都有自己的作用域，以及 PyCodeObject 对象。</p>
+<p><font color="darkblue"><strong>co_code：指令集，也就是字节码，它是一个 bytes 对象</strong></font></p>
+<pre><code class="language-Python">def foo(a, b, c):
+    name = &quot;satori&quot;
+    age = 16
+    gender = &quot;f&quot;
+    print(name, age, gender)
+
+# 字节码，一个 bytes 对象，它保存了要操作的指令
+# 但光有字节码是肯定不够的，还需要其它的静态信息
+# 显然这些信息连同字节码一样，都位于 PyCodeObject 中
+print(foo.__code__.co_code)
+&quot;&quot;&quot;
+b'd\x01}\x03d\x02}\x04d\x03}\x05t\x00|\x03|\x04|\x05\x83\x03\x01\x00d\x00S\x00'
+&quot;&quot;&quot;
+</code></pre>
+<p><font color="darkblue"><strong>co_consts：常量池，一个元组，保存代码块中创建的所有常量</strong></font></p>
+<pre><code class="language-Python">def foo():
+    a = 122 + 1
+    b = &quot;hello&quot;
+    c = (1, 2)
+    d = [&quot;x&quot;, &quot;y&quot;]
+    e = {&quot;p&quot;: &quot;k&quot;}
+    f = {7, 8}
+
+print(foo.__code__.co_consts)
+&quot;&quot;&quot;
+(None, 123, 'hello', (1, 2), 'x', 'y', 'p', 'k', 7, 8)
+&quot;&quot;&quot;
+</code></pre>
+<p>co_consts 里面出现的都是编译阶段可以确定的常量，而 [&quot;x&quot;, &quot;y&quot;] 和 {&quot;p&quot;: &quot;k&quot;} 没有出现，由此我们可以得出，列表和字典绝不是在编译阶段构建的。编译时，只是收集了里面的元素，然后等到运行时再去动态构建。</p>
+<p>不过问题来了，在构建的时候解释器怎么知道是要构建列表、还是字典、亦或是其它的什么对象呢？所以这就依赖于字节码了，解释字节码的时候，会判断到底要构建什么样的对象。因此解释器执行的是字节码，核心逻辑都体现在字节码中，但是光有字节码还不够，它包含的只是程序的主干逻辑，至于变量、常量，则从符号表和常量池里面获取。</p>
+<p>另外函数里面的变量 a 等于 122 + 1，但常量池里面却存储了 123，这个过程叫做常量折叠。常量之间的加减乘除，结果依旧是一个常量，编译阶段就会计算好。</p>
+<p><font color="darkblue"><strong>co_names：符号表，一个元组，保存代码块中引用的其它作用域的变量</strong></font></p>
+<pre><code class="language-Python">c = 1
+
+def foo(a, b):
+    print(a, b, c)
+    d = (list, int, str)
+
+print(foo.__code__.co_names)
+&quot;&quot;&quot;
+('print', 'c', 'list', 'int', 'str')
+&quot;&quot;&quot;
+</code></pre>
+<p>虽然一切皆对象，但看到的都是指向对象的变量，所以 print, c, list, int, str 都是变量，它们都不在当前 foo 函数的作用域中。</p>
+<p><font color="darkblue"><strong>co_varnames：符号表，一个元组，保存当前作用域中创建的局部变量</strong></font></p>
+<pre><code class="language-Python">def foo(a, b, c):
+    name = &quot;satori&quot;
+    age = 16
+    gender = &quot;f&quot;
+    print(name, age, gender)
+    
+# 当前作用域中创建的变量，注意它和 co_names 的区别
+# co_varnames 保存的是当前作用域中创建的局部变量
+# 而 co_names 保存的是当前作用域中引用的其它作用域的变量
+print(foo.__code__.co_varnames)
+&quot;&quot;&quot;
+('a', 'b', 'c', 'name', 'age', 'gender')
+&quot;&quot;&quot;
+print(foo.__code__.co_varnames)
+&quot;&quot;&quot;
+('print',)
+&quot;&quot;&quot;
+</code></pre>
+<p><font color="darkblue"><strong>co_cellvars：一个元组，保存外层函数的作用域中被内层函数引用的变量</strong></font></p>
+<p><font color="darkblue"><strong>co_freevars：一个元组，保存内层函数引用的外层函数的作用域中的变量</strong></font></p>
+<pre><code class="language-Python">def foo(a, b, c):
+    def bar():
+        print(a, b, c)
+    return bar
+
+# co_cellvars：外层函数的作用域中被内层函数引用的变量
+# co_freevars：内层函数引用的外层函数的作用域中的变量
+print(foo.__code__.co_cellvars)
+print(foo.__code__.co_freevars)
+&quot;&quot;&quot;
+('a', 'b', 'c')
+()
+&quot;&quot;&quot;
+# foo 里面的变量 a、b、c 被内层函数 bar 引用了
+# 所以它的 co_cellvars 是 ('a', 'b', 'c')
+# 而 foo 不是内层函数，所以它的 co_freevars 是 ()
+
+bar = foo(1, 2, 3)
+print(bar.__code__.co_cellvars)
+print(bar.__code__.co_freevars)
+&quot;&quot;&quot;
+()
+('a', 'b', 'c')
+&quot;&quot;&quot;
+# bar 引用了外层函数 foo 里面的变量 a、b、c
+# 所以它的 co_freevars 是 ('a', 'b', 'c')
+# 而 bar 已经是最内层函数了，所以它的 co_cellvars 是 () 
+</code></pre>
+<p>当然目前的函数只嵌套了两层，但嵌套三层甚至更多层也是一样的。</p>
+<pre><code class="language-Python">def foo(a, b, c):
+    def bar(d, e):
+        print(a)
+        def func():
+            print(b, c, d, e)
+        return func
+    return bar
+
+# 对于 foo 而言，它的内层函数就是 bar
+# 至于最里面的 func，由于定义在 bar 的内部，因此可以看做是 bar 函数体的一部分
+# 而 foo 里面的变量 a、b、c 都被内层函数引用了
+print(foo.__code__.co_cellvars)  # ('a', 'b', 'c')
+print(foo.__code__.co_freevars)  # ()
+
+bar = foo(1, 2, 3)
+# 对于函数 bar 而言，它的内层函数就是 func
+# 而显然 bar 里面的变量 d 和 e 被 func 引用了
+print(bar.__code__.co_cellvars)  # ('d', 'e')
+# 然后 bar 引用了外层函数 foo 里面的 a、b、c
+print(bar.__code__.co_freevars)  # ('a', 'b', 'c')
+# 所以 co_cellvars 和 co_freevars 这两个字段的关系有点类似镜像
+</code></pre>
+<p>co_cellvars 和 co_freevars 在后续介绍闭包的时候会用到。</p>
+<p><font color="darkblue"><strong>co_filename：代码块所在的文件的路径</strong></font></p>
+<pre><code class="language-python"># 文件名：main.py
+def foo():
+    pass
+
+
+print(foo.__code__.co_filename)
+&quot;&quot;&quot;
+/Users/satori/Documents/testing_project/main.py
+&quot;&quot;&quot;
+</code></pre>
+<p>如果你无法使用 IDE，那么便可通过该字段查看函数定义在哪个文件中。</p>
+<p><font color="darkblue"><strong>co_name：代码块的名字</strong></font></p>
+<pre><code class="language-Python">def foo():
+    pass
+
+print(foo.__code__.co_name)  # foo
+</code></pre>
+<p>对于函数来说，代码块的名字就是函数名。</p>
+<p><font color="darkblue"><strong>co_lnotab：负责存储指令的偏移量和源代码行号之间的对应关系</strong></font></p>
+<p>PyCodeObject 是源代码编译之后的产物，虽然两者的结构千差万别，但体现出的信息是一致的。像源代码具有行号，那么编译成 PyCodeObject 之后，行号信息也应该要有专门的字段来维护，否则报错时我们就无法快速定位到行号。</p>
+<pre><code class="language-Python">def foo():
+    name = &quot;古明地觉&quot;
+    hobby = (
+        &quot;sing&quot;,
+        &quot;dance&quot;,
+        &quot;rap&quot;,
+        &quot;🏀&quot;
+    )
+    age = 16
+</code></pre>
+<p>我们通过 dis 模块反编译一下。</p>
+<p><img src="./images/142.png" alt="" /></p>
+<p>第一列数字表示行号，第二列数字表示字节码指令的偏移量，或者说指令在整个字节码指令集中的索引。我们知道字节码指令集就是一段字节序列，由 co_code 字段维护，并且每个指令都带有一个参数，所以偏移量（索引）为 0 2 4 6 8 ··· 的字节表示指令，偏移量为 1 3 5 7 9 ··· 的字节表示参数。</p>
+<p>关于反编译的具体细节后续会说，总之一个字节码指令就是一个八位整数。对于当前函数来说，它的字节码偏移量和行号的对应关系如下：</p>
+<p><img src="./images/143.png" alt="" /></p>
+<p>偏移量和源代码行号的对应关系便由 co_lnotab（一个字节序列）维护，只不过 co_lnotab 并没有直接记录这些信息，而是记录的增量值。</p>
+<ul>
+<li>(0, 1) 到 (0, 2)：偏移量增加 0，行号增加 1；</li>
+<li>(0, 2) 到 (4, 3)：偏移量增加 4，行号增加 1；</li>
+<li>(4, 3) 到 (8, 9)：偏移量增加 4，行号增加 6；</li>
+</ul>
+<p>所以 co_lnotab 便是 0 1 4 1 4 6，我们验证一下。</p>
+<p><img src="./images/144.png" alt="" /></p>
+<p>结果和我们分析的一样。</p>
+<p>以上就是 PyCodeObject 里面的字段的含义，至于剩下的几个字段就无需关注了。</p>
+<h2 id="小结"><a class="header" href="#小结">小结</a></h2>
+<ul>
+<li>Python 解释器 = Python 编译器 + Python 虚拟机。</li>
+<li>编译器先将 .py 源码文件编译成 PyCodeObject 对象，然后再交给虚拟机执行。</li>
+<li>PyCodeObject 对象可以认为是源码文件的另一种等价形式，但经过编译，虚拟机可以更快速地执行。</li>
+<li>为了避免每次都要对源文件进行编译，因此编译后的结果会序列化在 .pyc 文件中，如果源文件没有做改动，那么下一次执行时会直接从 .pyc 文件中读取。</li>
+<li>Python 的函数、类、模块等，都具有各自的作用域，每个作用域对应一个独立的代码块，在编译时，Python 编译器会为每个代码块都创建一个 PyCodeObject 对象。</li>
+</ul>
+<hr />
+<p> </p>
+<p><strong>欢迎大家关注我的公众号：古明地觉的编程教室。</strong></p>
+<p><img src="/Users/satori/Documents/cpython-internal/src/images/qrcode_for_gh.jpg" alt="" /></p>
+<p><strong>如果觉得文章对你有所帮助，也可以请作者吃个馒头，Thanks♪(･ω･)ﾉ。</strong></p>
+<p><img src="./images/supports.png" alt="" /></p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="50.迭代器是怎么实现的？.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+                            <a rel="next" href="52.PyCodeObject拾遗.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="50.迭代器是怎么实现的？.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+                    <a rel="next" href="52.PyCodeObject拾遗.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+            </nav>
+
+        </div>
+
+        <script type="text/javascript">
+            window.playground_copyable = true;
+        </script>
+        <script src="elasticlunr.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="mark.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="searcher.js" type="text/javascript" charset="utf-8"></script>
+        <script src="clipboard.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="highlight.js" type="text/javascript" charset="utf-8"></script>
+        <script src="book.js" type="text/javascript" charset="utf-8"></script>
+
+        <!-- Custom JS scripts -->
+        <script type="text/javascript" src="theme/custom.js"></script>
+    </body>
+</html>
