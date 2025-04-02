@@ -10,6 +10,7 @@ mathjax-support = true
 no-section-label = true
 git-repository-url = "https://github.com/satori1995/cpython-internal"
 site-url = "/cpython-internal/"
+print = false
 
 fold.enable = false
 toc = { enable = true, levels = [2, 3] }
@@ -19,4 +20,3 @@ additional-js = ["theme/custom.js"]
 
 [output.latex]
 latex = true
-pdf = false
