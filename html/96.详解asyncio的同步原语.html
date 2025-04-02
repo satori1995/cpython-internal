@@ -1,0 +1,1434 @@
+<!DOCTYPE HTML>
+<html lang="zh-cn" class="sidebar-visible no-js light">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>96. 详解 asyncio 的同步原语 - CPython3.8 源码探秘</title>
+        <!-- Custom HTML head -->
+        <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff" />
+
+        <link rel="icon" href="favicon.svg">
+        <link rel="shortcut icon" href="favicon.png">
+        <link rel="stylesheet" href="css/variables.css">
+        <link rel="stylesheet" href="css/general.css">
+        <link rel="stylesheet" href="css/chrome.css">
+        <!-- Fonts -->
+        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="fonts/fonts.css">
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="highlight.css">
+        <link rel="stylesheet" href="tomorrow-night.css">
+        <link rel="stylesheet" href="ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+        <link rel="stylesheet" href="theme/custom.css">
+        <!-- MathJax -->
+        <script async type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    </head>
+    <body>
+        <!-- Provide site root to javascript -->
+        <script type="text/javascript">
+            var path_to_root = "";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script type="text/javascript">
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script type="text/javascript">
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            var html = document.querySelector('html');
+            html.classList.remove('no-js')
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add('js');
+        </script>
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script type="text/javascript">
+            var html = document.querySelector('html');
+            var sidebar = 'hidden';
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            }
+            html.classList.remove('sidebar-visible');
+            html.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li class="chapter-item expanded "><a href="0.序言.html">0. 序言</a></li><li class="chapter-item expanded "><a href="1.CPython源码长什么样子？.html">1. CPython 源码长什么样子？</a></li><li class="chapter-item expanded "><a href="2.变量和对象，它们之间有什么区别和联系呢？.html">2. 变量和对象，它们之间有什么区别和联系呢？</a></li><li class="chapter-item expanded "><a href="3.Python对象有哪几种，我们可以从哪些角度进行分类呢？.html">3. Python 对象有哪几种，我们可以从哪些角度进行分类呢？</a></li><li class="chapter-item expanded "><a href="4.万丈高楼平地起，一切从PyObject开始.html">4. 万丈高楼平地起，一切从 PyObject 开始</a></li><li class="chapter-item expanded "><a href="5.详解PyTypeObject，Python类型对象的载体.html">5. 详解 PyTypeObject，Python 类型对象的载体</a></li><li class="chapter-item expanded "><a href="6.通过type和object之间的关联，进一步分析类型对象.html">6. 通过 type 和 object 之间的关联，进一步分析类型对象</a></li><li class="chapter-item expanded "><a href="7.当创建一个Python对象时，背后都经历了哪些过程？.html">7. 当创建一个 Python 对象时，背后都经历了哪些过程？</a></li><li class="chapter-item expanded "><a href="8.当调用一个Python对象时，背后都经历了哪些过程？.html">8. 当调用一个 Python 对象时，背后都经历了哪些过程？</a></li><li class="chapter-item expanded "><a href="9.再探泛型API，感受Python对象的设计哲学.html">9. 再探泛型 API，感受 Python 对象的设计哲学</a></li><li class="chapter-item expanded "><a href="10.Python对象的行为是怎么区分的？.html">10. Python 对象的行为是怎么区分的？</a></li><li class="chapter-item expanded "><a href="11.一个Python对象会在何时被销毁？.html">11. 一个 Python 对象会在何时被销毁？</a></li><li class="chapter-item expanded "><a href="12.深度解密Python的浮点数是怎么实现的？.html">12. 深度解密 Python 的浮点数是怎么实现的？</a></li><li class="chapter-item expanded "><a href="13.对象被销毁之后所占的内存一定会释放吗？解密浮点数的缓存池机制.html">13. 对象被销毁之后所占的内存一定会释放吗？解密浮点数的缓存池机制</a></li><li class="chapter-item expanded "><a href="14.浮点数支持的操作是怎么实现的？.html">14. 浮点数支持的操作是怎么实现的？</a></li><li class="chapter-item expanded "><a href="15.解密Python的复数是怎么实现的？它有什么用途呢？.html">15. 解密 Python 的复数是怎么实现的？它有什么用途呢？</a></li><li class="chapter-item expanded "><a href="16.Python的整数是怎么设计的，为什么它不会溢出？.html">16. Python 的整数是怎么设计的，为什么它不会溢出？</a></li><li class="chapter-item expanded "><a href="17.解密Python的小整数对象池.html">17. 解密 Python 的小整数对象池</a></li><li class="chapter-item expanded "><a href="18.两个Python整数之间是如何进行大小比较的？过程并不像我们想的那样简单.html">18. 两个 Python 整数之间是如何进行大小比较的？过程并不像我们想的那样简单</a></li><li class="chapter-item expanded "><a href="19.探究Python整数的加减法，感受大整数的运算哲学与魅力.html">19. 探究 Python 整数的加减法，感受大整数的运算哲学与魅力</a></li><li class="chapter-item expanded "><a href="20.Python的布尔值是怎么实现的，你对它的了解有多深呢？.html">20. Python 的布尔值是怎么实现的，你对它的了解有多深呢？</a></li><li class="chapter-item expanded "><a href="21.Python的None是怎么实现的？.html">21. Python 的 None 是怎么实现的？</a></li><li class="chapter-item expanded "><a href="22.深度解密Python切片的实现原理.html">22.深度解密 Python 切片的实现原理</a></li><li class="chapter-item expanded "><a href="23.bytes对象（字节串）是怎么实现的？解密它的内部原理.html">23. bytes 对象（字节串）是怎么实现的？解密它的内部原理</a></li><li class="chapter-item expanded "><a href="24.bytes对象都支持哪些操作，它们是怎么实现的？.html">24. bytes 对象都支持哪些操作，它们是怎么实现的？</a></li><li class="chapter-item expanded "><a href="25.通过bytes对象的合并，探究缓冲区的奥秘.html">25. 通过 bytes 对象的合并，探究缓冲区的奥秘</a></li><li class="chapter-item expanded "><a href="26.解密bytes对象的缓存池.html">26. 解密 bytes 对象的缓存池</a></li><li class="chapter-item expanded "><a href="27.详解bytearray对象的底层实现.html">27. 详解 bytearray 对象的底层实现</a></li><li class="chapter-item expanded "><a href="28.字符集和字符编码.html">28. 字符集和字符编码</a></li><li class="chapter-item expanded "><a href="29.Python是怎么存储字符串的？.html">29. Python 是怎么存储字符串的？</a></li><li class="chapter-item expanded "><a href="30.解密字符串的底层结构，它是怎么实现的？.html">30. 解密字符串的底层结构，它是怎么实现的？</a></li><li class="chapter-item expanded "><a href="31.字符串的intern机制是怎么一回事？.html">31. 字符串的 intern 机制是怎么一回事？</a></li><li class="chapter-item expanded "><a href="32.聊一聊字符串常见操作的源码实现.html">32. 聊一聊字符串常见操作的源码实现</a></li><li class="chapter-item expanded "><a href="33.列表是怎么实现的？解密列表的数据结构.html">33. 列表是怎么实现的？解密列表的数据结构</a></li><li class="chapter-item expanded "><a href="34.列表是怎么扩容的？.html">34. 列表是怎么扩容的？</a></li><li class="chapter-item expanded "><a href="35.解密列表的创建与销毁，以及缓存池长什么样子？.html">35. 解密列表的创建与销毁，以及缓存池长什么样子？</a></li><li class="chapter-item expanded "><a href="36.列表作为序列型对象都支持哪些操作，它们在底层是怎么实现的？.html">36. 列表作为序列型对象都支持哪些操作，它们在底层是怎么实现的？</a></li><li class="chapter-item expanded "><a href="37.列表都有哪些自定义方法，它们是怎么实现的？.html">37. 列表都有哪些自定义方法，它们是怎么实现的？</a></li><li class="chapter-item expanded "><a href="38.解密元组的实现原理.html">38. 解密元组的实现原理</a></li><li class="chapter-item expanded "><a href="39.聊一聊喜闻乐见的哈希表.html">39. 聊一聊喜闻乐见的哈希表</a></li><li class="chapter-item expanded "><a href="40.字典是怎么实现的，它的底层结构长什么样子？.html">40. 字典是怎么实现的，它的底层结构长什么样子？</a></li><li class="chapter-item expanded "><a href="41.什么是可哈希对象，它的哈希值是怎么计算的？.html">41. 什么是可哈希对象，它的哈希值是怎么计算的？</a></li><li class="chapter-item expanded "><a href="42.字典的key是怎么映射成索引的，索引冲突了又该怎么办？.html">42. 字典的 key 是怎么映射成索引的，索引冲突了又该怎么办？</a></li><li class="chapter-item expanded "><a href="43.哈希表是怎么删除元素的，能直接删除吗？.html">43. 哈希表是怎么删除元素的，能直接删除吗？</a></li><li class="chapter-item expanded "><a href="44.字典是怎么创建的，支持的操作又是如何实现的？.html">44. 字典是怎么创建的，支持的操作又是如何实现的？</a></li><li class="chapter-item expanded "><a href="45.字典的自定义方法是怎么实现的？.html">45. 字典的自定义方法是怎么实现的？</a></li><li class="chapter-item expanded "><a href="46.字典是怎么扩容的？它会经历哪些过程？.html">46. 字典是怎么扩容的？它会经历哪些过程？</a></li><li class="chapter-item expanded "><a href="47.身虽死，道未消，解密字典的缓存池.html">47. 身虽死，道未消，解密字典的缓存池</a></li><li class="chapter-item expanded "><a href="48.解密集合的实现原理.html">48. 解密集合的实现原理</a></li><li class="chapter-item expanded "><a href="49.集合支持的操作有哪些，它们是怎么实现的？.html">49. 集合支持的操作有哪些，它们是怎么实现的？</a></li><li class="chapter-item expanded "><a href="50.迭代器是怎么实现的？.html">50. 迭代器是怎么实现的？</a></li><li class="chapter-item expanded "><a href="51.Python源文件编译之后会得到什么，它的结构是怎样的？和字节码又有什么联系？.html">51. Python 源文件编译之后会得到什么，它的结构是怎样的？和字节码又有什么联系？</a></li><li class="chapter-item expanded "><a href="52.PyCodeObject拾遗.html">52. PyCodeObject 拾遗</a></li><li class="chapter-item expanded "><a href="53.一文让你搞懂pyc文件.html">53. 一文让你搞懂 pyc 文件</a></li><li class="chapter-item expanded "><a href="54.深度解密虚拟机的执行环境：栈帧对象.html">54. 深度解密虚拟机的执行环境：栈帧对象</a></li><li class="chapter-item expanded "><a href="55.名字空间：变量的容身之所.html">55. 名字空间：变量的容身之所</a></li><li class="chapter-item expanded "><a href="56.当查找一个变量时，虚拟机会进行哪些动作？.html">56. 当查找一个变量时，虚拟机会进行哪些动作？</a></li><li class="chapter-item expanded "><a href="57.虚拟机是怎么执行字节码的？背后都经历了哪些过程.html">57. 虚拟机是怎么执行字节码的？背后都经历了哪些过程</a></li><li class="chapter-item expanded "><a href="58.深入源码，进一步考察字节码的执行流程.html">58. 深入源码，进一步考察字节码的执行流程</a></li><li class="chapter-item expanded "><a href="59.局部变量是怎么实现静态查找的，它和local名字空间又有什么联系呢？.html">59. 局部变量是怎么实现静态查找的，它和 local 名字空间又有什么联系呢？</a></li><li class="chapter-item expanded "><a href="60.剖析字节码指令，以及Python赋值语句的原理.html">60. 剖析字节码指令，以及 Python 赋值语句的原理</a></li><li class="chapter-item expanded "><a href="61.流程控制语句if是怎么实现的？.html">61. 流程控制语句 if 是怎么实现的？</a></li><li class="chapter-item expanded "><a href="62.流程控制语句for、while是怎么实现的？.html">62. 流程控制语句 for、while 是怎么实现的？</a></li><li class="chapter-item expanded "><a href="63.异常是怎么实现的？虚拟机是如何将异常抛出去的？.html">63. 异常是怎么实现的？虚拟机是如何将异常抛出去的？</a></li><li class="chapter-item expanded "><a href="64.虚拟机是如何捕获异常的？.html">64. 虚拟机是如何捕获异常的？</a></li><li class="chapter-item expanded "><a href="65.函数在底层长什么样子？.html">65. 函数在底层长什么样子？</a></li><li class="chapter-item expanded "><a href="66.函数是怎么创建的，背后经历了哪些过程？.html">66. 函数是怎么创建的，背后经历了哪些过程？</a></li><li class="chapter-item expanded "><a href="67.函数在底层是如何调用的？.html">67. 函数在底层是如何调用的？</a></li><li class="chapter-item expanded "><a href="68.函数是如何解析位置参数的？.html">68. 函数是如何解析位置参数的？</a></li><li class="chapter-item expanded "><a href="69.函数是如何解析关键字参数的？.html">69. 函数是如何解析关键字参数的？</a></li><li class="chapter-item expanded "><a href="70.扩展位置参数和扩展关键字参数是如何解析的？.html">70. 扩展位置参数和扩展关键字参数是如何解析的？</a></li><li class="chapter-item expanded "><a href="71.闭包是怎么实现的？.html">71. 闭包是怎么实现的？</a></li><li class="chapter-item expanded "><a href="72.生成器是做什么的，为什么会有生成器？.html">72. 生成器是做什么的，为什么会有生成器？</a></li><li class="chapter-item expanded "><a href="73.源码解密生成器的实现原理.html">73. 源码解密生成器的实现原理</a></li><li class="chapter-item expanded "><a href="74.回顾Python的对象模型.html">74. 回顾 Python 的对象模型</a></li><li class="chapter-item expanded "><a href="75.class概念解析.html">75. class 概念解析</a></li><li class="chapter-item expanded "><a href="76.类型对象的初始化.html">76. 类型对象的初始化</a></li><li class="chapter-item expanded "><a href="77.自定义类对象的底层实现与metaclass.html">77. 自定义类对象的底层实现与 metaclass</a></li><li class="chapter-item expanded "><a href="78.彻底搞懂描述符.html">78. 彻底搞懂描述符</a></li><li class="chapter-item expanded "><a href="79.实例对象是如何创建的？.html">79. 实例对象是如何创建的？</a></li><li class="chapter-item expanded "><a href="80.实例对象的属性访问.html">80. 实例对象的属性访问</a></li><li class="chapter-item expanded "><a href="81.为什么实例在调用方法时会将自身传给self参数.html">81. 为什么实例在调用方法时会将自身传给 self 参数</a></li><li class="chapter-item expanded "><a href="82.模块是如何导入的？.html">82. 模块是如何导入的？</a></li><li class="chapter-item expanded "><a href="83.import机制的黑盒探测.html">83. import 机制的黑盒探测</a></li><li class="chapter-item expanded "><a href="84.import机制是怎么实现的？.html">84. import 机制是怎么实现的？</a></li><li class="chapter-item expanded "><a href="85.Python运行时环境的初始化，解释器在启动时都做了什么？.html">85. Python 运行时环境的初始化，解释器在启动时都做了什么？</a></li><li class="chapter-item expanded "><a href="86.激活Python虚拟机.html">86. 激活 Python 虚拟机</a></li><li class="chapter-item expanded "><a href="87.初识GIL、以及多个线程之间的调度机制.html">87. 初识 GIL、以及多个线程之间的调度机制</a></li><li class="chapter-item expanded "><a href="88.线程的创建、销毁、调度，以及GIL的实现原理.html">88. 线程的创建、销毁、调度，以及 GIL 的实现原理</a></li><li class="chapter-item expanded "><a href="89.解密map、filter、zip底层实现，对比列表解析式.html">89. 解密 map、filter、zip 底层实现，对比列表解析式</a></li><li class="chapter-item expanded "><a href="90.为什么要有协程，协程是如何实现的？.html">90. 为什么要有协程，协程是如何实现的？</a></li><li class="chapter-item expanded "><a href="91.什么是asyncio？如何基于单线程实现并发？事件循环又是怎么工作的？.html">91. 什么是 asyncio？如何基于单线程实现并发？事件循环又是怎么工作的？</a></li><li class="chapter-item expanded "><a href="92.协程、任务、future，以及事件循环.html">92. 协程、任务、future，以及事件循环</a></li><li class="chapter-item expanded "><a href="93.在asyncio中使用Socket.html">93. 在 asyncio 中使用 Socket</a></li><li class="chapter-item expanded "><a href="94.解密asyncio的Future和Task.html">94. 解密 asyncio 的 Future 和 Task</a></li><li class="chapter-item expanded "><a href="95.如何精确控制asyncio中并发运行的多个任务.html">95. 如何精确控制 asyncio 中并发运行的多个任务</a></li><li class="chapter-item expanded "><a href="96.详解asyncio的同步原语.html" class="active">96. 详解 asyncio 的同步原语</a></li><li class="chapter-item expanded "><a href="97.在asyncio中引入多进程.html">97. 在 asyncio 中引入多进程</a></li><li class="chapter-item expanded "><a href="98.可执行文件的内存模型，变量的值是放在栈上还是放在堆上.html">98. 可执行文件的内存模型，变量的值是放在栈上还是放在堆上</a></li><li class="chapter-item expanded "><a href="99.Python是如何管理内存的？.html">99. Python 是如何管理内存的？</a></li><li class="chapter-item expanded "><a href="100.Python的垃圾回收机制是怎么实现的？.html">100. Python 的垃圾回收机制是怎么实现的？</a></li><li class="chapter-item expanded "><a href="101.深入源码，探究垃圾回收的秘密.html">101. 深入源码，探究垃圾回收的秘密</a></li><li class="chapter-item expanded "><a href="102.侵入Python虚拟机，动态修改底层数据结构和运行时.html">102. 侵入 Python 虚拟机，动态修改底层数据结构和运行时</a></li><li class="chapter-item expanded "><a href="103.使用Python的ctypes调用C的动态库.html">103. 使用 Python 的 ctypes 调用 C 的动态库</a></li><li class="chapter-item expanded "><a href="104.使用Python的ctypes调用Rust的动态库.html">104. 使用 Python 的 ctypes 调用 Rust 的动态库</a></li><li class="chapter-item expanded "><a href="105.用C写Python.html">105. 用 C 写 Python</a></li><li class="chapter-item expanded "><a href="106.Cython从入门到精通.html">106. Cython 从入门到精通</a></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky bordered">
+                    <div class="left-buttons">
+                        <button id="sidebar-toggle" class="icon-button" type="button" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </button>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light (default)</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">CPython3.8 源码探秘</h1>
+
+                    <div class="right-buttons">
+                        <a href="https://github.com/satori1995/cpython-internal" title="Git repository" aria-label="Git repository">
+                            <i id="git-repository-button" class="fa fa-github"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script type="text/javascript">
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h2 id="楔子"><a class="header" href="#楔子">楔子</a></h2>
+<p>使用多线程和多进程编写应用程序时，需要考虑非原子操作时的竞态条件，因为即使是并发增加整数这样的简单操作也可能导致微妙的、难以重现的 bug。而 asyncio 是单线程的，这是否意味着我们就不用考虑竞态条件呢？事实证明，事情并非那么简单。</p>
+<p>虽然 asyncio 的单线程特性消除了多线程或多进程应用程序中可能出现的某些并发错误，但并未完全消除，因此 asyncio 也提供了相应的同步原语（synchronization primitives）帮助我们防止单线程并发模型特有的错误。</p>
+<h2 id="了解单线程并发错误"><a class="header" href="#了解单线程并发错误">了解单线程并发错误</a></h2>
+<p>当处理在不同进程和线程之间共享的数据时，我们不得不考虑竞态条件，这是因为数据被一个线程修改时，也可能被另一个线程读取，从而导致状态不一致，引起数据损坏。这种损坏部分是由于某些操作是非原子性的，这意味着虽然它们看起来像一个操作，但其实它们在底层包含多个独立的操作。就比如整型变量进行自增，首先读取当前值，然后将其递增，最后再重新分配给变量，而这为其它线程和进程提供了足够的机会来获取处于不一致状态的数据。</p>
+<p>但在单线程并发模型中，避免了由非原子性操作引起的竞态条件。因为在 asyncio 的单线程模型中，只会有一个线程在给定时间执行 Python 代码，并且遇见非阻塞 IO 之前不会切换。这说明即使一个操作是非原子性的，也将始终运行直到完成，而不会让其它协程读取不一致的状态信息。</p>
+<p>为证明这一点，我们创建一个计数器，并启动多个任务，同时修改计数器。</p>
+<pre><code class="language-Python">import asyncio
+
+counter: int = 0
+
+async def increment():
+    global counter
+    await asyncio.sleep(0.01)
+    counter += 1
+
+async def main():
+    global counter
+    for _ in range(100):
+        tasks = [asyncio.create_task(increment()) for _ in range(100)]
+        await asyncio.gather(*tasks)
+        assert counter == 100
+        # 将 counter 重置为 0，重新开始循环
+        counter = 0
+
+asyncio.run(main())
+</code></pre>
+<p>在代码中创建了一个协程函数，它负责将全局计数器加 1，然后添加 1 毫秒的延迟来模拟慢速操作。在主协程中，创建了 100 个任务来递增计数器，然后通过 gather 并发执行。之后断言计数器可得到期望的值，因为我们运行了 100 个增量任务，所以它应该总是 100。运行这段程序，没有任何报错，所以最终 counter 的值总是 100。这说明虽然递增一个整数是非原子性操作，但对于单线程的 asyncio 来说没有任何影响。而如果运行多个线程而不是协程，应该会看到断言在执行的某个时刻失败。</p>
+<p>那么这是否意味着已经通过单线程并发模型找到了一种完全避免竞态条件的方法呢？不幸的是，情况并非如此。虽然避免了单个非原子性操作可能导致的错误竞态条件，但以错误顺序执行的多个操作是可能导致其它问题的。</p>
+<pre><code class="language-Python">import asyncio
+
+counter: int = 0
+
+async def increment():
+    global counter
+    temp_counter = counter
+    temp_counter += 1
+    await asyncio.sleep(0.01)
+    counter = temp_counter
+
+async def main():
+    global counter
+    for _ in range(100):
+        tasks = [asyncio.create_task(increment()) for _ in range(100)]
+        await asyncio.gather(*tasks)
+        assert counter == 100
+        # 将 counter 重置为 0，重新开始循环
+        counter = 0
+
+asyncio.run(main())
+</code></pre>
+<p>协程不是直接递增计数器，而是首先将其读入一个临时变量，然后将临时计数器加 1。通过 await asyncio.sleep 来模拟一个缓慢的操作，暂停协程，然后再将它重新分配给全局计数器变量。运行上述代码，你应该会立即看到执行失败，出现断言错误，并且计数器只会被设置为 1。</p>
+<p>每个协程首先读取计数器的值 0，将其存储给临时变量，临时变量自增 1，然后进入休眠状态。因为 temp_counter 是临时变量，所以每个任务里面的 temp_counter 都是 1，然后一旦休眠完成，再将其赋值给 counter。这意味着尽管运行了 100 个协程来增加计数器，但计数器永远只会是 1。注意，如果你删除 await 表达式，那么代码就是正确的，因为内部没有出现非阻塞 IO，每个任务都会一口气执行完，然后再执行下一个任务。</p>
+<p>诚然，上面是一个简单化且有些不切实际的例子，为了更好地了解何时会发生这种情况，让我们创建一个稍微复杂一点的竞态条件。</p>
+<pre><code class="language-Python">import asyncio
+
+class MockSocket:
+
+    def __init__(self):
+        self.socket_closed = False
+
+    async def send(self, msg: str):
+        # 模拟向客户端缓慢发送消息
+        if self.socket_closed:
+            raise Exception(&quot;socket 已关闭&quot;)
+        print(f&quot;准备向客户端发送消息: {msg}&quot;)
+        await asyncio.sleep(1)
+        print(f&quot;成功向客户端发送消息: {msg}&quot;)
+
+    def close(self):
+        self.socket_closed = True
+
+usernames_to_sockets = {&quot;satori&quot;: MockSocket(), &quot;koishi&quot;: MockSocket(),
+                         &quot;marisa&quot;: MockSocket(), &quot;scarlet&quot;: MockSocket()}
+
+async def user_disconnect(username: str):
+    # 断开用户连接，并将其从应用程序内存中删掉
+    print(f&quot;{username} 断开连接&quot;)
+    socket = usernames_to_sockets.pop(username)
+    socket.close()
+
+async def message_all_users():
+    # 同时向所有用户发送消息
+    print(f&quot;创建消息发送任务&quot;)
+    messages = [socket.send(f&quot;Hello {username}&quot;) for username, socket in usernames_to_sockets.items()]
+    await asyncio.gather(*messages)
+
+async def main():
+    await asyncio.gather(message_all_users(), user_disconnect(&quot;marisa&quot;))
+
+asyncio.run(main())
+&quot;&quot;&quot;
+创建消息发送任务
+marisa 断开连接
+准备向客户端发送消息: Hello satori
+准备向客户端发送消息: Hello koishi
+准备向客户端发送消息: Hello scarlet
+Traceback (most recent call last):
+  ......
+    raise Exception(&quot;socket 已关闭&quot;)
+Exception: socket 已关闭
+&quot;&quot;&quot;
+</code></pre>
+<p>我们实现了一个向连接的用户发送消息的套接字（MockSocket），每来一个用户就创建一个套接字，并用一个字典保存用户名到对应套接字的映射。当用户断开连接时，运行一个回调 user_disconnect，将用户从字典中删除并关闭套接字。</p>
+<p>然后并发运行 message_all_users() 和 user_disconnect(&quot;marisa&quot;) 两个协程，可以理解为服务端创建了 4 个任务，准备向每个用户发消息。然后 &quot;marisa&quot; 用户断开连接，于是我们关闭给 &quot;marisa&quot; 用户发送消息的套接字，并将其从 usernames_to_sockets 字典中删除。完成后，message_all_users 恢复执行，并开始发送消息，但由于 &quot;marisa&quot; 的套接字已关闭，所以结果会看到一个异常，不会收到我们发送的消息。</p>
+<p>这些是你在单线程并发模型中容易看到的错误类型，使用 await 到达一个挂起点，另一个协程运行并修改一些共享状态；当第一个协程通过意外的方式恢复时，就会发生修改冲突。多线程并发性 bug 和单线程并发性 bug 之间的关键区别在于，多线程应用程序中，在修改可变状态的任何地方都有可能出现竞态条件。而单线程并发模型中，只有遇到等待点（await point）才可能出现意料之外的结果。</p>
+<blockquote>
+<p>注意：asyncio 属于单线程，严格意义上讲，出现的错误并不能称之为竞态条件。一个变量在被修改到一半时，又被另一个线程读取了，这导致第一个线程所做的修改可能会被覆盖掉，这叫做竞态条件。但 asyncio 中是不存在这种情况的，因为 asyncio 默认是单线程，如果没有遇见 await，那么它会将某个任务一次性全部执行完。</p>
+<p>所以 asyncio 如果出现问题，那么一定是逻辑没有执行完，就通过 await 发生切换了。比如在上述代码的 message_all_users 中创建了 4 个套接字，准备给客户端发消息，但在发送之前发生了切换。而切换之后，在另一个任务中将套接字给关掉了，所以再切回来的时候，发送消息就会失败。但这不属于竞态条件，这属于逻辑没按照顺序执行导致的问题，不过和竞态条件类似，都属于并发错误。</p>
+</blockquote>
+<p>既然已经理解了单线程模型中的并发错误类型，那么让我们看看 asyncio 提供的同步原语，并且除了要学习用法之外，还要看底层是怎么实现的。另外 asyncio 提供的同步原语是针对协程的，而 threading 模块也提供了针对线程的同步原语，这两者我们都会介绍。</p>
+<h2 id="锁"><a class="header" href="#锁">锁</a></h2>
+<p>什么是锁呢？如果程序中某个部分在并发操作时会出现意想不到的结果（比如操作一个共享的数据结构），那么该部分就需要通过锁保护起来，而被锁保护起来的部分叫做临界区。线程在进入临界区之前必须先获取锁，然后才能操作共享资源。而锁一旦被获取，那么其它线程再尝试获取锁，就会陷入阻塞，直到锁被释放。</p>
+<p><img src="./images/332.png" alt="" /></p>
+<p>通过锁，可以确保同一时刻只能有一个线程操作共享资源，从而很好地解决资源竞争问题。这里的锁指的是互斥锁，也被称为排它锁。而在 Python 里面，锁可以通过 asyncio 和 threading 模块来创建，这两个模块都提供了锁，一个是协程锁，一个是线程锁。</p>
+<pre><code class="language-Python">import asyncio
+import threading
+
+lock1 = asyncio.Lock()
+lock2 = threading.Lock()
+</code></pre>
+<p>当我们对类 Lock 实例化，便可以得到锁，然后锁有两个常用方法。</p>
+<ul>
+<li>acquire()：获取锁；</li>
+<li>release()：释放锁；</li>
+</ul>
+<h3 id="协程锁"><a class="header" href="#协程锁">协程锁</a></h3>
+<p>之前在介绍 Future 和 Task 时说过，Future 对象可以看作是一个容器，它保存了在未来某个时刻才会出现的结果。如果 Future 对象里面还没有结果集，那么它就处于未完成状态，否则处于已完成状态。</p>
+<pre><code class="language-Python">import asyncio
+
+future = asyncio.Future()
+# 是否完成
+print(future.done())  # False
+# 因为 future 此时还没有结果集，所以是未完成状态（PENDING）
+# 设置结果集
+future.set_result(&quot;1 + 1&quot;)
+# 由于设置了结果集，所以变成已完成状态（FINISHED）
+print(future.done())  # True
+# 获取结果
+print(future.result())  # 1 + 1
+</code></pre>
+<p>问题来了，如何在 future 完成时立刻拿到结果呢？总不能一直调用 done 方法轮询吧。</p>
+<p>很简单，我们可以对 future 使用 await 表达式，如果 future 内部还没有结果集，那么 await 会处于阻塞状态，否则不会阻塞，并且还会将值取出来。</p>
+<pre><code class="language-python">import asyncio
+
+async def delay(future, seconds):
+    await asyncio.sleep(seconds)
+    print(&quot;给 future 设置结果集&quot;)
+    future.set_result(666)
+
+async def main():
+    # 创建一个 future
+    future = asyncio.Future()
+    loop = asyncio.get_running_loop()
+    # 创建一个任务，扔到事件循环
+    loop.create_task(delay(future, 3))
+    print(&quot;await future 会陷入阻塞，因为它内部还没有结果集&quot;)
+    # 该表达式会返回 666，因为给 future 设置的结果是 666
+    await future
+    print(f&quot;3 秒后结束阻塞，因为 delay 协程内部给 future 设置了结果集&quot;)
+
+asyncio.run(main())
+&quot;&quot;&quot;
+await future 会陷入阻塞，因为它内部还没有结果集
+给 future 设置结果集
+3 秒后结束阻塞，因为 delay 协程内部给 future 设置了结果集
+&quot;&quot;&quot;
+</code></pre>
+<p>而协程在进入事件循环时会自动创建一个 future，并将协程和 future 组合起来得到任务，而 await 一个任务等价于 await future。当协程没有执行完毕时会处于阻塞，而协程执行完毕时会将返回值设置在 future 中，然后 await 表达式会拿到里面的结果。</p>
+<p>在实际编码中，我们一般很少手动创建 Future 对象（future），但 Future 和 asyncio 的实现密切相关，其中就包括了锁。当协程在获取锁时，如果发现锁已被获取，那么如何陷入阻塞呢？当锁被释放时，它又如何解除阻塞呢？答案就是通过 future。</p>
+<p>假设协程 1 和协程 2 都要获取锁，它们都会调用锁的 acquire 方法。其中协程 1 先获取到，那么协程 2 就会创建一个 future 并 await。由于 future 内部还没有结果集，因此协程 2 会处于阻塞。当协程 1 释放锁时，会给协程 2 创建的 future 设置一个结果，从而让协程 2 解除阻塞、获取到锁。</p>
+<p>我们手动实现一下锁。</p>
+<pre><code class="language-Python">import asyncio
+from collections import deque
+
+class Lock:
+
+    def __init__(self):
+        # 保存创建的 future
+        self._waiters = deque()
+        # 锁是否已被获取
+        self._locked = False
+
+    async def acquire(self):
+        # 如果锁没有被获取，那么获取锁
+        if not self._locked:
+            self._locked = True
+            return True
+        # 否则说明锁已被获取，创建一个 future
+        future = asyncio.Future()
+        # 将它放在双端队列里面
+        self._waiters.append(future)
+        # 此时获取锁的协程就会陷入阻塞，等待其它协程唤醒
+        await future
+        # 如果解除阻塞，意味着该协程获取到锁了
+        self._locked = True
+        return True
+
+    def release(self):
+        # 释放锁，如果发现锁没被获取，说明对锁进行了二次释放
+        if not self._locked:
+            raise RuntimeError(&quot;锁没有被获取&quot;)
+        # 将锁的状态改成 False，表示锁被释放了
+        self._locked = False
+        if len(self._waiters) == 0:
+            return
+        # 从双端队列 deque 的左侧弹出 future
+        # 这个 future 就是某个协程在获取不到锁时创建的
+        # 并通过 await future 让自身陷入阻塞状态，等待被唤醒
+        future = self._waiters.popleft()
+        # 拿到 future 之后，执行 future.set_result()，也就是设置结果集
+        # 那么对应的协程就会解除阻塞，从而获取到锁
+        future.set_result(True)
+        # 注意：因为 future 是从右边添加的，所以要从 deque 的左侧弹出
+        # 因为先获取锁的协程要优先解除阻塞
+
+    async def __aenter__(self):
+        await self.acquire()
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        self.release()
+</code></pre>
+<p>整个过程非常简单，就是在获取不到锁时，创建一个 Future 对象并 await，此时就会陷入阻塞。当然获取锁的协程可能有很多，它们创建的 future 会保存在一个双端队列里面。而拿到锁的协程，在操作完临界区并释放锁时，会从双端队列的左侧弹出一个 future，并为其设置结果集。那么创建该 future 的协程就会解除阻塞，从而获取到锁。</p>
+<p>因此这就是 asyncio 锁的实现方式，一点都不神秘。当然 asyncio 内部还做了一些异常检测，以及检测 future 是否已取消等等，我们这里省略了。有兴趣可以看一看 asyncio 内部锁的实现细节，整体逻辑和我们这里基本一致，并且我们这里手动实现的锁在大部分场景下和 asyncio 的锁都是等效的。</p>
+<p>然后补充一点，你在使用 asyncio 锁的时候，一定不要以全局变量的形式创建。</p>
+<pre><code class="language-Python">import asyncio
+
+lock = asyncio.Lock()
+
+async def a():
+    async with lock:
+        print(&quot;协程 a 成功获取了锁, 并进入临界区执行操作&quot;)
+        await asyncio.sleep(2)
+    print(&quot;协程 a 释放了锁&quot;)
+
+async def b():
+    async with lock:
+        print(&quot;协程 b 成功获取了锁, 并进入临界区执行操作&quot;)
+        await asyncio.sleep(2)
+    print(&quot;协程 b 释放了锁&quot;)
+
+async def main():
+    await asyncio.gather(a(), b())
+
+asyncio.run(main())
+</code></pre>
+<p>如果这样做，很快会看到崩溃的发生，并报告多个事件循环的错误：RuntimeError: ..... attached to a different loop</p>
+<p>这是 asyncio 库的一个令人困惑的地方，而且这种现象也不是锁特有的，asyncio 中的大多数对象在创建时都会提供一个可选的 loop 参数，允许你指定要运行的事件循环。</p>
+<p>当未提供此参数时，asyncio 尝试获取当前正在运行的事件循环，如果没有，则创建一个新的事件循环。在上例中，创建锁的同时会创建一个事件循环，因为此时还没有事件循环。然后 asyncio.run(main()) 会创建第二个事件循环，试图使用锁时，这两个独立的事件循环就会混合在一起导致崩溃。</p>
+<p>这种行为比较棘手，因此在 Python 3.10 中会移除 loop 参数，这种令人困惑的行为也会消失。但在 3.10 之前，在使用全局 asyncio 变量时需要认真考虑这些情况。</p>
+<h3 id="线程锁"><a class="header" href="#线程锁">线程锁</a></h3>
+<p>线程锁可以通过 threading 模块创建。</p>
+<pre><code class="language-python">import threading
+
+lock = threading.Lock()
+</code></pre>
+<p>注意：Lock 并不是一个类，而是一个函数，看一下源代码。</p>
+<pre><code class="language-Python">Lock = _allocate_lock
+# threading.Lock() 其实就是 _thread.allocate_lock()
+_allocate_lock = _thread.allocate_lock
+</code></pre>
+<p>调用 _thread.allocate_lock() 时会在内部创建锁，而锁是由 _thread 模块实现的。</p>
+<pre><code class="language-Python">import threading
+import _thread
+
+lock = threading.Lock()
+print(type(lock))
+&quot;&quot;&quot;
+&lt;class '_thread.lock'&gt;
+&quot;&quot;&quot;
+lock = _thread.allocate_lock()
+print(type(lock))
+&quot;&quot;&quot;
+&lt;class '_thread.lock'&gt;
+&quot;&quot;&quot;
+</code></pre>
+<p>所以线程锁其实是一个 _thread.lock 对象。另外再补充一下，Python 有很多的模块是由 C 实现的，因为它们和性能密切相关，编译之后会内嵌在解释器里面，举个例子：</p>
+<pre><code class="language-Python">import random, _random
+import re, _sre
+import ssl, _ssl
+import io, _io
+import bisect, _bisect
+import heapq, _heapq
+import asyncio, _asyncio
+import threading, _thread
+</code></pre>
+<p>这些 C 实现的模块，名字前面一般会带有一个下滑线，它们内嵌在解释器里面，你在 Lib 目录下是找不到的。但我们不需要直接使用这些模块，解释器会提供相应的 Python 模块对其进行封装。我们只需要导入 Python 模块即可，在内部会调用具体的 C 实现，比如内置函数 open，它其实就是 io.open，而 io 里面的 open 是从 _io 导入进来的。</p>
+<pre><code class="language-Python">import io
+import _io
+
+print(open is io.open is _io.open)  # True
+</code></pre>
+<p>好了，说了这么多只是想表示线程锁的具体实现不在 threading 里面，而是在 _thread 里面。_thread 是一个 C 实现的模块，我们需要到解释器里面才能看到具体实现。在 Modules/_threadmodule.c 中，有一个结构体实例 Locktype，它便是 _thread.lock 这个类的底层实现。</p>
+<p><img src="./images/333.png" alt="" /></p>
+<p>_thread.lock 实例化后会得到锁，锁在底层对应的是 lockobject 结构体。</p>
+<pre><code class="language-C">// Modules/_threadmodule.c
+typedef struct {
+    // 每个对象都具备的头部信息，它包含了对象的引用计数和类型
+    PyObject_HEAD
+    // PyThread_type_lock 是 void * 的类型别名，所以 lock_lock 是一个 void * 指针
+    // 该指针指向了真正的锁，这个锁是底层操作系统提供的
+    // 和协程锁不同，由于操作系统感知不到协程，因此协程锁是基于 Future 对象实现的
+    // 但线程锁则是基于操作系统实现的，当 Python 代码创建锁、获取锁、解锁时
+    // 会通过 lock_lock 指针将这些操作转发到具体的锁实现上
+    PyThread_type_lock lock_lock;
+    // 用于创建弱引用，这里不用关注
+    PyObject *in_weakreflist;
+    // 用于标记锁状态，把它当成 Python 的布尔值即可
+    // 值为 1 表示锁已被获取（已锁定），0 表示未被获取（未锁定）。
+    char locked;
+} lockobject;
+
+// Include/pythread.h
+typedef void *PyThread_type_lock;
+</code></pre>
+<p>结构体应该很好理解，然后来看一下锁的具体方法，那么方法都定义在哪呢？前面说过，实例对象有哪些行为，取决于类型对象定义了哪些操作。因此锁的操作都定义在 Locktype 里面，由内部的 tp_methods 字段负责维护。而该字段被赋值为 lock_methods，所以锁的方法都在 lock_methods 数组中。</p>
+<p><img src="./images/334.png" alt="" /></p>
+<p>以上就是锁能够使用的方法，我们来验证一下。</p>
+<pre><code class="language-python">import threading
+
+lock = threading.Lock()
+
+# acquire_lock 和 acquire 基本是等价的
+# release_lock 和 release 也基本是等价的
+# 不过我们一般都会使用 acquire 和 lock
+lock.acquire_lock()  # 获取锁
+lock.release_lock()  # 释放锁
+
+lock.acquire()  # 获取锁
+lock.release()  # 释放锁
+
+# 同理 locked_lock 和 locked 也是等价的
+# 表示锁是否被获取（已锁定），不过我们一般使用 locked
+print(lock.locked_lock())  # False
+print(lock.locked())  # False
+lock.acquire()
+print(lock.locked_lock())  # True
+print(lock.locked())  # True
+lock.release()
+
+# 还提供了上下文管理，等价于 lock.acquire + lock.release
+with lock:
+    pass
+</code></pre>
+<p>好，接下来我们看看 acquire 方法，也就是锁是怎么获取的。</p>
+<pre><code class="language-c">static PyObject *
+lock_PyThread_acquire_lock(lockobject *self, PyObject *args, PyObject *kwds)
+{
+    _PyTime_t timeout;  // 超时时间
+    // 一个枚举，表示锁状态，有三个可选值
+    // PY_LOCK_FAILURE：表示因为锁已被持有，而获取失败
+    // PY_LOCK_ACQUIRED：表示锁可用，并成功获取锁
+    // PY_LOCK_INTR：表示获取锁的操作被中断，比如抵达超时时间
+    PyLockStatus r;
+    // 参数解析，该方法接收一个 timeout 参数
+    if (lock_acquire_parse_args(args, kwds, &amp;timeout) &lt; 0)
+        return NULL;
+    // 获取锁，并指定一个超时时间，不传则表示没有超时时间
+    // 那么在获取不到锁时，会无限等待
+    r = acquire_timed(self-&gt;lock_lock, timeout);
+    // 如果返回的状态为 PY_LOCK_INTR，说明达到超时时间
+    // 因此获取锁的操作被中断，并且会抛出异常
+    if (r == PY_LOCK_INTR) {
+        return NULL;
+    }
+    // 如果返回的状态为 PY_LOCK_ACQUIRED，表示锁获取成功
+    // 将锁的 locked 字段设置为 1，表示锁已被获取
+    if (r == PY_LOCK_ACQUIRED)
+        self-&gt;locked = 1;
+    // 如果以上两种状态都不是，那么说明获取失败了
+    // 将 r == PY_LOCK_ACQUIRED 转成布尔值返回
+    // 获取成功返回 True，获取失败返回 False
+    return PyBool_FromLong(r == PY_LOCK_ACQUIRED);
+}
+</code></pre>
+<p>整个过程仍然很简单，因此我们看到协程锁和线程锁的实现是类似的，它们都有一个 locked 字段用于表示锁是否已被获取。</p>
+<p>只不过协程锁是基于 Future 对象实现的，当 await future 陷入阻塞时，表示锁已被其它协程获取。当解除阻塞时，代表锁被释放了，自己获取到锁。而线程锁是基于操作系统实现的，它本质上是对操作系统提供的锁做了一个封装，Python 线程在获取锁时，底层会获取操作系统的锁。</p>
+<p>那么操作系统的锁是怎么获取的呢？在源码中使用的是 acquire_time 函数，它接收一个指针和一个超时时间。该指针便是 lockobject 的 lock_lock 字段，类型是 void *，它指向了操作系统提供的锁实现。</p>
+<p><img src="./images/335.png" alt="" /></p>
+<p>acquire_time 函数做了一些参数处理后，又调用了 PyThread_acquire_lock_timed  函数，显然获取锁的逻辑位于该函数里面。PyThread_acquire_lock_timed 函数在不同平台有着不同的实现，因为不同操作系统的锁实现是不一样的，所以源码中使用 void *。</p>
+<p><img src="./images/336.png" alt="" /></p>
+<p>我们以 Windows 系统为例：</p>
+<pre><code class="language-C">// Python/thread_nt.h
+
+// 虽然不同系统的函数实现不一样，但参数是一致的
+/* aLock：void * 指针，指向操作系统提供的锁；
+ * microseconds：等待锁的时间，以微妙为单位。如果值是负数，表示无限等待，直到获取锁；
+ * intr_flag：如果设置为 1，那么当等待过程中出现了信号中断时，函数会提前返回；*/
+PyLockStatus
+PyThread_acquire_lock_timed(PyThread_type_lock aLock,
+                            PY_TIMEOUT_T microseconds, int intr_flag)
+{
+    PyLockStatus success;
+    PY_TIMEOUT_T milliseconds;
+    // 如果 microseconds &gt;= 0，将微妙转成毫秒
+    if (microseconds &gt;= 0) {
+        milliseconds = microseconds / 1000;
+        if (microseconds % 1000 &gt; 0)
+            ++milliseconds;
+        if (milliseconds &gt; PY_DWORD_MAX) {
+            Py_FatalError(&quot;Timeout larger than PY_TIMEOUT_MAX&quot;);
+        }
+    }
+    // 否则无限等待
+    else {
+        milliseconds = INFINITE;
+    }
+
+    dprintf((&quot;%lu: PyThread_acquire_lock_timed(%p, %lld) called\n&quot;,
+             PyThread_get_thread_ident(), aLock, microseconds));
+    // 调用 EnterNonRecursiveMutex 获取锁
+    if (aLock &amp;&amp; EnterNonRecursiveMutex((PNRMUTEX)aLock,
+                                        (DWORD)milliseconds) == WAIT_OBJECT_0) {
+        success = PY_LOCK_ACQUIRED;
+    }
+    else {
+        success = PY_LOCK_FAILURE;
+    }
+
+    dprintf((&quot;%lu: PyThread_acquire_lock(%p, %lld) -&gt; %d\n&quot;,
+             PyThread_get_thread_ident(), aLock, microseconds, success));
+
+    return success;
+}
+</code></pre>
+<p>源码中又调用了 EnterNonRecursiveMutex 函数，该函数是真正获取锁的逻辑，参数 aLock 指向了操作系统的互斥锁。前面说过，不同系统有着不同的锁实现，所以实际使用时需要转换，在 Windows 系统上，它被转成了 PNRMUTEX。</p>
+<pre><code class="language-C">// Python/thread_nt.h
+typedef struct _NRMUTEX
+{   
+    // 对操作系统互斥锁的封装
+    PyMUTEX_T cs;
+    // 对条件变量的封装，用于线程间的同步
+    // 允许线程在条件不满足时等待，条件满足时由其它线程通知等待的线程
+    // 条件变量一般和互斥锁一起使用，避免竞争条件和死锁
+    PyCOND_T cv;
+    // 标记互斥锁是否已被获取，1 表示已被获取，0 表示未被获取
+    int locked;
+} NRMUTEX;
+typedef NRMUTEX *PNRMUTEX;
+</code></pre>
+<p>所以 lockobject 的 lock_lock 指针指向的其实依旧不是 OS 互斥锁，而是一个结构体实例，结构体内部的 cs 字段封装的才是 OS 互斥锁。</p>
+<p><img src="./images/337.png" alt="" /></p>
+<p>lockobject 是线程锁，也就是 Python 代码中使用的锁的底层实现，而 NRMUTEX 则是封装了操作系统提供的互斥锁。注意这里面的两个 locked，它们都用于标记锁是否已被获取。</p>
+<p>最后来看看 EnterNonRecursiveMutex 函数的具体逻辑。</p>
+<pre><code class="language-C">// Python/thread_nt.h
+DWORD
+EnterNonRecursiveMutex(PNRMUTEX mutex, DWORD milliseconds)
+{
+    DWORD result = WAIT_OBJECT_0;
+    // 对 OS 互斥锁进行锁定，用于保护共享数据，如果锁定失败直接返回
+    if (PyMUTEX_LOCK(&amp;mutex-&gt;cs))
+        return WAIT_FAILED;
+    // 如果锁定成功，那么将 locked 字段设置为 1，表示互斥锁被获取
+    // 但如果发现 locked 已经为 1 了，则说明已有别的线程将 locked 修改为 1
+    // 那么当前线程就要等待，直到 locked 不为 1（锁被释放）
+    if (milliseconds == INFINITE) {
+        // 无限等待
+        while (mutex-&gt;locked) {
+            if (PyCOND_WAIT(&amp;mutex-&gt;cv, &amp;mutex-&gt;cs)) {
+                result = WAIT_FAILED;
+                break;
+            }
+        }
+    } else if (milliseconds != 0) {
+        // 有时间限制的等待
+        ULONGLONG now, target = GetTickCount64() + milliseconds;
+        while (mutex-&gt;locked) {
+            if (PyCOND_TIMEDWAIT(&amp;mutex-&gt;cv, &amp;mutex-&gt;cs, (long long)milliseconds*1000) &lt; 0) {
+                result = WAIT_FAILED;
+                break;
+            }
+            now = GetTickCount64();
+            if (target &lt;= now)
+                break;
+            milliseconds = (DWORD)(target-now);
+        }
+    }
+    // 被唤醒之后，说明当前线程获取互斥锁成功，于是将 locked 改成 1
+    if (!mutex-&gt;locked) {
+        mutex-&gt;locked = 1;
+        result = WAIT_OBJECT_0;
+    } else if (result == WAIT_OBJECT_0)
+        result = WAIT_TIMEOUT;
+    // 这里必须将操作系统的锁释放掉，因为对于外界的线程而言
+    // 锁是否被获取（锁定），取决于 locked 字段是否为 1
+    PyMUTEX_UNLOCK(&amp;mutex-&gt;cs);
+    return result;
+}
+</code></pre>
+<p>代码逻辑有一些让人疑惑的地方，下面解释一下。Python 里面调用 lock.acquire() 方法时，表示要获取线程锁，但获取线程锁之前，要先获取 OS 互斥锁，如果获取不到，那么压根不允许进入临界区。</p>
+<p>但解释器在互斥锁的基础上又封装了一层，如果获取到了互斥锁，还要将 locked 字段修改为 1。因为从代码逻辑上讲，无论是线程锁还是互斥锁，只有当它们内部的 locked 字段为 1 时，才算是获取了锁。所以将互斥锁的 locked 字段修改为 1 之后，后续还要将线程锁的 locked 字段修改为 1，这样才算是获取了线程锁。</p>
+<p>到这里可能有人会产生一个疑问，为啥函数在一开始要获取系统的互斥锁，最后又释放掉，这岂不是多此一举？</p>
+<pre><code class="language-C">    if (PyMUTEX_LOCK(&amp;mutex-&gt;cs))
+        return WAIT_FAILED;
+    //...
+    PyMUTEX_UNLOCK(&amp;mutex-&gt;cs);
+</code></pre>
+<p>直接检测 locked 字段是否等于 1 不就行了吗？其实原因有三个：</p>
+<ul>
+<li>保护共享状态：操作系统的互斥锁 <code>mutex-&gt;cs</code> 用于保护共享状态 <code>mutex-&gt;locked</code> 的读写，在多线程环境中，任何对共享状态的访问都要同步，以防止竞态条件；</li>
+<li>条件变量的同步：在使用条件变量 <code>mutex-&gt;cv</code> 时，通常需要结合互斥锁使用，条件变量的等待和通知需要在互斥锁的保护下进行，以保证操作的原子性；</li>
+<li>避免忙等待：如果只使用 <code>mutex-&gt;locked</code> 进行检查，可能会陷入忙等待，即不断地检查锁状态而占用 CPU 资源。使用互斥锁和条件变量可以让线程在等待时被挂起，从而更有效地利用 CPU；</li>
+</ul>
+<p>所以解释器为 OS 互斥锁引入了一个自定义的锁状态 locked，OS 互斥锁提供了对 locked 的基本保护，因为多个线程都要修改它。而自定义的锁状态 locked 则用于实现同步逻辑，如果 locked 为 1，我们就认为锁被获取了，locked 为 0，锁就没有被获取。</p>
+<p>协程锁和线程锁都是如此，所谓的获取锁、释放锁都是在修改 locked 字段的值。只不过在等待的时候，协程锁使用的是 Future 对象，而线程锁使用的是操作系统提供的互斥锁和条件变量。</p>
+<p>所以上面代码中的 PyMUTEX_LOCK 通过之后，还要检测 locked 字段是否等于 1，代码片段如下。</p>
+<pre><code class="language-c">        while (mutex-&gt;locked) {
+            if (PyCOND_WAIT(&amp;mutex-&gt;cv, &amp;mutex-&gt;cs)) {
+                result = WAIT_FAILED;
+                break;
+            }
+        //...
+</code></pre>
+<p>如果 locked 是 1，说明互斥锁已经被获取了，当前线程要进行等待，直到 locked 字段的值为 0。当其它线程释放锁时，会将 locked 字段修改为 0，并通过条件变量唤醒当前线程。该线程醒来后检测到 locked 为 0，就知道互斥锁已被释放，自己可以获取了，于是再将 locked 字段修改为 1。</p>
+<p>说完了线程锁的获取，再来看看线程锁的释放，所谓释放，其实就是将 locked 字段修改为 0 而已。</p>
+<pre><code class="language-C">// Python/_threadmodule.c
+static PyObject *
+lock_PyThread_release_lock(lockobject *self, PyObject *Py_UNUSED(ignored))
+{
+    /* Sanity check: the lock must be locked */
+    if (!self-&gt;locked) {
+        PyErr_SetString(ThreadError, &quot;release unlocked lock&quot;);
+        return NULL;
+    }
+    // 释放互斥锁，在内部会将 locked 字段设置为 0
+    PyThread_release_lock(self-&gt;lock_lock);
+    self-&gt;locked = 0;  // 将 locked 字段设置为 0，释放线程锁
+    Py_RETURN_NONE;
+}
+</code></pre>
+<p>释放互斥锁的逻辑最终会调用如下函数：</p>
+<pre><code class="language-C">// Python/thread_nt.h
+BOOL
+LeaveNonRecursiveMutex(PNRMUTEX mutex)
+{
+    BOOL result;
+    if (PyMUTEX_LOCK(&amp;mutex-&gt;cs))
+        return FALSE;
+    // 将 locked 设置为 0
+    mutex-&gt;locked = 0;
+    /* condvar APIs return 0 on success. We need to return TRUE on success. */
+    result = !PyCOND_SIGNAL(&amp;mutex-&gt;cv);
+    PyMUTEX_UNLOCK(&amp;mutex-&gt;cs);
+    return result;
+}
+</code></pre>
+<p>修改 locked 是不安全的，需要加锁保护。所以 OS 互斥锁就是为了保护 locked 变量的修改，再配合条件变量实现阻塞等待以及自动唤醒，但从代码逻辑上讲，将 locked 字段设置为 0，才算是真正释放了锁。</p>
+<p>这部分逻辑稍微有点绕，总之记住一个重点：所谓的锁，它的核心就是结构体的一个字段，这里是 locked。如果字段的值为 1，表示锁被获取了，字段的值为 0，表示锁没有被获取。</p>
+<ul>
+<li>而获取锁，本质上就是将 locked 字段修改为 1；</li>
+<li>而释放锁，本质上就是将 locked 字段修改为 0；</li>
+</ul>
+<p>线程在获取锁和释放锁时的逻辑可以简化为如下：</p>
+<p><img src="./images/338.png" alt="" /></p>
+<p>但实际情况会有多个线程一起竞争锁，因此为了保护这个共享字段，以及实现阻塞等待和自动唤醒，解释器使用了操作系统的互斥锁和条件变量。</p>
+<h2 id="信号量"><a class="header" href="#信号量">信号量</a></h2>
+<p>说完了锁，再来说说信号量。锁负责保证同一时刻只能有一个协程去操作临界区，而信号量在创建时会接收一个初始值 value，可以保证同一时刻最多有 value 个协程去操作临界区。</p>
+<p>因此可以把锁看成是初始值 value 等于 1 的信号量，它在源码中的实现和锁基本是类似的，我们也手动实现一下（这里只看协程信号量）。</p>
+<pre><code class="language-Python">import asyncio
+from collections import deque
+
+class Semaphore:
+
+    def __init__(self, value=1):
+        self._waiters = deque()
+        # 可以把 self._value 看成是令牌的数量
+        # 每当一个协程进入临界区，令牌数减 1，离开临界区，令牌数加 1
+        # 如果 self._value 小于等于 0，说明令牌用光了，此时就不允许进入临界区
+        self._value = value
+
+    @property
+    def locked(self):
+        return self._value &lt;= 0
+
+    async def acquire(self):
+        # 如果 self._value &gt; 0，说明可以进入临界区
+        if not self.locked:
+            self._value -= 1  # self._value 要减 1
+            return True
+        # 如果 self._value &lt;= 0，说明此时不能进入临界区，必须等待某个协程从临界区出来
+        # 那么和锁一样，也是创建一个 future 并放在双端队列里面
+        future = asyncio.Future()
+        self._waiters.append(future)
+        # 此时获取信号量的协程会陷入阻塞
+        await future
+        # 解除阻塞，意味着该协程获取到信号量了
+        self._value -= 1
+        return True
+
+    def release(self):
+        # 释放信号量，说白了就是将 self._value 加 1
+        self._value += 1
+        if len(self._waiters) == 0:
+            return
+        future = self._waiters.popleft()
+        future.set_result(True)
+
+    async def __aenter__(self):
+        await self.acquire()
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        self.release()
+</code></pre>
+<p>信号量和锁的实现方式是一样的，锁可以看成是 value 为 1 的信号量。当协程进入临界区，value 的值会减少 1，离开临界区 value 的值会增加 1。如果 value 为 0，那么后续协程就不允许进入临界区了，必须等到某个协程从临界区出来。</p>
+<p>说到这，再来补充一个有界信号量，因为信号量有一个问题。</p>
+<pre><code class="language-Python">import asyncio
+from asyncio import Semaphore
+import time
+
+async def bar(sem: Semaphore):
+    async with sem:
+        await asyncio.sleep(3)
+
+async def main():
+    # 每次允许两个协程进入临界区
+    sem = Semaphore(2)
+    # 创建 4 个任务
+    task = [asyncio.create_task(bar(sem)) for _ in range(4)]
+    # 直接对 sem 执行 release
+    sem.release()
+    sem.release()
+    await asyncio.gather(*task)
+
+start = time.perf_counter()
+asyncio.run(main())
+end = time.perf_counter()
+print(f&quot;总耗时: {end - start}&quot;)
+&quot;&quot;&quot;
+总耗时: 3.003426834
+&quot;&quot;&quot;
+</code></pre>
+<p>创建了 4 个任务，每次只允许两个协程进入临界区，因此总耗时应该是 6 秒才对。但问题是我们创建完信号量之后，调用了两次 release 方法，将内部的 value 值增加了 2，此时信号量就变成了同时允许 4 个协程进入临界区。</p>
+<p>因此和锁不一样，锁一旦被释放，就不能再二次释放。而信号量被释放，其实就是将内部的 value 加 1，并且不会对内部的 value 进行检测。</p>
+<pre><code class="language-Python">import asyncio
+from asyncio import Semaphore
+
+async def main():
+    sem = Semaphore(2)
+    print(f&quot;before value: {sem._value}&quot;)
+    for _ in range(100):
+        sem.release()
+    print(f&quot;after value: {sem._value}&quot;)
+
+asyncio.run(main())
+&quot;&quot;&quot;
+before value: 2
+after value: 102
+&quot;&quot;&quot;
+</code></pre>
+<p>不过这个问题基本很少发生，当然也可以使用 async with 语句，这样获取和释放一定是成对出现的。而有界信号量在信号量的基础上做了一层检测，如果在 release 的时候发现 value 已经达到了初始值，那么会报错。</p>
+<p><img src="./images/339.png" alt="" /></p>
+<p>有界信号量会将初始值 value 单独保存起来，如果释放时发现 value 大于等于初始值，那么报错。但是注意：有界信号量依旧可以多次 release，不过我们基本不会这么干，因为获取和释放应该是成对出现的。</p>
+<p>以上就是协程信号量，至于线程信号量可以自己尝试阅读源码，看看是怎么实现的。</p>
+<h2 id="队列"><a class="header" href="#队列">队列</a></h2>
+<p>队列是一种特殊的线性表，具有先进先出（FIFO）的特性，这意味着元素的入队顺序和出队顺序是一致的。</p>
+<p><img src="./images/340.png" alt="" /></p>
+<p>而 Python 也提供了队列，分别是协程队列和线程队列。</p>
+<pre><code class="language-python">import asyncio
+import queue
+
+# 协程队列
+coroutine_queue = asyncio.Queue()
+# 线程队列
+threading_queue = queue.Queue()
+</code></pre>
+<p>如果你的程序基于 asyncio，那么应该使用协程队列，如果你的程序采用了多线程，那么应该使用线程队列。</p>
+<h3 id="协程队列"><a class="header" href="#协程队列">协程队列</a></h3>
+<p>协程队列的具体实现由 asyncio 提供，以下是它的基本用法。</p>
+<pre><code class="language-Python">import asyncio
+
+async def main():
+    # 创建队列时可以指定能够存储的最大元素个数
+    # 不指定则没有容量限制
+    queue = asyncio.Queue(maxsize=20)
+    # 返回容量
+    print(queue.maxsize)  # 20
+
+    # 添加元素，如果队列满了会阻塞，直到有剩余空间
+    await queue.put(111)
+    
+    # 添加元素，如果队列满了会抛异常
+    # 因为不需要阻塞等待，所以 put_nowait 不是协程函数
+    queue.put_nowait(222)
+    # 队列是否已满
+    print(queue.full())  # False
+
+    # 返回队列内部的元素个数
+    print(queue.qsize())  # 2
+
+    # 从队列中获取元素，如果队列为空，会阻塞，直到队列中有可用元素
+    print(await queue.get())  # 111
+
+    # 从队列中获取元素，如果队列为空，会抛异常
+    # 因为不需要阻塞等待，所以 put_nowait 不是协程函数
+    print(queue.get_nowait())  # 222
+
+    # 队列是否为空
+    print(queue.empty())  # True
+
+asyncio.run(main())
+</code></pre>
+<p>所以协程队列的 API 很简单，我们再罗列一下：</p>
+<ul>
+<li><font color="blue">queue = asyncio.Queue()</font>，创建一个队列。</li>
+<li><font color="blue">queue.maxsize</font>，返回队列的容量。</li>
+<li><font color="blue">queue.qsize()</font>，返回队列中的元素个数。</li>
+<li><font color="blue">queue.full()</font>，队列是否已满。</li>
+<li><font color="blue">queue.empty()</font>，队列是否为空。</li>
+<li><font color="blue">await queue.put(item)</font>，往队列中添加元素，队列满了会阻塞。</li>
+<li><font color="blue">queue.put_nowait(item)</font>，往队列中添加元素，队列满了会抛异常。</li>
+<li><font color="blue">await queue.get()</font>，从队列中取出元素，队列为空会阻塞。</li>
+<li><font color="blue">queue.get_nowait()</font>，从队列中取出元素，队列为空会抛异常。</li>
+</ul>
+<p>然后协程队列还有两个 API，需要单独说明，分别是 task_done() 和 join()。</p>
+<p>首先在协程队列内部有一个 _unfinished_tasks 属性，初始值为 0，每当往队列添加一个元素时，该属性的值就会自增 1。但是从队列取出元素时，该属性不会自动减 1，需要手动调用 task_done() 方法。所以 _unfinished_tasks 记录了队列中有多少个任务数据需要处理，每来一个自动加 1，但取走一个不会自动减 1，而是需要调用 task_done 实现。</p>
+<p>然后 join() 的作用是，当 _unfinished_tasks 不为 0 的时候，await queue.join() 会阻塞，直到为 0。</p>
+<pre><code class="language-python">import asyncio
+
+async def consumer(queue, n):
+    print(f&quot;consumer{n} 开始消费&quot;)
+    await asyncio.sleep(3)
+    await queue.get()
+    # 获取数据后，调用 task_done
+    queue.task_done()
+    print(f&quot;consumer{n} 消费完毕&quot;)
+
+async def main():
+    queue = asyncio.Queue()
+    await queue.put(123)
+    await queue.put(456)
+    await queue.put(789)
+    # 队列里面有三个数据，开启三个消费者去消费
+    await asyncio.gather(
+        consumer(queue, 1),
+        consumer(queue, 2),
+        consumer(queue, 3),
+    )
+    # 这里会陷入阻塞，直到 _unfinished_tasks 变为 0
+    await queue.join()
+    print(&quot;main 解除阻塞&quot;)
+
+
+asyncio.run(main())
+&quot;&quot;&quot;
+consumer1 开始消费
+consumer2 开始消费
+consumer3 开始消费
+consumer1 消费完毕
+consumer2 消费完毕
+consumer3 消费完毕
+main 解除阻塞
+&quot;&quot;&quot;
+</code></pre>
+<p>还是比较简单的，然后我们来看一下协程队列的具体实现细节。</p>
+<p><img src="./images/341.png" alt="" /></p>
+<p>协程队列内部有一个 _queue 属性，它是一个双端队列，负责保存具体的元素。因为要保证两端的操作都是高效的，所以采用双端队列实现。</p>
+<p>然后是 _getters 和 _putters 两个属性，它们是做什么的呢？首先在队列满了的时候，协程往队列添加元素时会陷入阻塞，等到队列有剩余空间时会解除阻塞。同理，在队列为空时，协程从队列获取元素时会陷入阻塞，等到队列有可用元素时会解除阻塞。那么这个阻塞等待，以及自动唤醒并解除阻塞是怎么实现的呢？在介绍锁和信号量的时候，我们分析过整个实现过程，协程队列与之类似。</p>
+<p>假设协程从队列获取元素，但是队列为空，于是会创建一个 Future 对象，并保存起来，而保存的地方就是 _getters，它也是双端队列。然后 await future 会陷入阻塞，当其它协程往队列中添加元素时，会将 _getters 里面的 future 弹出，设置结果集，此时 await future 的协程就会解除阻塞，因为队列有可用元素了。</p>
+<p>同理，协程往队列添加元素也是如此，如果队列满了，同样创建一个 Future 对象，并保存起来，而保存的地方就是 _putters。然后 await future，陷入阻塞，当其它协程从队列中取出元素，会将 _putters 里面的 future 弹出，设置结果集。因此 await future 的协程就会解除阻塞，因为队列有可用空间了。</p>
+<p><img src="./images/342.png" alt="" /></p>
+<p>以上是内部调用的三个方法，_get 方法负责从队列的头部弹出元素，_put 方法负责从队列的尾部追加元素，比较简单。然后是 _wakeup_next 方法，它负责唤醒阻塞的协程。参数 waiters 要么是 _getters，要么是 _putters，从里面弹出一个 future，设置结果集，让对应的协程解除阻塞。</p>
+<p><img src="./images/343.png" alt="" /></p>
+<p>以上几个方法都比较简单，接下来重点来了，我们看看元素是怎么放入和获取的。</p>
+<pre><code class="language-Python">    def put_nowait(self, item):
+        &quot;&quot;&quot;Put an item into the queue without blocking.
+
+        If no free slot is immediately available, raise QueueFull.
+        &quot;&quot;&quot;
+        if self.full():
+            raise QueueFull
+        self._put(item)
+        self._unfinished_tasks += 1
+        self._finished.clear()
+        self._wakeup_next(self._getters)
+        
+    def get_nowait(self):
+        &quot;&quot;&quot;Remove and return an item from the queue.
+
+        Return an item if one is immediately available, else raise QueueEmpty.
+        &quot;&quot;&quot;
+        if self.empty():
+            raise QueueEmpty
+        item = self._get()
+        self._wakeup_next(self._putters)
+        return item        
+</code></pre>
+<p>put_nowait 负责往队列添加元素，如果添加时发现队列已满，那么抛出异常。如果未满，则调用 _put 方法往 _queue 里面添加元素，因为元素的实际存储是由 self._queue 这个双端队列负责的。添加完毕后，将 _unfinished_task 加 1。最后从 _getters 里面弹出 future，设置结果集，让因获取不到元素而陷入阻塞的协程解除阻塞（同时会将添加的元素取走）。</p>
+<p>get_nowait 的逻辑也很简单，如果队列为空，直接抛异常。如果不为空，则调用 _get 方法从队列中弹出元素。最后从 _putters 里面弹出 future，设置结果集，让因队列已满、无法添加元素而陷入阻塞的协程解除阻塞（同时会将元素添加进队列）。</p>
+<p>无论是 put_nowait 还是 get_nowait，在调用时都不会阻塞，因此队列还提供了阻塞的 put 和 get 方法。</p>
+<pre><code class="language-Python">    async def put(self, item):
+        while self.full():  # 如果队列已满
+            putter = self._get_loop().create_future()  # 创建一个 future
+            self._putters.append(putter)  # 添加到 self._putters 中
+            try:
+                # await 陷入阻塞，直到别的协程从队列中取走元素
+                # 然后弹出该 future 并设置结果集
+                await putter
+            except:
+                putter.cancel()  # Just in case putter is not done yet.
+                try:
+                    # Clean self._putters from canceled putters.
+                    self._putters.remove(putter)
+                except ValueError:
+                    # The putter could be removed from self._putters by a
+                    # previous get_nowait call.
+                    pass
+                if not self.full() and not putter.cancelled():
+                    # We were woken up by get_nowait(), but can't take
+                    # the call.  Wake up the next in line.
+                    self._wakeup_next(self._putters)
+                raise
+        # 说明队列有可用空间了，直接调用 put_nowait 方法
+        return self.put_nowait(item)
+
+
+    async def get(self):
+        while self.empty():  # 如果队列为空
+            getter = self._get_loop().create_future()  # 创建一个 future
+            self._getters.append(getter)  # 添加到 self,_getters 中
+            try:
+                # await 陷入阻塞，直到别的协程往队列中添加元素
+                # 然后弹出该 future 并设置结果集
+                await getter
+            except:
+                getter.cancel()  # Just in case getter is not done yet.
+                try:
+                    # Clean self._getters from canceled getters.
+                    self._getters.remove(getter)
+                except ValueError:
+                    # The getter could be removed from self._getters by a
+                    # previous put_nowait call.
+                    pass
+                if not self.empty() and not getter.cancelled():
+                    # We were woken up by put_nowait(), but can't take
+                    # the call.  Wake up the next in line.
+                    self._wakeup_next(self._getters)
+                raise
+        # 说明队列有可用元素了，直接调用 get_nowait 方法                
+        return self.get_nowait()
+</code></pre>
+<p>比较简单，还是没什么难度的，最后再来看看 task_done 和 join 两个方法。</p>
+<pre><code class="language-Python">    def task_done(self):
+        if self._unfinished_tasks &lt;= 0:
+            raise ValueError('task_done() called too many times')
+        self._unfinished_tasks -= 1
+        if self._unfinished_tasks == 0:
+            self._finished.set()
+            
+    async def join(self):
+        if self._unfinished_tasks &gt; 0:
+            await self._finished.wait()            
+</code></pre>
+<p>协程队列里面使用了 asyncio.Event，它表示事件，我们稍后说。如果事件对象没有调用 set 方法设置标志位，那么调用 wait 方法时会陷入阻塞。当事件对象调用 set 方法时，wait 会解除阻塞。所以协程队列的 join 方法的逻辑就是，当 _unfinished_tasks 大于 0 时，调用事件对象的 wait 方法陷入阻塞。</p>
+<p>而 task_done 方法的作用就是将 _unfinished_tasks 减 1，当 _unfinished_tasks 的值为 0 时，调用事件对象的 set 方法，让 join 解除阻塞。</p>
+<p>以上就是整个协程队列的实现细节，具体的元素存储是由 collections.deque 来承载的。并在队列已满或者为空时，通过 Future 对象来实现阻塞等待和自动唤醒。</p>
+<p>另外除了先进先出队列之外，还有先进后出队列，一般称为 LIFO 队列，它的效果类似于栈。</p>
+<pre><code class="language-Python">class LifoQueue(Queue):
+
+    def _init(self, maxsize):
+        self._queue = []
+
+    def _put(self, item):
+        self._queue.append(item)
+
+    def _get(self):
+        return self._queue.pop()
+</code></pre>
+<p>这个没什么好说的，因为是先进后出，所以添加和弹出都在同一端，直接使用列表实现即可。并且由于 LifoQueue 继承 Queue，所以它的 API 和普通的协程队列是一样的。</p>
+<p>除了先进先出队列，还有一个优先队列。</p>
+<pre><code class="language-Python">class PriorityQueue(Queue):
+
+    def _init(self, maxsize):
+        self._queue = []
+
+    def _put(self, item, heappush=heapq.heappush):
+        heappush(self._queue, item)
+
+    def _get(self, heappop=heapq.heappop):
+        return heappop(self._queue)
+</code></pre>
+<p>它的 API 和普通的协程队列也是一致的，只不过优先队列在添加元素时，需要指定一个优先级：<font color="blue">(优先级, 元素)</font>，优先级的值越低，表示优先级越高。然后在内部，会按照优先级的高低，维护一个小根堆，堆顶元素便是优先级最高的元素。</p>
+<p>这几个队列具体使用哪一种，则取决于具体的业务场景。</p>
+<h3 id="线程队列"><a class="header" href="#线程队列">线程队列</a></h3>
+<p>说完了协程队列，再来看看线程队列，它们的 API 是类似的，但实现细节则不同。因为操作系统感知不到协程，所以协程队列的阻塞等待是基于 Future 实现的，而线程队列的阻塞等待是基于条件变量（和互斥锁）实现的。</p>
+<p>还是先来看看线程队列的一些 API，和协程队列是类似的。</p>
+<pre><code class="language-Python">from queue import Queue
+
+# 可以指定一个 maxsize 参数，表示队列的容量
+# 不指定则表示队列的容量无限
+queue = Queue(maxsize=20)
+
+# 查看容量
+print(queue.maxsize)  # 20
+
+# 查看队列的元素个数
+print(queue.qsize())  # 0
+
+# 判断队列是否已满
+print(queue.full())  # False
+
+# 判断队列是否为空
+print(queue.empty())  # True
+
+# 往队列中添加元素，block 参数表示是否阻塞，默认为 True，当队列已满时，线程会阻塞
+# timeout 表示超时时间，默认为 None，表示会无限等待
+# 当然也可以给 timeout 传一个具体的值，如果在规定时间内，没有将元素放入队列，那么抛异常
+queue.put(123, block=True, timeout=None)
+# 也是往队列中添加元素，但是当队列已满时，会直接抛异常
+# put_nowait(item) 本质上就是 put(item, block=False)
+queue.put_nowait(456)
+
+# 从队列中取出元素，同样可以传递 block 和 timeout 参数
+# block 默认为 True，当队列为空时会陷入阻塞，timeout 默认为 None，表示会无限等待
+print(queue.get(block=True, timeout=None))  # 123
+
+# 也是从队列中取出元素，但是当队列为空时，会直接抛异常
+# get_nowait() 本质上就是 get(block=False)
+print(queue.get_nowait())  # 456
+
+print(queue.unfinished_tasks)  # 2
+
+# task_done()，将 unfinished_tasks 属性的值减 1
+queue.task_done()
+queue.task_done()
+print(queue.unfinished_tasks)  # 0
+
+# join()，当 unfinished_tasks 不为 0 时，陷入阻塞
+queue.join()
+</code></pre>
+<p>线程队列的具体使用我们已经知道了，下面来看看它的具体实现。</p>
+<pre><code class="language-python">class Queue:
+
+    def __init__(self, maxsize=0):
+        self.maxsize = maxsize
+        self._init(maxsize)
+
+        # 互斥锁，当队列发生变化时，必须持有互斥锁
+        # 所有需要获取互斥锁的方法在返回前都必须释放它
+        self.mutex = threading.Lock()
+        # 互斥锁在以下三种条件变量（threading.Condition 对象）之间共享
+        # 因此获取和释放这些条件变量也相当于获取和释放互斥锁
+        
+        # 往队列中添加元素时，要通知条件变量 not_empty
+        # 这样等待获取元素的线程就会被通知到，从而解除阻塞
+        self.not_empty = threading.Condition(self.mutex)
+
+        # 从队列中弹出元素时，要通知条件变量 not_full
+        # 这样等待添加元素的线程就会被通知到，从而解除阻塞
+        self.not_full = threading.Condition(self.mutex)
+
+        # 当 unfinished_task 属性的值为 0 时，要通知条件变量 all_tasks_done
+        # 这样执行 join 方法的线程就会被通知到，从而解除阻塞
+        self.all_tasks_done = threading.Condition(self.mutex)
+        self.unfinished_tasks = 0
+
+    def _init(self, maxsize):
+        self.queue = deque()        
+</code></pre>
+<p>线程队列的内部依旧使用双端队列进行元素存储，并且还使用了一个互斥锁和三个条件变量。</p>
+<p>为了保证数据的一致性和线程安全，当队列在多线程环境中被修改（比如添加或删除元素）时，需要使用互斥锁。任何需要修改队列的操作都必须在获取到互斥锁之后进行，以防止多个线程同时对队列进行修改，否则会导致数据不一致或其它错误。同时，一旦对队列的修改完成，必须立即释放互斥锁，以便其它线程可以访问队列。</p>
+<p>然后是 not_empty 条件变量，当一个新元素被添加到队列时，应该向 not_empty 发送一个信号。这个动作会通知那些想从队列中获取元素，但因队列为空而陷入阻塞的线程，现在队列中已经有了新的元素，它们可以继续执行获取元素的操作。</p>
+<p>接下来是 not_full 条件变量，当从队列中取走一个元素时，应该向 not_full 发送一个信号。这个动作会通知那些想往队列添加元素，但因队列已满而陷入阻塞的线程，现在队列中已经有了可用空间，它们可以继续执行添加元素的操作。</p>
+<p>最后是 all_tasks_done 条件变量，当处理的任务全部完成，即计数器 unfinished_task 为 0 时，应该向 all_tasks_done 发送一个信号。这个动作会通知那些执行了 join() 方法而陷入阻塞的线程，它们可以继续往下执行了。</p>
+<pre><code class="language-Python">    def qsize(self):
+        with self.mutex:
+            return self._qsize()
+
+    def empty(self):
+        with self.mutex:
+            return not self._qsize()
+
+    def full(self):
+        with self.mutex:
+            return 0 &lt; self.maxsize &lt;= self._qsize()
+          
+    def _qsize(self):
+        return len(self.queue)          
+</code></pre>
+<p>因为线程队列采用了双端队列存储元素，所以双端队列的长度就是线程队列的元素个数。如果元素个数为 0，那么队列就是空；如果容量大于 0，并且小于等于元素个数，那么队列就满了。此外我们看到执行这些操作时，必须要在互斥锁的保护下进行。</p>
+<pre><code class="language-Python">    def put_nowait(self, item):
+        return self.put(item, block=False)
+
+    def get_nowait(self):
+        return self.get(block=False)
+</code></pre>
+<p>前面说了，put_nowait 和 get_nowait 本质上就是调用了 put 和 get，所以我们的重点是 put 和 get 两个方法。</p>
+<pre><code class="language-Python">    def _put(self, item):
+        self.queue.append(item)
+      
+    def put(self, item, block=True, timeout=None):
+        # 条件变量支持 with 语句，在内部会自动获取锁
+        with self.not_full:
+            # 如果指定了具体的容量，并且设置了非阻塞，以及元素个数达到了指定的容量
+            # 那么直接抛异常
+            if self.maxsize &gt; 0:
+                if not block:
+                    if self._qsize() &gt;= self.maxsize:
+                        raise Full
+                # 否则说明 block 为 True，如果元素个数达到了指定的容量
+                # 那么调用条件变量的 wait 方法进行等待，直到队列有可用空间
+                elif timeout is None:
+                    while self._qsize() &gt;= self.maxsize:
+                        self.not_full.wait()
+                # 超时时间必须大于等于 0
+                elif timeout &lt; 0:
+                    raise ValueError(&quot;'timeout' must be a non-negative number&quot;)
+                else:  # 否则说明 block 为 True，并且也指定了具体的超时时间
+                    endtime = time() + timeout
+                    # 如果规定时间内，元素没有放入到队列中，那么抛出异常，表示队列已满
+                    while self._qsize() &gt;= self.maxsize:
+                        remaining = endtime - time()
+                        if remaining &lt;= 0.0:
+                            raise Full
+                        self.not_full.wait(remaining)
+            # 到此，说明队列有可用空间，那么将元素添加进去
+            self._put(item)
+            # unfinished_tasks 属性的值加 1
+            self.unfinished_tasks += 1
+            # 给条件变量 not_empty 发一个信号，表示队列有元素了
+            # 那些因获取不到条件变量而陷入阻塞的线程可以解除阻塞了
+            self.not_empty.notify()      
+</code></pre>
+<p>以上就是 put 方法的底层实现，不难理解。说完了 put，再来看看 get。</p>
+<pre><code class="language-Python">    def _get(self):
+        return self.queue.popleft()
+    
+    def get(self, block=True, timeout=None):
+        with self.not_empty:
+            if not block:  # 如果 block 为 False，并且队列为空，那么抛异常
+                if not self._qsize():
+                    raise Empty
+            elif timeout is None:  # 说明 block 为 True，并且没有超时时间
+                # 当队列为空时，调用条件变量的 wait 方法进入等待
+                # 那么问题来了，什么时候解除阻塞呢
+                while not self._qsize():
+                    # 还记得 put 方法里面添加完元素后，做了一件什么事吗？
+                    # 没错，就是调用了 self.not_empty.notify()，它会发送一个信号
+                    # 让 self.not_empty.wait() 解除阻塞，因为队列有可用元素了
+                    self.not_empty.wait()
+            elif timeout &lt; 0:  # 超时时间必须大于等于 0
+                raise ValueError(&quot;'timeout' must be a non-negative number&quot;)
+            else:
+                # 如果规定时间内，还没有从队列中获取到元素
+                # 那么抛异常，表示队列为空，没有可用元素
+                endtime = time() + timeout
+                while not self._qsize():
+                    remaining = endtime - time()
+                    if remaining &lt;= 0.0:
+                        raise Empty
+                    self.not_empty.wait(remaining)
+            # 到此，说明队列有可用元素，那么将元素取出
+            item = self._get()
+            # put 方法在添加元素后，会通知 not_empty 有可用元素
+            # 那么同理，get 方法在获取元素后，也会通知 not_full，表示队列有可用空间了
+            # 让 self.not_full.wait() 解除阻塞
+            self.not_full.notify()
+            # 返回队列元素
+            return item
+</code></pre>
+<p>最后是 task_done 和 join 方法，看看它们的内部逻辑。</p>
+<pre><code class="language-Python">    def task_done(self):
+        with self.all_tasks_done:
+            unfinished = self.unfinished_tasks - 1
+            if unfinished &lt;= 0:
+                if unfinished &lt; 0:
+                    raise ValueError('task_done() called too many times')
+                self.all_tasks_done.notify_all()
+            self.unfinished_tasks = unfinished
+
+    def join(self):
+        with self.all_tasks_done:
+            while self.unfinished_tasks:
+                self.all_tasks_done.wait()
+</code></pre>
+<p>调用 join 方法，当 unfinished_task 大于 0 时，会陷入阻塞。调用 task_done 方法，会将未完成任务数减 1，如果为 0，那么唤醒阻塞等待的线程。需要注意的是，唤醒调用的方法不是 notify，而是 notify_all。对于添加元素和获取元素，每次显然只能唤醒一个线程，因此调用 notify。而 unfinished_task 为 0 时，应该要唤醒所有等待的线程，因此要调用 notify_all。</p>
+<p>最后线程队列也有相应的 PriorityQueue 和 LifoQueue，它们的用法、实现和协程里面的这两个队列是一样的。</p>
+<p>以上便是协程队列和线程队列的具体用法和实现原理，它们本质上都是基于双端队列实现具体的元素存储，并且在队列已满和队列为空时，可以阻塞等待。只不过协程队列是通过 Future 对象实现的，而线程队列是通过条件变量实现的。</p>
+<h2 id="event"><a class="header" href="#event">Event</a></h2>
+<p>说完了锁、信号量、队列之后，再来说一说 asyncio 的事件（Event 对象），它负责多任务之间的同步。在看队列的时候，我们注意到队列的 join 方法内部使用了 Event。</p>
+<p>Event 对象内部维护了一个标志位，初始时为 False，如果调用 event.set()，可以将它设置为 True，调用 event.clear() 可以重置为 False。然后 Event 对象还有一个 wait() 方法，如果内部的标志位是 False，那么调用该方法会阻塞。而当标志被设置为 True（通过 set 方法）时，所有任务会解除阻塞并继续执行。</p>
+<p>因此 Event 对象（事件）常用于多任务之间的协调和同步，例如一个任务在等待某个事件发生，而另一个任务在发生时将标志设置为 True，以此来通知正在等待的任务。</p>
+<h3 id="协程-event"><a class="header" href="#协程-event">协程 Event</a></h3>
+<p>协程 Event 由 asyncio 模块提供。</p>
+<pre><code class="language-Python">import asyncio
+from asyncio import Event
+
+async def task(event: Event):
+    # 如果 event 内部的标志位是 False，会陷入阻塞
+    print(f&quot;陷入阻塞，因为标志位 = {event.is_set()}&quot;)
+    await event.wait()
+    print(f&quot;解除阻塞，因为标志位 = {event.is_set()}&quot;)
+
+async def main():
+    event = Event()
+    # 任务开始执行
+    asyncio.create_task(task(event))
+    await asyncio.sleep(3)
+    # task 内部的 event.wait() 会陷入阻塞
+    # 3 秒后将标志设置为 True
+    print(&quot;将 event 内部的标志位设置为 True&quot;)
+    event.set()
+
+asyncio.run(main())
+&quot;&quot;&quot;
+陷入阻塞，因为标志位 = False
+将 event 内部的标志位设置为 True
+解除阻塞，因为标志位 = True
+&quot;&quot;&quot;
+</code></pre>
+<p>非常简单，当调用 event.wait() 时，如果标志是 True，那么相当于绿灯，直接通过；如果标志是 False，那么相当于红灯，需要等待。</p>
+<p>默认情况下是红灯，通过 event.set() 可以设置为绿灯，也可以通过 event.clear() 重置为红灯。调用 is_set() 方法可以判断当前是红灯还是绿灯，True 为绿灯，False 为红灯。</p>
+<p>然后再来看看它的源码实现：</p>
+<pre><code class="language-python">class Event:
+
+    def __init__(self, *, loop=mixins._marker):
+        super().__init__(loop=loop)
+        self._waiters = collections.deque()
+        self._value = False
+</code></pre>
+<p>当标志位是 False 时，协程调用 wait 方法会陷入阻塞，那么阻塞要如何实现呢？没错，还是要通过 Future 对象。所以 Future 对象和 asyncio 的实现紧密相关，协程里面的阻塞等待都是基于 Future 实现的。</p>
+<p>而 _waiters 负责保存协程内部创建的 Future 对象，_value 则表示标志位。</p>
+<pre><code class="language-Python">    def is_set(self):
+        # 查看标志位
+        return self._value
+
+    def clear(self):
+        # 将标志位设置为 False
+        self._value = False
+
+    async def wait(self):
+        # 如果调用时发现标志位是 True，那么说明是绿灯，直接通过
+        if self._value:
+            return True
+        # 否则说明是红灯，于是创建一个 Future 对象，并添加到 _waiters 中
+        fut = self._get_loop().create_future()
+        self._waiters.append(fut)
+        try:
+            # 然后 await 它，从而陷入阻塞
+            await fut
+            return True
+        finally:
+            self._waiters.remove(fut)
+
+    def set(self):
+        # 如果标志位是 False，将其设置为 True
+        # 然后将 _waiters 里面的 future 依次弹出，设置结果集，让 await fut 的协程解除阻塞
+        if not self._value:
+            self._value = True
+            for fut in self._waiters:
+                if not fut.done():
+                    fut.set_result(True)            
+</code></pre>
+<p>整个过程没有任何难度，非常简单。</p>
+<h3 id="线程-event"><a class="header" href="#线程-event">线程 Event</a></h3>
+<p>线程 Event 也很简单，它是由 threading 模块提供的。</p>
+<pre><code class="language-Python">import time
+import threading
+from threading import Event
+
+def task():
+    # 如果 event 内部的标志位是 False，会陷入阻塞
+    print(f&quot;陷入阻塞，因为标志位 = {event.is_set()}&quot;)
+    event.wait()
+    print(f&quot;解除阻塞，因为标志位 = {event.is_set()}&quot;)
+
+def main():
+    time.sleep(3)
+    print(&quot;将 event 内部的标志位设置为 True&quot;)
+    event.set()
+
+event = Event()
+t1 = threading.Thread(target=task)
+t2 = threading.Thread(target=main)
+t1.start()
+t2.start()
+&quot;&quot;&quot;
+陷入阻塞，因为标志位 = False
+将 event 内部的标志位设置为 True
+解除阻塞，因为标志位 = True
+&quot;&quot;&quot;
+</code></pre>
+<p>用法和协程 Event 几乎没什么区别，然后看一下它的内部实现。</p>
+<pre><code class="language-Python">class Event:
+
+    def __init__(self):
+        # 条件变量，所以事件对象其实是基于条件变量的一个封装
+        self._cond = Condition(Lock())
+        # 标志位，初始为 False
+        self._flag = False
+
+    def is_set(self):
+        # 标志位是否被设置
+        return self._flag
+
+    isSet = is_set
+
+    def set(self):
+        # 修改共享变量时需要加锁保护
+        with self._cond:
+            # 设置标志位，并唤醒所有阻塞线程
+            self._flag = True
+            self._cond.notify_all()
+
+    def clear(self):
+        # 将标志位设置为 False
+        with self._cond:
+            self._flag = False
+
+    def wait(self, timeout=None):
+        # 阻塞等待，但支持超时时间
+        with self._cond:
+            signaled = self._flag
+            if not signaled:
+                signaled = self._cond.wait(timeout)
+            return signaled
+</code></pre>
+<p>非常简单，Event 内部是基于 Condition 实现的。</p>
+<h2 id="小结"><a class="header" href="#小结">小结</a></h2>
+<p>以上我们就分析了常见的同步原语。</p>
+<p><strong>锁（Lock）</strong></p>
+<ul>
+<li>本质是互斥机制，一次只允许一个线程访问共享资源。</li>
+<li>适合用于保护简单的共享数据访问。</li>
+<li>最基本也最常用的同步原语。</li>
+<li>要注意避免死锁问题。</li>
+</ul>
+<p><strong>信号量（Semaphore）</strong></p>
+<ul>
+<li>可以控制同时访问特定资源的线程数量。</li>
+<li>比锁更灵活，因为可以允许多个线程并发访问。</li>
+<li>适合用于限制资源池的并发访问。</li>
+<li>常用于控制资源的使用数量（如连接池、线程池）。</li>
+</ul>
+<p><strong>队列（Queue）</strong></p>
+<ul>
+<li>提供了线程安全的 FIFO 数据结构。</li>
+<li>内置了必要的锁机制，使用起来更简单安全。</li>
+<li>特别适合生产者 - 消费者模式。</li>
+<li>可用于线程间的数据传递和任务分发。</li>
+</ul>
+<p><strong>事件（Event）</strong></p>
+<ul>
+<li>用于线程间的通知机制。</li>
+<li>一个线程等待信号，另一个线程发送信号。</li>
+<li>适用于简单的线程协调和状态同步。</li>
+<li>常用于启动信号、停止信号等场景。</li>
+</ul>
+<hr />
+<p> </p>
+<p><strong>欢迎大家关注我的公众号：古明地觉的编程教室。</strong></p>
+<p><img src="./images/qrcode_for_gh.jpg" alt="" /></p>
+<p><strong>如果觉得文章对你有所帮助，也可以请作者吃个馒头，Thanks♪(･ω･)ﾉ。</strong></p>
+<p><img src="./images/supports.png" alt="" /></p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="95.如何精确控制asyncio中并发运行的多个任务.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+                            <a rel="next" href="97.在asyncio中引入多进程.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="95.如何精确控制asyncio中并发运行的多个任务.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+                    <a rel="next" href="97.在asyncio中引入多进程.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+            </nav>
+
+        </div>
+
+        <script type="text/javascript">
+            window.playground_copyable = true;
+        </script>
+        <script src="elasticlunr.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="mark.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="searcher.js" type="text/javascript" charset="utf-8"></script>
+        <script src="clipboard.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="highlight.js" type="text/javascript" charset="utf-8"></script>
+        <script src="book.js" type="text/javascript" charset="utf-8"></script>
+
+        <!-- Custom JS scripts -->
+        <script type="text/javascript" src="theme/custom.js"></script>
+    </body>
+</html>

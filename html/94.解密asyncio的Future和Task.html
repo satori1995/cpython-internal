@@ -1,0 +1,1049 @@
+<!DOCTYPE HTML>
+<html lang="zh-cn" class="sidebar-visible no-js light">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>94. 解密 asyncio 的 Future 和 Task - CPython3.8 源码探秘</title>
+        <!-- Custom HTML head -->
+        <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff" />
+
+        <link rel="icon" href="favicon.svg">
+        <link rel="shortcut icon" href="favicon.png">
+        <link rel="stylesheet" href="css/variables.css">
+        <link rel="stylesheet" href="css/general.css">
+        <link rel="stylesheet" href="css/chrome.css">
+        <!-- Fonts -->
+        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="fonts/fonts.css">
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="highlight.css">
+        <link rel="stylesheet" href="tomorrow-night.css">
+        <link rel="stylesheet" href="ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+        <link rel="stylesheet" href="theme/custom.css">
+        <!-- MathJax -->
+        <script async type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    </head>
+    <body>
+        <!-- Provide site root to javascript -->
+        <script type="text/javascript">
+            var path_to_root = "";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script type="text/javascript">
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script type="text/javascript">
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            var html = document.querySelector('html');
+            html.classList.remove('no-js')
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add('js');
+        </script>
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script type="text/javascript">
+            var html = document.querySelector('html');
+            var sidebar = 'hidden';
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            }
+            html.classList.remove('sidebar-visible');
+            html.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li class="chapter-item expanded "><a href="0.序言.html">0. 序言</a></li><li class="chapter-item expanded "><a href="1.CPython源码长什么样子？.html">1. CPython 源码长什么样子？</a></li><li class="chapter-item expanded "><a href="2.变量和对象，它们之间有什么区别和联系呢？.html">2. 变量和对象，它们之间有什么区别和联系呢？</a></li><li class="chapter-item expanded "><a href="3.Python对象有哪几种，我们可以从哪些角度进行分类呢？.html">3. Python 对象有哪几种，我们可以从哪些角度进行分类呢？</a></li><li class="chapter-item expanded "><a href="4.万丈高楼平地起，一切从PyObject开始.html">4. 万丈高楼平地起，一切从 PyObject 开始</a></li><li class="chapter-item expanded "><a href="5.详解PyTypeObject，Python类型对象的载体.html">5. 详解 PyTypeObject，Python 类型对象的载体</a></li><li class="chapter-item expanded "><a href="6.通过type和object之间的关联，进一步分析类型对象.html">6. 通过 type 和 object 之间的关联，进一步分析类型对象</a></li><li class="chapter-item expanded "><a href="7.当创建一个Python对象时，背后都经历了哪些过程？.html">7. 当创建一个 Python 对象时，背后都经历了哪些过程？</a></li><li class="chapter-item expanded "><a href="8.当调用一个Python对象时，背后都经历了哪些过程？.html">8. 当调用一个 Python 对象时，背后都经历了哪些过程？</a></li><li class="chapter-item expanded "><a href="9.再探泛型API，感受Python对象的设计哲学.html">9. 再探泛型 API，感受 Python 对象的设计哲学</a></li><li class="chapter-item expanded "><a href="10.Python对象的行为是怎么区分的？.html">10. Python 对象的行为是怎么区分的？</a></li><li class="chapter-item expanded "><a href="11.一个Python对象会在何时被销毁？.html">11. 一个 Python 对象会在何时被销毁？</a></li><li class="chapter-item expanded "><a href="12.深度解密Python的浮点数是怎么实现的？.html">12. 深度解密 Python 的浮点数是怎么实现的？</a></li><li class="chapter-item expanded "><a href="13.对象被销毁之后所占的内存一定会释放吗？解密浮点数的缓存池机制.html">13. 对象被销毁之后所占的内存一定会释放吗？解密浮点数的缓存池机制</a></li><li class="chapter-item expanded "><a href="14.浮点数支持的操作是怎么实现的？.html">14. 浮点数支持的操作是怎么实现的？</a></li><li class="chapter-item expanded "><a href="15.解密Python的复数是怎么实现的？它有什么用途呢？.html">15. 解密 Python 的复数是怎么实现的？它有什么用途呢？</a></li><li class="chapter-item expanded "><a href="16.Python的整数是怎么设计的，为什么它不会溢出？.html">16. Python 的整数是怎么设计的，为什么它不会溢出？</a></li><li class="chapter-item expanded "><a href="17.解密Python的小整数对象池.html">17. 解密 Python 的小整数对象池</a></li><li class="chapter-item expanded "><a href="18.两个Python整数之间是如何进行大小比较的？过程并不像我们想的那样简单.html">18. 两个 Python 整数之间是如何进行大小比较的？过程并不像我们想的那样简单</a></li><li class="chapter-item expanded "><a href="19.探究Python整数的加减法，感受大整数的运算哲学与魅力.html">19. 探究 Python 整数的加减法，感受大整数的运算哲学与魅力</a></li><li class="chapter-item expanded "><a href="20.Python的布尔值是怎么实现的，你对它的了解有多深呢？.html">20. Python 的布尔值是怎么实现的，你对它的了解有多深呢？</a></li><li class="chapter-item expanded "><a href="21.Python的None是怎么实现的？.html">21. Python 的 None 是怎么实现的？</a></li><li class="chapter-item expanded "><a href="22.深度解密Python切片的实现原理.html">22.深度解密 Python 切片的实现原理</a></li><li class="chapter-item expanded "><a href="23.bytes对象（字节串）是怎么实现的？解密它的内部原理.html">23. bytes 对象（字节串）是怎么实现的？解密它的内部原理</a></li><li class="chapter-item expanded "><a href="24.bytes对象都支持哪些操作，它们是怎么实现的？.html">24. bytes 对象都支持哪些操作，它们是怎么实现的？</a></li><li class="chapter-item expanded "><a href="25.通过bytes对象的合并，探究缓冲区的奥秘.html">25. 通过 bytes 对象的合并，探究缓冲区的奥秘</a></li><li class="chapter-item expanded "><a href="26.解密bytes对象的缓存池.html">26. 解密 bytes 对象的缓存池</a></li><li class="chapter-item expanded "><a href="27.详解bytearray对象的底层实现.html">27. 详解 bytearray 对象的底层实现</a></li><li class="chapter-item expanded "><a href="28.字符集和字符编码.html">28. 字符集和字符编码</a></li><li class="chapter-item expanded "><a href="29.Python是怎么存储字符串的？.html">29. Python 是怎么存储字符串的？</a></li><li class="chapter-item expanded "><a href="30.解密字符串的底层结构，它是怎么实现的？.html">30. 解密字符串的底层结构，它是怎么实现的？</a></li><li class="chapter-item expanded "><a href="31.字符串的intern机制是怎么一回事？.html">31. 字符串的 intern 机制是怎么一回事？</a></li><li class="chapter-item expanded "><a href="32.聊一聊字符串常见操作的源码实现.html">32. 聊一聊字符串常见操作的源码实现</a></li><li class="chapter-item expanded "><a href="33.列表是怎么实现的？解密列表的数据结构.html">33. 列表是怎么实现的？解密列表的数据结构</a></li><li class="chapter-item expanded "><a href="34.列表是怎么扩容的？.html">34. 列表是怎么扩容的？</a></li><li class="chapter-item expanded "><a href="35.解密列表的创建与销毁，以及缓存池长什么样子？.html">35. 解密列表的创建与销毁，以及缓存池长什么样子？</a></li><li class="chapter-item expanded "><a href="36.列表作为序列型对象都支持哪些操作，它们在底层是怎么实现的？.html">36. 列表作为序列型对象都支持哪些操作，它们在底层是怎么实现的？</a></li><li class="chapter-item expanded "><a href="37.列表都有哪些自定义方法，它们是怎么实现的？.html">37. 列表都有哪些自定义方法，它们是怎么实现的？</a></li><li class="chapter-item expanded "><a href="38.解密元组的实现原理.html">38. 解密元组的实现原理</a></li><li class="chapter-item expanded "><a href="39.聊一聊喜闻乐见的哈希表.html">39. 聊一聊喜闻乐见的哈希表</a></li><li class="chapter-item expanded "><a href="40.字典是怎么实现的，它的底层结构长什么样子？.html">40. 字典是怎么实现的，它的底层结构长什么样子？</a></li><li class="chapter-item expanded "><a href="41.什么是可哈希对象，它的哈希值是怎么计算的？.html">41. 什么是可哈希对象，它的哈希值是怎么计算的？</a></li><li class="chapter-item expanded "><a href="42.字典的key是怎么映射成索引的，索引冲突了又该怎么办？.html">42. 字典的 key 是怎么映射成索引的，索引冲突了又该怎么办？</a></li><li class="chapter-item expanded "><a href="43.哈希表是怎么删除元素的，能直接删除吗？.html">43. 哈希表是怎么删除元素的，能直接删除吗？</a></li><li class="chapter-item expanded "><a href="44.字典是怎么创建的，支持的操作又是如何实现的？.html">44. 字典是怎么创建的，支持的操作又是如何实现的？</a></li><li class="chapter-item expanded "><a href="45.字典的自定义方法是怎么实现的？.html">45. 字典的自定义方法是怎么实现的？</a></li><li class="chapter-item expanded "><a href="46.字典是怎么扩容的？它会经历哪些过程？.html">46. 字典是怎么扩容的？它会经历哪些过程？</a></li><li class="chapter-item expanded "><a href="47.身虽死，道未消，解密字典的缓存池.html">47. 身虽死，道未消，解密字典的缓存池</a></li><li class="chapter-item expanded "><a href="48.解密集合的实现原理.html">48. 解密集合的实现原理</a></li><li class="chapter-item expanded "><a href="49.集合支持的操作有哪些，它们是怎么实现的？.html">49. 集合支持的操作有哪些，它们是怎么实现的？</a></li><li class="chapter-item expanded "><a href="50.迭代器是怎么实现的？.html">50. 迭代器是怎么实现的？</a></li><li class="chapter-item expanded "><a href="51.Python源文件编译之后会得到什么，它的结构是怎样的？和字节码又有什么联系？.html">51. Python 源文件编译之后会得到什么，它的结构是怎样的？和字节码又有什么联系？</a></li><li class="chapter-item expanded "><a href="52.PyCodeObject拾遗.html">52. PyCodeObject 拾遗</a></li><li class="chapter-item expanded "><a href="53.一文让你搞懂pyc文件.html">53. 一文让你搞懂 pyc 文件</a></li><li class="chapter-item expanded "><a href="54.深度解密虚拟机的执行环境：栈帧对象.html">54. 深度解密虚拟机的执行环境：栈帧对象</a></li><li class="chapter-item expanded "><a href="55.名字空间：变量的容身之所.html">55. 名字空间：变量的容身之所</a></li><li class="chapter-item expanded "><a href="56.当查找一个变量时，虚拟机会进行哪些动作？.html">56. 当查找一个变量时，虚拟机会进行哪些动作？</a></li><li class="chapter-item expanded "><a href="57.虚拟机是怎么执行字节码的？背后都经历了哪些过程.html">57. 虚拟机是怎么执行字节码的？背后都经历了哪些过程</a></li><li class="chapter-item expanded "><a href="58.深入源码，进一步考察字节码的执行流程.html">58. 深入源码，进一步考察字节码的执行流程</a></li><li class="chapter-item expanded "><a href="59.局部变量是怎么实现静态查找的，它和local名字空间又有什么联系呢？.html">59. 局部变量是怎么实现静态查找的，它和 local 名字空间又有什么联系呢？</a></li><li class="chapter-item expanded "><a href="60.剖析字节码指令，以及Python赋值语句的原理.html">60. 剖析字节码指令，以及 Python 赋值语句的原理</a></li><li class="chapter-item expanded "><a href="61.流程控制语句if是怎么实现的？.html">61. 流程控制语句 if 是怎么实现的？</a></li><li class="chapter-item expanded "><a href="62.流程控制语句for、while是怎么实现的？.html">62. 流程控制语句 for、while 是怎么实现的？</a></li><li class="chapter-item expanded "><a href="63.异常是怎么实现的？虚拟机是如何将异常抛出去的？.html">63. 异常是怎么实现的？虚拟机是如何将异常抛出去的？</a></li><li class="chapter-item expanded "><a href="64.虚拟机是如何捕获异常的？.html">64. 虚拟机是如何捕获异常的？</a></li><li class="chapter-item expanded "><a href="65.函数在底层长什么样子？.html">65. 函数在底层长什么样子？</a></li><li class="chapter-item expanded "><a href="66.函数是怎么创建的，背后经历了哪些过程？.html">66. 函数是怎么创建的，背后经历了哪些过程？</a></li><li class="chapter-item expanded "><a href="67.函数在底层是如何调用的？.html">67. 函数在底层是如何调用的？</a></li><li class="chapter-item expanded "><a href="68.函数是如何解析位置参数的？.html">68. 函数是如何解析位置参数的？</a></li><li class="chapter-item expanded "><a href="69.函数是如何解析关键字参数的？.html">69. 函数是如何解析关键字参数的？</a></li><li class="chapter-item expanded "><a href="70.扩展位置参数和扩展关键字参数是如何解析的？.html">70. 扩展位置参数和扩展关键字参数是如何解析的？</a></li><li class="chapter-item expanded "><a href="71.闭包是怎么实现的？.html">71. 闭包是怎么实现的？</a></li><li class="chapter-item expanded "><a href="72.生成器是做什么的，为什么会有生成器？.html">72. 生成器是做什么的，为什么会有生成器？</a></li><li class="chapter-item expanded "><a href="73.源码解密生成器的实现原理.html">73. 源码解密生成器的实现原理</a></li><li class="chapter-item expanded "><a href="74.回顾Python的对象模型.html">74. 回顾 Python 的对象模型</a></li><li class="chapter-item expanded "><a href="75.class概念解析.html">75. class 概念解析</a></li><li class="chapter-item expanded "><a href="76.类型对象的初始化.html">76. 类型对象的初始化</a></li><li class="chapter-item expanded "><a href="77.自定义类对象的底层实现与metaclass.html">77. 自定义类对象的底层实现与 metaclass</a></li><li class="chapter-item expanded "><a href="78.彻底搞懂描述符.html">78. 彻底搞懂描述符</a></li><li class="chapter-item expanded "><a href="79.实例对象是如何创建的？.html">79. 实例对象是如何创建的？</a></li><li class="chapter-item expanded "><a href="80.实例对象的属性访问.html">80. 实例对象的属性访问</a></li><li class="chapter-item expanded "><a href="81.为什么实例在调用方法时会将自身传给self参数.html">81. 为什么实例在调用方法时会将自身传给 self 参数</a></li><li class="chapter-item expanded "><a href="82.模块是如何导入的？.html">82. 模块是如何导入的？</a></li><li class="chapter-item expanded "><a href="83.import机制的黑盒探测.html">83. import 机制的黑盒探测</a></li><li class="chapter-item expanded "><a href="84.import机制是怎么实现的？.html">84. import 机制是怎么实现的？</a></li><li class="chapter-item expanded "><a href="85.Python运行时环境的初始化，解释器在启动时都做了什么？.html">85. Python 运行时环境的初始化，解释器在启动时都做了什么？</a></li><li class="chapter-item expanded "><a href="86.激活Python虚拟机.html">86. 激活 Python 虚拟机</a></li><li class="chapter-item expanded "><a href="87.初识GIL、以及多个线程之间的调度机制.html">87. 初识 GIL、以及多个线程之间的调度机制</a></li><li class="chapter-item expanded "><a href="88.线程的创建、销毁、调度，以及GIL的实现原理.html">88. 线程的创建、销毁、调度，以及 GIL 的实现原理</a></li><li class="chapter-item expanded "><a href="89.解密map、filter、zip底层实现，对比列表解析式.html">89. 解密 map、filter、zip 底层实现，对比列表解析式</a></li><li class="chapter-item expanded "><a href="90.为什么要有协程，协程是如何实现的？.html">90. 为什么要有协程，协程是如何实现的？</a></li><li class="chapter-item expanded "><a href="91.什么是asyncio？如何基于单线程实现并发？事件循环又是怎么工作的？.html">91. 什么是 asyncio？如何基于单线程实现并发？事件循环又是怎么工作的？</a></li><li class="chapter-item expanded "><a href="92.协程、任务、future，以及事件循环.html">92. 协程、任务、future，以及事件循环</a></li><li class="chapter-item expanded "><a href="93.在asyncio中使用Socket.html">93. 在 asyncio 中使用 Socket</a></li><li class="chapter-item expanded "><a href="94.解密asyncio的Future和Task.html" class="active">94. 解密 asyncio 的 Future 和 Task</a></li><li class="chapter-item expanded "><a href="95.如何精确控制asyncio中并发运行的多个任务.html">95. 如何精确控制 asyncio 中并发运行的多个任务</a></li><li class="chapter-item expanded "><a href="96.详解asyncio的同步原语.html">96. 详解 asyncio 的同步原语</a></li><li class="chapter-item expanded "><a href="97.在asyncio中引入多进程.html">97. 在 asyncio 中引入多进程</a></li><li class="chapter-item expanded "><a href="98.可执行文件的内存模型，变量的值是放在栈上还是放在堆上.html">98. 可执行文件的内存模型，变量的值是放在栈上还是放在堆上</a></li><li class="chapter-item expanded "><a href="99.Python是如何管理内存的？.html">99. Python 是如何管理内存的？</a></li><li class="chapter-item expanded "><a href="100.Python的垃圾回收机制是怎么实现的？.html">100. Python 的垃圾回收机制是怎么实现的？</a></li><li class="chapter-item expanded "><a href="101.深入源码，探究垃圾回收的秘密.html">101. 深入源码，探究垃圾回收的秘密</a></li><li class="chapter-item expanded "><a href="102.侵入Python虚拟机，动态修改底层数据结构和运行时.html">102. 侵入 Python 虚拟机，动态修改底层数据结构和运行时</a></li><li class="chapter-item expanded "><a href="103.使用Python的ctypes调用C的动态库.html">103. 使用 Python 的 ctypes 调用 C 的动态库</a></li><li class="chapter-item expanded "><a href="104.使用Python的ctypes调用Rust的动态库.html">104. 使用 Python 的 ctypes 调用 Rust 的动态库</a></li><li class="chapter-item expanded "><a href="105.用C写Python.html">105. 用 C 写 Python</a></li><li class="chapter-item expanded "><a href="106.Cython从入门到精通.html">106. Cython 从入门到精通</a></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky bordered">
+                    <div class="left-buttons">
+                        <button id="sidebar-toggle" class="icon-button" type="button" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </button>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light (default)</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">CPython3.8 源码探秘</h1>
+
+                    <div class="right-buttons">
+                        <a href="https://github.com/satori1995/cpython-internal" title="Git repository" aria-label="Git repository">
+                            <i id="git-repository-button" class="fa fa-github"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script type="text/javascript">
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h2 id="楔子"><a class="header" href="#楔子">楔子</a></h2>
+<p>关于 Future 和 Task 在之前的文章中已经说过了，但由于这两个概念非常重要，我们单独再说一遍，并做一些补充。虽然内容和之前会有很多重复，但不妨碍我们再复习一遍。</p>
+<h2 id="future"><a class="header" href="#future">Future</a></h2>
+<p>Future 是 asyncio 提供的一个类，它的实例对象（future）我们称之为未来对象，future 包含一个你希望在未来某个时间点获得、但目前还不存在的值。通常当创建 future 时，它内部还没有任何值，在这种状态下，future 被认为是不完整的、未解决的或没有完成的。然后一旦得到结果，就可以设置 future 的值，这将完成 future。那时我们可以认为 future 已经完成，并可从中提取结果。</p>
+<p>让我们尝试创建一个 future，然后设置它的值并提取该值。</p>
+<pre><code class="language-Python">import asyncio
+
+# asyncio 里面有一个类 Future
+# 实例化之后即可得到未来对象 future
+future = asyncio.Future()
+print(future)
+&quot;&quot;&quot;
+&lt;Future pending&gt;
+&quot;&quot;&quot;
+print(future.__class__)  
+&quot;&quot;&quot;
+&lt;class '_asyncio.Future'&gt;
+&quot;&quot;&quot;
+# 注意这里是 _asyncio.Future，不是 asyncio.Future
+# 因为解释器自带了一个 C 实现的 _asyncio，编译之后就内嵌在解释器里面了
+# 它提供了 asyncio 需要的核心功能，比如这里的 Future
+# 当然 asyncio 本身也实现了 Future，只不过运行时会使用 C 实现的
+</code></pre>
+<p>由于 future 内部还没有结果，所以打印的时候显示 pending 状态。</p>
+<pre><code class="language-Python">import asyncio
+
+future = asyncio.Future()
+print(&quot;future 是否完成:&quot;, future.done())
+&quot;&quot;&quot;
+future 是否完成: False
+&quot;&quot;&quot;
+# 调用 set_result 设置结果
+future.set_result(&quot;古明地觉&quot;)
+print(&quot;future 是否完成:&quot;, future.done())
+&quot;&quot;&quot;
+future 是否完成: True
+&quot;&quot;&quot;
+print(future)
+&quot;&quot;&quot;
+&lt;Future finished result='古明地觉'&gt;
+&quot;&quot;&quot;
+print(&quot;future 的返回值:&quot;, future.result())
+&quot;&quot;&quot;
+future 的返回值: 古明地觉
+&quot;&quot;&quot;
+</code></pre>
+<p>future 有一个 done 方法，调用之后会返回布尔值，标记此 future 是否已经运行完成。运行完成返回 True，否则返回 False。</p>
+<p>而当调用 future.set_result() 之后，就代表它运行完成了，该方法会给 future 设置一个结果。因为它的含义是未来对象，包含一个从未来某个时刻才存在的值，当它内部还没有这个值的时候，就代表它还处于未完成（pending）状态，一旦有值了，那么就会变成已完成（finished）状态。</p>
+<p>而当状态变成已完成时，便可以调用 result 方法拿到相应的结果。</p>
+<pre><code class="language-Python">import asyncio
+from asyncio import Future
+
+async def set_result(future: Future, result):
+    await asyncio.sleep(3)  # sleep 3 秒
+    future.set_result(result)
+
+async def get_result(future: Future):
+    while future.done() is False:
+        print(&quot;future 处于未完成状态，sleep 1 秒&quot;)
+        await asyncio.sleep(1)
+    else:
+        print(&quot;future 状态变为已完成&quot;)
+        print(&quot;future 内部的值为:&quot;, future.result())
+
+async def main():
+    future = Future()
+    # 并发运行两个协程
+    await asyncio.gather(
+        set_result(future, &quot;Some Value&quot;),
+        get_result(future)
+    )
+
+asyncio.run(main())
+&quot;&quot;&quot;
+future 处于未完成状态，sleep 1 秒
+future 处于未完成状态，sleep 1 秒
+future 处于未完成状态，sleep 1 秒
+future 状态变为已完成
+future 内部的值为: Some Value
+&quot;&quot;&quot;
+</code></pre>
+<p>future 的概念应该还是很好理解的，你就把它想象成一个容器，容器里面就是你所需要的值，只不过目前还没有。一旦有了，就会通过 set_result() 方法放到容器里，然后再通过 result() 方法拿到它。</p>
+<p>注意：我们只能调用一次 set_result，但是 result 可以多次调用。</p>
+<pre><code class="language-Python">from asyncio import Future
+from asyncio import InvalidStateError
+
+future = Future()
+future.set_result(&quot;古明地觉&quot;)
+# 可以获取任意多次
+print(future.result())  # 古明地觉
+print(future.result())  # 古明地觉
+print(future.result())  # 古明地觉
+
+# 但是 set_result 只能调用一次
+# 否则报错，会提示我们 future 的状态无效
+try:
+    future.set_result(&quot;古明地觉&quot;)
+except InvalidStateError as e:
+    print(e)  # invalid state
+</code></pre>
+<p>future 对象除了有 set_result 方法之外，还有一个 set_exception 方法。因为在未来的某个时刻，我们本应该把结果值设置给 future，但由于某些原因执行出错了，我们并没有拿到结果值，那么这时候就应该将异常设置给 future。</p>
+<p>首先 set_result 方法是可以接收异常的，因为异常本身也是一个对象，也可以作为一个结果。但为了区分，我们会使用 set_exception，因为如果还使用 set_result 方法的话，那么我们就无法判断这个异常是因为报错产生的，还是某个函数本身就返回了异常。</p>
+<p>注：set_exception 方法必须接收一个异常对象。</p>
+<pre><code class="language-Python">from asyncio import Future
+
+future = Future()
+# 注意：不管是调用 set_result 还是 set_exception
+# 都会将 future 的状态标记为已完成（finished）
+future.set_exception(ValueError(&quot;o_O&quot;))
+print(future.done())
+&quot;&quot;&quot;
+True
+&quot;&quot;&quot;
+# 调用 exception() 方法会拿到相应的异常
+print(future.exception())
+&quot;&quot;&quot;
+o_O
+&quot;&quot;&quot;
+</code></pre>
+<p>那么问题来了，当 future 的状态为已完成时，我们怎么知道它接收的是正常的结果值，还是异常呢？很简单：</p>
+<ul>
+<li>调用 future.set_result() 之后：
+<ul>
+<li>调用 future.result() 会返回设置的结果；</li>
+<li>调用 future.exception() 会返回 None；</li>
+</ul>
+</li>
+<li>调用 future.set_exception() 之后：
+<ul>
+<li>调用 future.exception() 会返回设置的异常；</li>
+<li>调用 future.result() 会将异常抛出来；</li>
+</ul>
+</li>
+</ul>
+<pre><code class="language-Python">from asyncio import Future
+
+future1 = Future()
+future2 = Future()
+print(future1.done())
+print(future2.done())
+&quot;&quot;&quot;
+False
+False
+&quot;&quot;&quot;
+# 不管是 set_result 还是 set_exception，都表示 future 已完成
+future1.set_result(&quot;Some Value&quot;)
+future2.set_exception(ValueError(&quot;Some Error&quot;))
+print(future1.done())
+print(future2.done())
+&quot;&quot;&quot;
+True
+True
+&quot;&quot;&quot;
+# 如果 future 内部是正常的结果值
+# 那么调用 result 返回结果，调用 exception 返回 None
+print(future1.result())
+print(future1.exception())
+&quot;&quot;&quot;
+Some Value
+None
+&quot;&quot;&quot;
+
+# 但如果 future 内部是异常，调用 exception 会返回异常
+print(future2.exception())
+&quot;&quot;&quot;
+Some Error
+&quot;&quot;&quot;
+# 调用 result 会将异常抛出来
+future2.result()
+&quot;&quot;&quot;
+Traceback (most recent call last):
+  File &quot;...&quot;, line 36, in &lt;module&gt;
+    future2.result()
+ValueError: Some Error
+&quot;&quot;&quot;
+</code></pre>
+<p>所以当你不确定 future 内部是否是正常的结果值，那么可以先调用 exception 方法，如果它返回的是 None，那么再调用 result。</p>
+<p>然后 future 还可以绑定回调，当它处于已完成状态时，会触发回调的执行。</p>
+<pre><code class="language-Python">from asyncio import Future
+
+def callback(future: Future):
+    if (exc := future.exception()) is not None:
+        print(&quot;出现异常:&quot;, exc)
+    else:
+        print(&quot;future 的结果值:&quot;, future.result())
+
+async def main():
+    future1 = Future()
+    future2 = Future()
+    # 调用回调时，会自动将 future 本身作为参数传递过去
+    future1.add_done_callback(callback)
+    future2.add_done_callback(callback)
+    # 状态为 finished 时，会触发回调的执行
+    future1.set_result(&quot;Some Value&quot;)
+    future2.set_exception(RuntimeError(&quot;Some Value&quot;))
+
+asyncio.run(main())
+&quot;&quot;&quot;
+future 的结果值: Some Value
+出现异常: Some Value
+&quot;&quot;&quot;
+</code></pre>
+<p>另外 future 也可以用在 await 表达式中，如果对一个 future 执行 await 操作，那么会处于阻塞，直到该 future 有一个可供使用的值。</p>
+<pre><code class="language-Python">import asyncio
+from asyncio import Future
+
+def set_result(future: Future):
+    future.set_result(&quot;古明地觉&quot;)
+
+async def main():
+    future = Future()
+    loop = asyncio.get_running_loop()
+    # 3 秒后调用 set_result
+    loop.call_later(3, set_result, future)
+    print(&quot;我会阻塞在这里，直到 3 秒后 set_value 调用完毕&quot;)
+    # 当 future.set_result() 的时候解除阻塞
+    result = await future
+    print(&quot;拿到结果:&quot;, result)
+
+asyncio.run(main())
+&quot;&quot;&quot;
+我会阻塞在这里，直到 3 秒后 set_value 调用完毕
+拿到结果: 古明地觉
+&quot;&quot;&quot;
+</code></pre>
+<p>所以 await future 会阻塞等待，当 future 状态为已完成时，自动调用 future.result() 方法，将结果值返回。</p>
+<p>你可以简单理解为我们发出了一个请求，由于请求需要一些时间，所以 future 还处于 pending 状态。当请求完成时，结果将被设置，那么 future 会变成 finished 状态，我们就可以访问它了，这个概念类似于 JavaScript 中的 Promise。而在 Java 中，这些被称为 completable future。</p>
+<p>另外我们还可以取消一个 future，通过调用它的 cancel 方法。</p>
+<pre><code class="language-Python">from asyncio import Future
+
+future = Future()
+print(&quot;是否被取消:&quot;, future.cancelled())
+&quot;&quot;&quot;
+是否被取消: False
+&quot;&quot;&quot;
+future.cancel()
+print(&quot;是否被取消:&quot;, future.cancelled())
+&quot;&quot;&quot;
+是否被取消: True
+&quot;&quot;&quot;
+# 一旦被取消，就不能再调用 set_result 和 set_exception 了
+</code></pre>
+<p>在 asyncio 中，你很少会直接创建 Future 对象，但 asyncio API 的实现在很大程度上依赖于它，比如锁、事件等等，都依赖 Future，所以我们必须要理解它。</p>
+<h2 id="源码解密-future"><a class="header" href="#源码解密-future">源码解密 Future</a></h2>
+<p>前面说了，Future 这个类是 C 实现的，但在 asyncio 中也有相应的纯 Python 实现，两者功能是一样的。下面我们就通过 Python 源码，看一下 Future 的实现过程（代码略有删减）。</p>
+<p>首先 Future 实例有三个非常重要的属性：_state、_result、_exception，含义如下。</p>
+<ul>
+<li>_state 表示运行状态，总共三种，分别是：PENDING（正在运行）、CANCELLED（已取消）、FINISHED（已完成）。</li>
+<li>_result：调用 future.set_result() 时，本质上就是将结果值设置给了该属性。</li>
+<li>_exception：调用 future.set_exception() 时，本质上就是将异常设置给了该属性。</li>
+</ul>
+<p>下面来看一下源码：</p>
+<pre><code class="language-Python">class Future:
+    
+    def cancel(self):
+        # cancel 方法，负责取消一个 future
+        # 并且该方法有返回值，取消成功返回 True，取消失败返回 False
+        self.__log_traceback = False
+        # 检测状态是否为 PENDING，不是 PENDING，说明 future 已经运行完毕或取消了
+        # 那么返回 False 表示取消失败，但对于 future 而言则无影响
+        if self._state != _PENDING:
+            return False
+        # 如果状态是 PENDING，那么将其改为 CANCELLED
+        self._state = _CANCELLED
+        self.__schedule_callbacks()
+        return True
+
+    def cancelled(self):
+        # 判断 future 是否被取消，那么检测它的状态是否为 CANCELLED 即可
+        return self._state == _CANCELLED
+
+    def done(self):
+        # 判断 future 是否已经完成，那么检测它的状态是否不是 PENDING 即可
+        # 注意：CANCELLED 和 FINISHED 都表示 future 运行结束
+        return self._state != _PENDING
+
+    def result(self):
+        # 调用 result 方法相当于获取 future 设置的结果
+        # 但如果它的状态为 CANCELLED，表示取消了，那么抛出 CancelledError
+        if self._state == _CANCELLED:
+            raise exceptions.CancelledError
+        # 如果状态不是 FINISHED（说明还没有设置结果）
+        # 那么抛出 asyncio.InvalidStateError 异常
+        # 所以我们不能在 set_result 之前调用 result
+        if self._state != _FINISHED:
+            raise exceptions.InvalidStateError('Result is not ready.')
+        self.__log_traceback = False
+        # 走到这里说明状态为 FINISHED
+        # 但不管是正常执行、还是出现异常，都会将状态标记为 FINISHED
+        # 如果是出现异常，那么调用 result 会将异常抛出来
+        if self._exception is not None:
+            raise self._exception
+        # 否则返回设置的结果
+        return self._result
+
+    def exception(self):
+        # 无论是调用 set_result 还是 set_exception，都会将 future 的状态标记为 FINISHED
+        # 如果是前者，那么 self._result 就是结果，self._exception 为 None
+        # 如果是后者，那么 self._result 为 None，self._exception 就是异常本身
+        
+        # 因此调用 result 和 exception 都要求 future 的状态为 FINISHED
+        # 如果为 CANCELLED，那么同样抛出 CancelledError
+        if self._state == _CANCELLED:
+            raise exceptions.CancelledError
+        # 如果为 PENDING，那么抛出 asyncio.InvalidStateError 异常
+        if self._state != _FINISHED:
+            raise exceptions.InvalidStateError('Exception is not set.')
+        self.__log_traceback = False
+        # 返回异常本身
+        # 因此如果你不确定 future 内部到底是普通的结果值，还是异常
+        # 那么可以先调用 future.exception()，看它是否为 None
+        # 如果 future.exception() 不为 None，那么内部就是异常，否则是结果值
+        return self._exception
+
+    def set_result(self, result):
+        # 通过 set_result 设置结果
+        # 显然在设置结果的时候，future 的状态应该为 PENDING 
+        if self._state != _PENDING:
+            raise exceptions.InvalidStateError(f'{self._state}: {self!r}')
+        # 然后设置 self._result，当程序调用 future.result() 时会返回 self._result
+        self._result = result
+        # 并将状态标记为 FINISHED，表示一个 future 从 PENDING 变成了 FINISHED
+        # 所以我们不能对一个已完成的 future 再次调用 set_result
+        # 因为第二次调用 set_result 的时候，状态已经不是 PENDING 了
+        self._state = _FINISHED
+        self.__schedule_callbacks()
+
+    def set_exception(self, exception):
+        # 和 set_result 类似，调用时 future 的状态必须为 PENDING
+        if self._state != _PENDING:
+            raise exceptions.InvalidStateError(f'{self._state}: {self!r}')
+        # exception 必须是异常，且不能是 StopIteration 异常
+        if isinstance(exception, type):
+            exception = exception()
+        if type(exception) is StopIteration:
+            raise TypeError(&quot;StopIteration interacts badly with generators &quot;
+                            &quot;and cannot be raised into a Future&quot;)
+        # 将 self._exception 设置为 exception
+        # 调用 future.exception() 的时候，会返回 self._exception
+        self._exception = exception
+        # 将状态标记为已完成
+        self._state = _FINISHED
+        self.__schedule_callbacks()
+        self.__log_traceback = True
+</code></pre>
+<p>整个过程应该很好理解，我们通过一段代码再演示一下：</p>
+<pre><code class="language-Python">import asyncio
+
+future = asyncio.Future()
+# future 是否已完成
+print(future.done())
+&quot;&quot;&quot;
+False
+&quot;&quot;&quot;
+print(future._state)
+&quot;&quot;&quot;
+PENDING
+&quot;&quot;&quot;
+
+# 获取结果
+try:
+    future.result()
+except asyncio.InvalidStateError:
+    print(&quot;future 尚未完成，不能获取结果&quot;)
+    &quot;&quot;&quot;
+    future 尚未完成，不能获取结果
+    &quot;&quot;&quot;
+# 但是我们可以通过 future._result 去获取（不推荐）
+# 显然拿到的是 None
+print(future._result)
+&quot;&quot;&quot;
+None
+&quot;&quot;&quot;
+print(future._exception)
+&quot;&quot;&quot;
+None
+&quot;&quot;&quot;
+
+future.set_result(&quot;我是返回值&quot;)
+print(future.done())
+&quot;&quot;&quot;
+True
+&quot;&quot;&quot;
+print(future._state)
+&quot;&quot;&quot;
+FINISHED
+&quot;&quot;&quot;
+print(future.result() == future._result == &quot;我是返回值&quot;)
+&quot;&quot;&quot;
+True
+&quot;&quot;&quot;
+</code></pre>
+<p>非常简单，但是我们在设置结果或设置异常的时候，应该通过 set_result() 和 set_exception()，不要通过类似 <font color="blue">future._result = &quot;...&quot;</font> 的方式。同理获取返回值或异常时，也要用 future.result() 和 future.exception()，不要直接用 future._result 或 future._exception，因为这背后还涉及状态的维护。</p>
+<p>当然 future 也可以用在 await 表达式中，如果对一个 future 执行 await 操作，那么会处于阻塞，直到 future 有一个可供使用的值。</p>
+<h2 id="task"><a class="header" href="#task">Task</a></h2>
+<p>在 asyncio 中，如果协程想要并发运行，那么它必须被包装为 Task 对象，也就是任务。那么任务 task 和未来对象 future 之间有什么关系呢？首先在源码中，Task 是 Future 的子类，而一个任务可以看做是一个 future 和一个协程的组合。</p>
+<p><img src="./images/330.png" alt="" /></p>
+<p>future 可以被认为代表了我们暂时不会拥有的值，而一个任务可以被认为是一个协程和一个 future 的组合。创建一个任务时，我们正在创建一个空的 future，并运行协程，然后当协程运行得到结果或出现异常时，将其设置给 future。当然任务也可以使用 await 表达式，await 一个任务时同样会陷入阻塞，那什么时候解除阻塞呢？显然是当协程执行完毕并将返回值设置在 future 里面的时候。</p>
+<p>如果 await future，那么需要我们手动调用 future.set_result()。如果 await 任务，那么当协程执行完毕时会自动调用 future.set_result（执行出错则自动调用 future.set_exception），因为任务是基于协程包装得到的，它等价于一个协程加上一个 future。</p>
+<p>但不管 await 后面跟的是任务还是 future，本质上都是等到 future 里面有值之后，通过 future.result() 拿到里面的值。</p>
+<pre><code class="language-python">import asyncio
+
+async def coro():
+    return &quot;Some Value&quot;
+
+async def main():
+    # 将协程包装成任务，并且还可以起个名字
+    # 需要注意的是，当协程被包装成任务的时候，就已经开始运行了
+    task = asyncio.create_task(coro(), name=&quot;任务 1&quot;)
+    print(task)
+    print(task.__class__)
+    # 如果你希望拿到返回值，程序才能继续执行，那么使用 await 阻塞等待
+    result = await task
+    print(&quot;返回值:&quot;, result)
+
+asyncio.run(main())
+&quot;&quot;&quot;
+&lt;Task pending name='任务 1' coro=&lt;coro() running at ...&gt;&gt;
+&lt;class '_asyncio.Task'&gt;
+返回值: Some Value
+&quot;&quot;&quot;
+</code></pre>
+<p>问题来了，当 await 任务的时候，如果协程执行出错了，会怎么样呢？首先出错了，那么任务里面的 future 会调用 set_exception 设置异常。而前面在看 future 源码的时候，我们看到：如果没有出现异常，那么调用 result 会返回结果，调用 exception 会返回 None；如果出现异常，那么调用 exception 会返回异常，调用 result 会将异常抛出来。</p>
+<p>而 await 任务，本质上就是在调用内部 future 的 result 方法，显然如果任务内部的协程执行出错，那么会将出错时产生的异常抛出来。</p>
+<pre><code class="language-python">import asyncio
+
+async def coro():
+    raise Exception(&quot;出错了&quot;)
+
+async def main():
+    task = asyncio.create_task(coro())
+    # Task 继承 Future，所以 await task 和 await future 的表现是一致的
+    # 协程在执行完毕时会调用 task.set_result() 设置结果值
+    # 如果协程执行出错，会调用 task.set_exception() 设置异常
+    # 而 await task 等价于 &quot;阻塞等待 + task.result()&quot;
+    try:
+        result = await task
+        print(&quot;返回值:&quot;, result)
+    except Exception:
+        exc = task.exception()
+        print(&quot;出现异常:&quot;, exc)
+
+asyncio.run(main())
+&quot;&quot;&quot;
+出现异常: 出错了
+&quot;&quot;&quot;
+</code></pre>
+<p>相信你现在已经了解任务是怎么回事了，它是协程对象的容器，并且也是一个 future，因为 Task 继承 Future。</p>
+<p>不同的是，future 需要我们手动设置结果或异常，而任务不需要，内部的协程在运行完毕或出现异常时会自动设置。我们前面之所以花费很大笔墨介绍 Future，就是为了给任务做铺垫，因为我们实际在编写代码时，也是直接和任务打交道，而不是 future。</p>
+<h2 id="基于任务实现并发"><a class="header" href="#基于任务实现并发">基于任务实现并发</a></h2>
+<p>使用 async def 可以定义一个协程函数，调用协程函数会得到一个协程对象。</p>
+<pre><code class="language-Python">async def coro():
+    return &quot;Some Value&quot;
+
+# 如何判断它是不是一个协程函数呢？
+if coro.__code__.co_flags &amp; 0x80:
+    print(&quot;协程函数&quot;)
+else:
+    print(&quot;非协程函数&quot;)
+# 无论是协程函数还是普通函数，它们都是函数
+# 通过 type 查看类型得到的都是 &lt;class 'function'&gt;
+# 因此我们需要通过 co_flags 进行判断，解释器在编译时会设置不同的标识
+# 同理如果 co_flags &amp; 0x20 为真，那么就是生成器函数
+
+# 调用协程函数，会得到协程对象
+c = coro()
+print(c.__class__)
+&quot;&quot;&quot;
+协程函数
+&lt;class 'coroutine'&gt;
+sys:1: RuntimeWarning: coroutine 'coro' was never awaited
+&quot;&quot;&quot;
+</code></pre>
+<p>然后我们看到它抛出了一个警告，意思是协程没有被 await。因为协程需要扔到事件循环中运行，或者在一个协程里面通过 await 关键字进行驱动（在 A 协程里面 await B 协程，如果 A 协程运行了，那么 B 协程也会被驱动）。</p>
+<p>虽然通过这些工具，可编写异步代码，但不能同时运行，要想同时运行协程，需要将它包装成任务。上面说了，任务是协程的包装器，它会安排协程尽快在事件循环中运行，并提供一系列的方法来获取协程的运行状态和返回值。这种调度和执行以非阻塞方式发生，这意味着一旦创建一个任务，那么任务就会立刻运行。</p>
+<pre><code class="language-Python">import asyncio
+
+async def get_html(n):
+    # 模拟从网站下载页面
+    await asyncio.sleep(n)
+    return f&quot;{n} 秒后，页面被下载&quot;
+
+async def main():
+    # 通过 asyncio.create_task 函数创建任务
+    # 调用时需要给它传递一个协程，然后返回一个任务对象
+    task1 = asyncio.create_task(get_html(3))
+    task2 = asyncio.create_task(get_html(2))
+    # 此时 task1 和 task2 均已开始运行
+    print(&quot;task1 是否运行完毕&quot;, task1.done())
+    print(&quot;task2 是否运行完毕&quot;, task2.done())
+    # sleep 2.5 秒
+    await asyncio.sleep(2.5)
+    print(&quot;sleep 2.5 秒后&quot;)
+    print(&quot;task1 是否运行完毕&quot;, task1.done())
+    print(&quot;task2 是否运行完毕&quot;, task2.done())
+
+asyncio.run(main())
+&quot;&quot;&quot;
+task1 是否运行完毕 False
+task2 是否运行完毕 False
+sleep 2.5 秒后
+task1 是否运行完毕 False
+task2 是否运行完毕 True
+&quot;&quot;&quot;
+</code></pre>
+<p>从打印的结果不难看出，协程被包装成任务之后就已经开始运行了，并且两个任务是并发运行的。需要注意的是，由于 task1 的睡眠时间稍长一些，所以在它还没有运行完毕之前，主协程就已经结束了。</p>
+<pre><code class="language-Python">import asyncio
+
+async def get_html(n):
+    print(&quot;开始下载页面&quot;)
+    await asyncio.sleep(n)
+    print(f&quot;{n} 秒后，页面被下载&quot;)
+
+async def main():
+    task1 = asyncio.create_task(get_html(3))
+    task2 = asyncio.create_task(get_html(2))
+    await asyncio.sleep(2.5)
+
+asyncio.run(main())
+&quot;&quot;&quot;
+开始下载页面
+开始下载页面
+2 秒后，页面被下载
+&quot;&quot;&quot;
+</code></pre>
+<p>从结果可以看出，只有 task2 完成了，而 task1 还没运行完，主协程就结束了。如果我希望等待所有任务都完成呢？那么可以使用 await。</p>
+<pre><code class="language-Python">import asyncio
+
+async def get_html(n):
+    await asyncio.sleep(n)
+    print(f&quot;get_html({n})&quot;)
+    return f&quot;{n} 秒后，页面被下载&quot;
+
+async def main():
+    task1 = asyncio.create_task(get_html(3))
+    task2 = asyncio.create_task(get_html(2))
+    result1 = await task1
+    result2 = await task2
+    print(result1)
+    print(result2)
+
+asyncio.run(main())
+&quot;&quot;&quot;
+get_html(2)
+get_html(3)
+3 秒后，页面被下载
+2 秒后，页面被下载
+&quot;&quot;&quot;
+</code></pre>
+<p>不难看出，get_html(2) 会先运行完毕，但我们先 await task1，所以在这个过程中，task2 已经运行完毕了。只不过代码是串行执行的，必须等待 await task1 结束之后才能 await task2。但 task2 先 task1 结束，所以 await task1 之后，await task2 会立即得到结果。</p>
+<p>但如果先 await task2，那么 await task1 的时候则需要再等待 1 秒，才能拿到结果，非常好理解。当然不管是哪一种方式，两个任务运行结束所花费的总时间都是 3 秒，但如果我们直接运行协程就不一样了。</p>
+<pre><code class="language-Python">import time
+import asyncio
+
+async def get_html(n):
+    await asyncio.sleep(n)
+    print(f&quot;get_html({n})&quot;)
+    return f&quot;{n} 秒后，页面被下载&quot;
+
+async def main():
+    # 得到两个协程对象
+    c1 = get_html(3)
+    c2 = get_html(2)
+    # 协程如果想运行，需要扔到事件循环中进行调度
+    # 可以包装成任务，或者在协程内部通过 await 进行驱动
+    result1 = await c1
+    result2 = await c2
+    print(result1)
+    print(result2)
+
+start = time.perf_counter()
+asyncio.run(main())
+print(&quot;总耗时:&quot;, time.perf_counter() - start)
+&quot;&quot;&quot;
+get_html(3)
+get_html(2)
+3 秒后，页面被下载
+2 秒后，页面被下载
+总耗时: 5.0024129
+&quot;&quot;&quot;
+</code></pre>
+<p>我们发现总耗时需要 5 秒，因为不管 await 后面跟的是 future、任务还是协程，都会产生阻塞。但很明显 await c1 的时候 c2 并没有开始运行，它必须在 await c1 之后才会进入事件循环，所以它们是串行的。</p>
+<p>因此我们不要直接 await 一个协程，而是将它包装成任务，一旦包装成任务后，就自动进入事件循环开始运行了。如果你希望程序必须等到某个任务完成之后才能继续，那么再 await 它即可。</p>
+<h2 id="取消任务"><a class="header" href="#取消任务">取消任务</a></h2>
+<p>网络连接可能不可靠，用户的连接可能因为网速变慢而中断，或者网络服务器崩溃导致现有的请求无法处理。因此对于用户发出的请求，需要特别小心，不要无限等待。如果无限等待一个不会出现的结果，可能导致应用程序挂起，从而导致精糕的用户体验。</p>
+<p>在之前的示例中，如果任务一直持续下去，我们将被困在等待 await 语句完成而没有反馈的情况，也没有办法阻止这样的事情发生。因此 asyncio 提供了一个机制，允许我们手动取消任务，或者超时之后自动取消。</p>
+<p>取消任务很简单，每个任务对象都有一个名为 cancel 的方法，可以在想要停止任务时调用它。取消一个任务将导致该任务被 await 时引发 CancelledError，然后再根据需要处理它。</p>
+<p>为说明这一点，我们启动一个长时间运行的任务，但不希望它运行的时间超过 5 秒。如果任务没有在 5 秒内完成，就停止该任务。</p>
+<pre><code class="language-Python">import asyncio
+
+async def get_html(seconds):
+    print(&quot;开始下载页面&quot;)
+    await asyncio.sleep(seconds)
+    return f&quot;{seconds} 秒后下载完成&quot;
+
+async def main():
+    long_task = asyncio.create_task(get_html(10))
+    seconds_elapsed = 0
+
+    while not long_task.done():
+        print(&quot;检测到任务尚未完成，一秒钟之后继续检测&quot;)
+        await asyncio.sleep(1)
+        seconds_elapsed += 1
+        # 时间超过 5 秒，取消任务
+        if seconds_elapsed == 5:
+            long_task.cancel()
+
+    try:
+        # 等待 long_task 完成，显然执行到这里的时候，任务已经被取消
+        # 不管是 await 一个已经取消的任务，还是 await 的时候任务被取消
+        # 都会引发 asyncio.CancelledError
+        await long_task
+    except asyncio.CancelledError:
+        print(&quot;任务被取消&quot;)
+
+asyncio.run(main())
+&quot;&quot;&quot;
+检测到任务尚未完成，一秒钟之后继续检测
+开始下载页面
+检测到任务尚未完成，一秒钟之后继续检测
+检测到任务尚未完成，一秒钟之后继续检测
+检测到任务尚未完成，一秒钟之后继续检测
+检测到任务尚未完成，一秒钟之后继续检测
+检测到任务尚未完成，一秒钟之后继续检测
+任务被取消
+&quot;&quot;&quot;
+</code></pre>
+<p>在代码中我们创建了一个任务，它需要花费 10 秒的时间才能运行完成。然后创建一个 while 循环来检查该任务是否已完成，任务的 done 方法在任务完成时返回 True，否则返回 False。每一秒，我们检查任务是否已经完成，并记录到目前为止经历了多少秒，如果任务已经花费了 5 秒，就取消这个任务。然后来到 await long_task，将输出 &quot;任务被取消&quot;，这表明捕获了一个 CancelledError。</p>
+<p>关于取消任务需要注意的是，CancelledError 只能从 await 语句抛出。这意味着如果任务是在执行普通 Python 代码时被取消，那么该代码将一直运行，直到触发下一个 await 语句（如果存在），才能引发 CancelledError。</p>
+<pre><code class="language-Python">import asyncio
+
+async def get_html(seconds):
+    print(&quot;开始下载页面&quot;)
+    await asyncio.sleep(seconds)
+    returnf&quot;{seconds} 秒后下载完成&quot;
+
+async def main():
+    long_task = asyncio.create_task(get_html(3))
+    # 立刻取消
+    long_task.cancel()
+    # 但 CancelledError 只有在 await 一个被取消的协程时才会触发
+    # 所以下面的语句会正常执行
+    print(&quot;我会正常执行&quot;)
+    print(&quot;Hello World&quot;)
+    print(list(range(10)))
+    await asyncio.sleep(5)
+    try:
+        # 引发 CancelledError
+        await long_task
+    except asyncio.CancelledError:
+        print(&quot;任务被取消&quot;)
+
+asyncio.run(main())
+&quot;&quot;&quot;
+我会正常执行
+Hello World
+[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+任务被取消
+&quot;&quot;&quot;
+</code></pre>
+<p>但是注意：如果任务在取消的时候已经运行完毕了，那么 await 的时候就不会抛 CancelledError 了。</p>
+<pre><code class="language-Python">import asyncio
+
+async def get_html(seconds):
+    print(&quot;开始下载页面&quot;)
+    await asyncio.sleep(seconds)
+    returnf&quot;{seconds} 秒后下载完成&quot;
+
+async def main():
+    long_task = asyncio.create_task(get_html(3))
+    await asyncio.sleep(5)
+    # 显然执行到这里，任务已经结束了
+    long_task.cancel()
+    try:
+        print(await long_task)
+        print(&quot;任务执行完毕&quot;)
+    except asyncio.CancelledError:
+        print(&quot;任务被取消&quot;)
+
+asyncio.run(main())
+&quot;&quot;&quot;
+开始下载页面
+3 秒后下载完成
+任务执行完毕
+&quot;&quot;&quot;
+</code></pre>
+<p>所以对一个已完成的任务调用 cancel 方法，没有任何影响。</p>
+<h2 id="给任务设置超时时间"><a class="header" href="#给任务设置超时时间">给任务设置超时时间</a></h2>
+<p>我们上面判断任务是否超时，是通过不断地循环来进行检测的，但显然这种做法是很笨的。我们应该有一个辅助函数，它允许指定超时时间，并在超时后自动取消任务。</p>
+<p>asyncio 通过名为 wait_for 的函数提供此功能，该函数接收协程或任务，以及以秒为单位的超时时间。如果任务完成所需的时间超过了设定的超时时间，则会引发 TimeoutError，任务将自动取消。</p>
+<pre><code class="language-Python">import asyncio
+
+async def get_html(seconds):
+    print(&quot;开始下载页面&quot;)
+    await asyncio.sleep(seconds)
+    return f&quot;{seconds} 秒后下载完成&quot;
+
+async def main():
+    task = asyncio.create_task(get_html(2))
+    try:
+        result = await asyncio.wait_for(task, 1)
+        print(&quot;返回值:&quot;, result)
+    except asyncio.TimeoutError:
+        print(&quot;超时啦&quot;)
+        # task.cancelled() 用于判断任务是否被取消
+        # 任务被取消：返回 True，没有被取消：返回 False
+        print(&quot;任务是否被取消:&quot;, task.cancelled())
+
+
+asyncio.run(main())
+&quot;&quot;&quot;
+开始下载页面
+超时啦
+任务是否被取消: True
+&quot;&quot;&quot;
+</code></pre>
+<p>应用程序运行 1 秒后，wait_for 函数将引发 TimeoutError，然后我们对其进行处理，并且 task 被取消了。所以当一个任务超时的时候，会被自动取消。</p>
+<p>因此通过 wait_for 函数就很方便，如果直接 await 一个任务，那么必须等到任务完成之后才能继续往下执行。如果任务一直完成不了，那么就会一直陷入阻塞。我们的目的是希望这个任务的执行时间是可控的，那么便可以使用 wait_for 并指定超时时间。注：使用 wait_for 必须要搭配 await，阻塞等待任务完成并拿到返回值、或者达到超时时间引发 TimeoutError 之后，程序才能往下执行。</p>
+<p>因此 <font color="blue">await 任务</font>和 <font color="blue">await asyncio.wait_for(任务, timeout)</font> 的效果是类似的，都是等待后面的任务完成并拿到它的返回值。但使用 wait_for 可以指定超时时间，在规定时间内如果没有完成，则抛出 TimeoutError，而不会一直陷入阻塞。</p>
+<p>如果任务花费的时间比预期的长，在引发 TimeoutError 之后自动取消任务通常是个好主意，否则可能会有一个无限等待的任务，占用永远不会释放的资源。但在某些情况下，我们可能希望保持任务运行。例如，我们可能想通知用户：某任务花费的时间比预期的要长，但即便超过了规定的超时时间，也不取消该任务。为此，可使用 asyncio.shield 函数包装任务，这个函数将防止传入的任务被取消，会给它一个屏蔽，将取消请求忽略掉。</p>
+<pre><code class="language-python">import asyncio
+
+async def get_html(seconds):
+    print(&quot;开始下载页面&quot;)
+    await asyncio.sleep(seconds)
+    return f&quot;{seconds} 秒后下载完成&quot;
+
+async def main():
+    task = asyncio.create_task(get_html(2))
+    try:
+        # 通过 asyncio.shield 将 task 保护起来
+        result = await asyncio.wait_for(asyncio.shield(task), 1)
+        print(&quot;返回值:&quot;, result)
+    except asyncio.TimeoutError:
+        print(&quot;超时啦&quot;)
+        # 如果超时依旧会引发 TimeoutError，但和之前不同的是
+        # 此时任务不会被取消了，因为 asyncio.shield 会将取消请求忽略掉
+        print(&quot;任务是否被取消:&quot;, task.cancelled())
+        # 从出现超时的地方，继续执行，并等待它完成
+        result = await task
+        print(&quot;返回值:&quot;, result)
+
+
+asyncio.run(main())
+&quot;&quot;&quot;
+开始下载页面
+超时啦
+任务是否被取消: False
+返回值: 2 秒后下载完成
+&quot;&quot;&quot;
+</code></pre>
+<p>以上就是任务的超时。</p>
+<h2 id="awaitable"><a class="header" href="#awaitable">awaitable</a></h2>
+<p>我们说 Task 继承 Future，因此任务的很多方法都来自 future，而一个任务可以看做是一个 future 和一个协程的组合。然后协程、future 和任务，都可以使用 await 表达式，那么它们有没有什么共同之处呢？</p>
+<p>很简单，它们之间的共同点是 awaitable 抽象基类，这个类定义了一个抽象的魔法函数 __await__，任何实现了 __await__ 方法的对象都可以在 await 表达式中使用。</p>
+<p><img src="./images/331.png" alt="" /></p>
+<p>协程、future 和任务，它们的内部都实现了 __await__，当然我们自己定义的类也可以。</p>
+<pre><code class="language-python">import asyncio
+
+class Girl:
+
+    def __init__(self):
+        self.name = &quot;古明地觉&quot;
+        self.address = &quot;地灵殿&quot;
+
+    async def get_info(self):
+        await asyncio.sleep(1)
+        return f&quot;name: {self.name}, address: {self.address}&quot;
+
+    def __await__(self):
+        return asyncio.create_task(self.get_info()).__iter__()
+
+
+async def main():
+    g = Girl()
+    return await g
+
+result = asyncio.run(main())
+print(result)
+&quot;&quot;&quot;
+name: 古明地觉, address: 地灵殿
+&quot;&quot;&quot;
+</code></pre>
+<p>我们将可在 await 表达式中使用的对象称为 awaitable 对象，你会经常在 asyncio 文档中看到 awaitable 的术语，因为许多 API 并不关心你传入的是协程还是任务。但最佳实践应该是将协程包装成任务，然后将任务传给内置的 API 方法。</p>
+<h2 id="协程和任务的陷阱"><a class="header" href="#协程和任务的陷阱">协程和任务的陷阱</a></h2>
+<p>虽然通过将协程包装成任务来并发执行，可以获得一些性能改进，但面对以下场景却得不到提升。</p>
+<ul>
+<li>第一个场景：代码是 CPU 密集；</li>
+<li>第二个场景：代码虽然是 IO 密集，但 IO 是同步阻塞 IO，而不是异步非阻塞 IO；</li>
+</ul>
+<p>当有好几个执行大量计算的函数时，你或许会想到包装成任务并发执行。从概念上讲这是一个好主意，但 asyncio 使用的是单线程并发模型，这意味着仍然受到单线程和全局解释器锁的限制。为证明这一点，让我们尝试同时运行多个 CPU 密集型函数。</p>
+<pre><code class="language-python">import asyncio
+import time
+from functools import wraps
+from typing import Callable, Any
+
+# 一个函数，用于度量协程的运行时间
+def async_timed(func: Callable) -&gt; Callable:
+    @wraps(func)
+    async def wrapper(*args, **kwargs) -&gt; Any:
+        start = time.perf_counter()
+        try:
+            return await func(*args, **kwargs)
+        finally:
+            end = time.perf_counter()
+            total = end - start
+            print(f&quot;协程 {func.__name__} 用 {total} 秒执行完毕&quot;)
+    return wrapper
+
+@async_timed
+async def cpu_bound_work():
+    counter = 0
+    for i in range(100000000):
+        counter += 1
+    return counter
+
+@async_timed
+async def main():
+    task_one = asyncio.create_task(cpu_bound_work())
+    task_two = asyncio.create_task(cpu_bound_work())
+
+    await task_one
+    await task_two
+
+asyncio.run(main())
+&quot;&quot;&quot;
+协程 cpu_bound_work 用 1.7002373 秒执行完毕
+协程 cpu_bound_work 用 1.7006968 秒执行完毕
+协程 main 用 3.401072 秒执行完毕
+&quot;&quot;&quot;
+</code></pre>
+<p>尽管创建了两个任务，但代码仍然是串行执行。首先运行任务 1，然后运行任务 2，这意味着总运行时间将是对 cpu_bound_work 的两次调用的总和。对于 CPU 密集型任务，如果还想放在协程里面，那么应该和进程池搭配使用，后续再聊。</p>
+<p>然后在协程中使用阻塞 IO 密集型操作，会产生和 CPU 密集型操作相同的问题，因为这些 API 会阻塞线程。所以在协程中运行阻塞 API 调用时，会阻塞事件循环线程本身，这意味其它的任何协程或任务都将暂停。阻塞 API 调用的示例包括使用 requests 发请求、使用 time.sleep 休眠等，通常执行任何非协程的 IO 操作或执行耗时的 CPU 操作都可视为阻塞。</p>
+<blockquote>
+<p>同步阻塞 IO：比如 requests.get()、time.sleep() 等，这会阻塞整个线程，导致所有任务都得不到执行；异步非阻塞 IO：比如协程的 IO 操作，这只会阻塞协程，但线程不阻塞，线程可以执行其它已经准备就绪的任务。</p>
+</blockquote>
+<p>我们举个例子：</p>
+<pre><code class="language-Python">@async_timed
+async def get_baidu_status():
+    return requests.get(&quot;http://www.baidu.com&quot;).status_code
+
+@async_timed
+async def main():
+    task_one = asyncio.create_task(get_baidu_status())
+    task_two = asyncio.create_task(get_baidu_status())
+    task_three = asyncio.create_task(get_baidu_status())
+    await task_one
+    await task_two
+    await task_three
+
+asyncio.run(main())
+&quot;&quot;&quot;
+协程 get_baidu_status 用 0.11206920000000001 秒执行完毕
+协程 get_baidu_status 用 0.09500720000000001 秒执行完毕
+协程 get_baidu_status 用 0.11085439999999996 秒执行完毕
+协程 main 用 0.3180584 秒执行完毕
+&quot;&quot;&quot;
+</code></pre>
+<p>可以看到 main() 协程的耗时，是所有任务的总和。这是因为 requests 库是同步阻塞的，这意味着它将阻塞运行它的线程。由于 asyncio 是单线程，因此 requests 库会阻塞事件循环，而阻塞期间事件循环无法做其它任何事情。</p>
+<p>通常，你现在使用的大多数 API 都是同步阻塞的，且无法与 asyncio 一起使用。如果想和 asyncio 搭配，那么你需要使用支持协程、并利用非阻塞套接字的库，否则就只能进行阻塞调用了。</p>
+<p>而对于上面这个例子，我们可以将 requests 换成 aiohttp 或 httpx，它们可以使用非阻塞套接字，并返回协程，从而获得适当的并发性。如果你只能使用同步库，并且还想和 asyncio 搭配使用的话，那么应该要引入线程池，后续再聊。</p>
+<h2 id="小结"><a class="header" href="#小结">小结</a></h2>
+<p>到目前为止，我们就简单地剖析了 Future 和 Task，并介绍了它们的区别。Future 和 asyncio 的实现密切相关，比如锁和事件都是基于 Future 实现的，但在工作中我们很少会直接使用 Future，都是定义协程，然后将协程包装成任务。</p>
+<p>当然关于任务，还有很多东西没有介绍，比如如何同时等待一组任务？如何给一组任务指定超时时间？以及如何优先处理已经完成的任务等等？关于这些内容，我们之后再说。</p>
+<hr />
+<p> </p>
+<p><strong>欢迎大家关注我的公众号：古明地觉的编程教室。</strong></p>
+<p><img src="./images/qrcode_for_gh.jpg" alt="" /></p>
+<p><strong>如果觉得文章对你有所帮助，也可以请作者吃个馒头，Thanks♪(･ω･)ﾉ。</strong></p>
+<p><img src="./images/supports.png" alt="" /></p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="93.在asyncio中使用Socket.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+                            <a rel="next" href="95.如何精确控制asyncio中并发运行的多个任务.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="93.在asyncio中使用Socket.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+                    <a rel="next" href="95.如何精确控制asyncio中并发运行的多个任务.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+            </nav>
+
+        </div>
+
+        <script type="text/javascript">
+            window.playground_copyable = true;
+        </script>
+        <script src="elasticlunr.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="mark.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="searcher.js" type="text/javascript" charset="utf-8"></script>
+        <script src="clipboard.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="highlight.js" type="text/javascript" charset="utf-8"></script>
+        <script src="book.js" type="text/javascript" charset="utf-8"></script>
+
+        <!-- Custom JS scripts -->
+        <script type="text/javascript" src="theme/custom.js"></script>
+    </body>
+</html>

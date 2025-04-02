@@ -1,0 +1,701 @@
+<!DOCTYPE HTML>
+<html lang="zh-cn" class="sidebar-visible no-js light">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>19. 探究 Python 整数的加减法，感受大整数的运算哲学与魅力 - CPython3.8 源码探秘</title>
+        <!-- Custom HTML head -->
+        <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff" />
+
+        <link rel="icon" href="favicon.svg">
+        <link rel="shortcut icon" href="favicon.png">
+        <link rel="stylesheet" href="css/variables.css">
+        <link rel="stylesheet" href="css/general.css">
+        <link rel="stylesheet" href="css/chrome.css">
+        <!-- Fonts -->
+        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="fonts/fonts.css">
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="highlight.css">
+        <link rel="stylesheet" href="tomorrow-night.css">
+        <link rel="stylesheet" href="ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+        <link rel="stylesheet" href="theme/custom.css">
+        <!-- MathJax -->
+        <script async type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    </head>
+    <body>
+        <!-- Provide site root to javascript -->
+        <script type="text/javascript">
+            var path_to_root = "";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script type="text/javascript">
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script type="text/javascript">
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            var html = document.querySelector('html');
+            html.classList.remove('no-js')
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add('js');
+        </script>
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script type="text/javascript">
+            var html = document.querySelector('html');
+            var sidebar = 'hidden';
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            }
+            html.classList.remove('sidebar-visible');
+            html.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li class="chapter-item expanded "><a href="0.序言.html">0. 序言</a></li><li class="chapter-item expanded "><a href="1.CPython源码长什么样子？.html">1. CPython 源码长什么样子？</a></li><li class="chapter-item expanded "><a href="2.变量和对象，它们之间有什么区别和联系呢？.html">2. 变量和对象，它们之间有什么区别和联系呢？</a></li><li class="chapter-item expanded "><a href="3.Python对象有哪几种，我们可以从哪些角度进行分类呢？.html">3. Python 对象有哪几种，我们可以从哪些角度进行分类呢？</a></li><li class="chapter-item expanded "><a href="4.万丈高楼平地起，一切从PyObject开始.html">4. 万丈高楼平地起，一切从 PyObject 开始</a></li><li class="chapter-item expanded "><a href="5.详解PyTypeObject，Python类型对象的载体.html">5. 详解 PyTypeObject，Python 类型对象的载体</a></li><li class="chapter-item expanded "><a href="6.通过type和object之间的关联，进一步分析类型对象.html">6. 通过 type 和 object 之间的关联，进一步分析类型对象</a></li><li class="chapter-item expanded "><a href="7.当创建一个Python对象时，背后都经历了哪些过程？.html">7. 当创建一个 Python 对象时，背后都经历了哪些过程？</a></li><li class="chapter-item expanded "><a href="8.当调用一个Python对象时，背后都经历了哪些过程？.html">8. 当调用一个 Python 对象时，背后都经历了哪些过程？</a></li><li class="chapter-item expanded "><a href="9.再探泛型API，感受Python对象的设计哲学.html">9. 再探泛型 API，感受 Python 对象的设计哲学</a></li><li class="chapter-item expanded "><a href="10.Python对象的行为是怎么区分的？.html">10. Python 对象的行为是怎么区分的？</a></li><li class="chapter-item expanded "><a href="11.一个Python对象会在何时被销毁？.html">11. 一个 Python 对象会在何时被销毁？</a></li><li class="chapter-item expanded "><a href="12.深度解密Python的浮点数是怎么实现的？.html">12. 深度解密 Python 的浮点数是怎么实现的？</a></li><li class="chapter-item expanded "><a href="13.对象被销毁之后所占的内存一定会释放吗？解密浮点数的缓存池机制.html">13. 对象被销毁之后所占的内存一定会释放吗？解密浮点数的缓存池机制</a></li><li class="chapter-item expanded "><a href="14.浮点数支持的操作是怎么实现的？.html">14. 浮点数支持的操作是怎么实现的？</a></li><li class="chapter-item expanded "><a href="15.解密Python的复数是怎么实现的？它有什么用途呢？.html">15. 解密 Python 的复数是怎么实现的？它有什么用途呢？</a></li><li class="chapter-item expanded "><a href="16.Python的整数是怎么设计的，为什么它不会溢出？.html">16. Python 的整数是怎么设计的，为什么它不会溢出？</a></li><li class="chapter-item expanded "><a href="17.解密Python的小整数对象池.html">17. 解密 Python 的小整数对象池</a></li><li class="chapter-item expanded "><a href="18.两个Python整数之间是如何进行大小比较的？过程并不像我们想的那样简单.html">18. 两个 Python 整数之间是如何进行大小比较的？过程并不像我们想的那样简单</a></li><li class="chapter-item expanded "><a href="19.探究Python整数的加减法，感受大整数的运算哲学与魅力.html" class="active">19. 探究 Python 整数的加减法，感受大整数的运算哲学与魅力</a></li><li class="chapter-item expanded "><a href="20.Python的布尔值是怎么实现的，你对它的了解有多深呢？.html">20. Python 的布尔值是怎么实现的，你对它的了解有多深呢？</a></li><li class="chapter-item expanded "><a href="21.Python的None是怎么实现的？.html">21. Python 的 None 是怎么实现的？</a></li><li class="chapter-item expanded "><a href="22.深度解密Python切片的实现原理.html">22.深度解密 Python 切片的实现原理</a></li><li class="chapter-item expanded "><a href="23.bytes对象（字节串）是怎么实现的？解密它的内部原理.html">23. bytes 对象（字节串）是怎么实现的？解密它的内部原理</a></li><li class="chapter-item expanded "><a href="24.bytes对象都支持哪些操作，它们是怎么实现的？.html">24. bytes 对象都支持哪些操作，它们是怎么实现的？</a></li><li class="chapter-item expanded "><a href="25.通过bytes对象的合并，探究缓冲区的奥秘.html">25. 通过 bytes 对象的合并，探究缓冲区的奥秘</a></li><li class="chapter-item expanded "><a href="26.解密bytes对象的缓存池.html">26. 解密 bytes 对象的缓存池</a></li><li class="chapter-item expanded "><a href="27.详解bytearray对象的底层实现.html">27. 详解 bytearray 对象的底层实现</a></li><li class="chapter-item expanded "><a href="28.字符集和字符编码.html">28. 字符集和字符编码</a></li><li class="chapter-item expanded "><a href="29.Python是怎么存储字符串的？.html">29. Python 是怎么存储字符串的？</a></li><li class="chapter-item expanded "><a href="30.解密字符串的底层结构，它是怎么实现的？.html">30. 解密字符串的底层结构，它是怎么实现的？</a></li><li class="chapter-item expanded "><a href="31.字符串的intern机制是怎么一回事？.html">31. 字符串的 intern 机制是怎么一回事？</a></li><li class="chapter-item expanded "><a href="32.聊一聊字符串常见操作的源码实现.html">32. 聊一聊字符串常见操作的源码实现</a></li><li class="chapter-item expanded "><a href="33.列表是怎么实现的？解密列表的数据结构.html">33. 列表是怎么实现的？解密列表的数据结构</a></li><li class="chapter-item expanded "><a href="34.列表是怎么扩容的？.html">34. 列表是怎么扩容的？</a></li><li class="chapter-item expanded "><a href="35.解密列表的创建与销毁，以及缓存池长什么样子？.html">35. 解密列表的创建与销毁，以及缓存池长什么样子？</a></li><li class="chapter-item expanded "><a href="36.列表作为序列型对象都支持哪些操作，它们在底层是怎么实现的？.html">36. 列表作为序列型对象都支持哪些操作，它们在底层是怎么实现的？</a></li><li class="chapter-item expanded "><a href="37.列表都有哪些自定义方法，它们是怎么实现的？.html">37. 列表都有哪些自定义方法，它们是怎么实现的？</a></li><li class="chapter-item expanded "><a href="38.解密元组的实现原理.html">38. 解密元组的实现原理</a></li><li class="chapter-item expanded "><a href="39.聊一聊喜闻乐见的哈希表.html">39. 聊一聊喜闻乐见的哈希表</a></li><li class="chapter-item expanded "><a href="40.字典是怎么实现的，它的底层结构长什么样子？.html">40. 字典是怎么实现的，它的底层结构长什么样子？</a></li><li class="chapter-item expanded "><a href="41.什么是可哈希对象，它的哈希值是怎么计算的？.html">41. 什么是可哈希对象，它的哈希值是怎么计算的？</a></li><li class="chapter-item expanded "><a href="42.字典的key是怎么映射成索引的，索引冲突了又该怎么办？.html">42. 字典的 key 是怎么映射成索引的，索引冲突了又该怎么办？</a></li><li class="chapter-item expanded "><a href="43.哈希表是怎么删除元素的，能直接删除吗？.html">43. 哈希表是怎么删除元素的，能直接删除吗？</a></li><li class="chapter-item expanded "><a href="44.字典是怎么创建的，支持的操作又是如何实现的？.html">44. 字典是怎么创建的，支持的操作又是如何实现的？</a></li><li class="chapter-item expanded "><a href="45.字典的自定义方法是怎么实现的？.html">45. 字典的自定义方法是怎么实现的？</a></li><li class="chapter-item expanded "><a href="46.字典是怎么扩容的？它会经历哪些过程？.html">46. 字典是怎么扩容的？它会经历哪些过程？</a></li><li class="chapter-item expanded "><a href="47.身虽死，道未消，解密字典的缓存池.html">47. 身虽死，道未消，解密字典的缓存池</a></li><li class="chapter-item expanded "><a href="48.解密集合的实现原理.html">48. 解密集合的实现原理</a></li><li class="chapter-item expanded "><a href="49.集合支持的操作有哪些，它们是怎么实现的？.html">49. 集合支持的操作有哪些，它们是怎么实现的？</a></li><li class="chapter-item expanded "><a href="50.迭代器是怎么实现的？.html">50. 迭代器是怎么实现的？</a></li><li class="chapter-item expanded "><a href="51.Python源文件编译之后会得到什么，它的结构是怎样的？和字节码又有什么联系？.html">51. Python 源文件编译之后会得到什么，它的结构是怎样的？和字节码又有什么联系？</a></li><li class="chapter-item expanded "><a href="52.PyCodeObject拾遗.html">52. PyCodeObject 拾遗</a></li><li class="chapter-item expanded "><a href="53.一文让你搞懂pyc文件.html">53. 一文让你搞懂 pyc 文件</a></li><li class="chapter-item expanded "><a href="54.深度解密虚拟机的执行环境：栈帧对象.html">54. 深度解密虚拟机的执行环境：栈帧对象</a></li><li class="chapter-item expanded "><a href="55.名字空间：变量的容身之所.html">55. 名字空间：变量的容身之所</a></li><li class="chapter-item expanded "><a href="56.当查找一个变量时，虚拟机会进行哪些动作？.html">56. 当查找一个变量时，虚拟机会进行哪些动作？</a></li><li class="chapter-item expanded "><a href="57.虚拟机是怎么执行字节码的？背后都经历了哪些过程.html">57. 虚拟机是怎么执行字节码的？背后都经历了哪些过程</a></li><li class="chapter-item expanded "><a href="58.深入源码，进一步考察字节码的执行流程.html">58. 深入源码，进一步考察字节码的执行流程</a></li><li class="chapter-item expanded "><a href="59.局部变量是怎么实现静态查找的，它和local名字空间又有什么联系呢？.html">59. 局部变量是怎么实现静态查找的，它和 local 名字空间又有什么联系呢？</a></li><li class="chapter-item expanded "><a href="60.剖析字节码指令，以及Python赋值语句的原理.html">60. 剖析字节码指令，以及 Python 赋值语句的原理</a></li><li class="chapter-item expanded "><a href="61.流程控制语句if是怎么实现的？.html">61. 流程控制语句 if 是怎么实现的？</a></li><li class="chapter-item expanded "><a href="62.流程控制语句for、while是怎么实现的？.html">62. 流程控制语句 for、while 是怎么实现的？</a></li><li class="chapter-item expanded "><a href="63.异常是怎么实现的？虚拟机是如何将异常抛出去的？.html">63. 异常是怎么实现的？虚拟机是如何将异常抛出去的？</a></li><li class="chapter-item expanded "><a href="64.虚拟机是如何捕获异常的？.html">64. 虚拟机是如何捕获异常的？</a></li><li class="chapter-item expanded "><a href="65.函数在底层长什么样子？.html">65. 函数在底层长什么样子？</a></li><li class="chapter-item expanded "><a href="66.函数是怎么创建的，背后经历了哪些过程？.html">66. 函数是怎么创建的，背后经历了哪些过程？</a></li><li class="chapter-item expanded "><a href="67.函数在底层是如何调用的？.html">67. 函数在底层是如何调用的？</a></li><li class="chapter-item expanded "><a href="68.函数是如何解析位置参数的？.html">68. 函数是如何解析位置参数的？</a></li><li class="chapter-item expanded "><a href="69.函数是如何解析关键字参数的？.html">69. 函数是如何解析关键字参数的？</a></li><li class="chapter-item expanded "><a href="70.扩展位置参数和扩展关键字参数是如何解析的？.html">70. 扩展位置参数和扩展关键字参数是如何解析的？</a></li><li class="chapter-item expanded "><a href="71.闭包是怎么实现的？.html">71. 闭包是怎么实现的？</a></li><li class="chapter-item expanded "><a href="72.生成器是做什么的，为什么会有生成器？.html">72. 生成器是做什么的，为什么会有生成器？</a></li><li class="chapter-item expanded "><a href="73.源码解密生成器的实现原理.html">73. 源码解密生成器的实现原理</a></li><li class="chapter-item expanded "><a href="74.回顾Python的对象模型.html">74. 回顾 Python 的对象模型</a></li><li class="chapter-item expanded "><a href="75.class概念解析.html">75. class 概念解析</a></li><li class="chapter-item expanded "><a href="76.类型对象的初始化.html">76. 类型对象的初始化</a></li><li class="chapter-item expanded "><a href="77.自定义类对象的底层实现与metaclass.html">77. 自定义类对象的底层实现与 metaclass</a></li><li class="chapter-item expanded "><a href="78.彻底搞懂描述符.html">78. 彻底搞懂描述符</a></li><li class="chapter-item expanded "><a href="79.实例对象是如何创建的？.html">79. 实例对象是如何创建的？</a></li><li class="chapter-item expanded "><a href="80.实例对象的属性访问.html">80. 实例对象的属性访问</a></li><li class="chapter-item expanded "><a href="81.为什么实例在调用方法时会将自身传给self参数.html">81. 为什么实例在调用方法时会将自身传给 self 参数</a></li><li class="chapter-item expanded "><a href="82.模块是如何导入的？.html">82. 模块是如何导入的？</a></li><li class="chapter-item expanded "><a href="83.import机制的黑盒探测.html">83. import 机制的黑盒探测</a></li><li class="chapter-item expanded "><a href="84.import机制是怎么实现的？.html">84. import 机制是怎么实现的？</a></li><li class="chapter-item expanded "><a href="85.Python运行时环境的初始化，解释器在启动时都做了什么？.html">85. Python 运行时环境的初始化，解释器在启动时都做了什么？</a></li><li class="chapter-item expanded "><a href="86.激活Python虚拟机.html">86. 激活 Python 虚拟机</a></li><li class="chapter-item expanded "><a href="87.初识GIL、以及多个线程之间的调度机制.html">87. 初识 GIL、以及多个线程之间的调度机制</a></li><li class="chapter-item expanded "><a href="88.线程的创建、销毁、调度，以及GIL的实现原理.html">88. 线程的创建、销毁、调度，以及 GIL 的实现原理</a></li><li class="chapter-item expanded "><a href="89.解密map、filter、zip底层实现，对比列表解析式.html">89. 解密 map、filter、zip 底层实现，对比列表解析式</a></li><li class="chapter-item expanded "><a href="90.为什么要有协程，协程是如何实现的？.html">90. 为什么要有协程，协程是如何实现的？</a></li><li class="chapter-item expanded "><a href="91.什么是asyncio？如何基于单线程实现并发？事件循环又是怎么工作的？.html">91. 什么是 asyncio？如何基于单线程实现并发？事件循环又是怎么工作的？</a></li><li class="chapter-item expanded "><a href="92.协程、任务、future，以及事件循环.html">92. 协程、任务、future，以及事件循环</a></li><li class="chapter-item expanded "><a href="93.在asyncio中使用Socket.html">93. 在 asyncio 中使用 Socket</a></li><li class="chapter-item expanded "><a href="94.解密asyncio的Future和Task.html">94. 解密 asyncio 的 Future 和 Task</a></li><li class="chapter-item expanded "><a href="95.如何精确控制asyncio中并发运行的多个任务.html">95. 如何精确控制 asyncio 中并发运行的多个任务</a></li><li class="chapter-item expanded "><a href="96.详解asyncio的同步原语.html">96. 详解 asyncio 的同步原语</a></li><li class="chapter-item expanded "><a href="97.在asyncio中引入多进程.html">97. 在 asyncio 中引入多进程</a></li><li class="chapter-item expanded "><a href="98.可执行文件的内存模型，变量的值是放在栈上还是放在堆上.html">98. 可执行文件的内存模型，变量的值是放在栈上还是放在堆上</a></li><li class="chapter-item expanded "><a href="99.Python是如何管理内存的？.html">99. Python 是如何管理内存的？</a></li><li class="chapter-item expanded "><a href="100.Python的垃圾回收机制是怎么实现的？.html">100. Python 的垃圾回收机制是怎么实现的？</a></li><li class="chapter-item expanded "><a href="101.深入源码，探究垃圾回收的秘密.html">101. 深入源码，探究垃圾回收的秘密</a></li><li class="chapter-item expanded "><a href="102.侵入Python虚拟机，动态修改底层数据结构和运行时.html">102. 侵入 Python 虚拟机，动态修改底层数据结构和运行时</a></li><li class="chapter-item expanded "><a href="103.使用Python的ctypes调用C的动态库.html">103. 使用 Python 的 ctypes 调用 C 的动态库</a></li><li class="chapter-item expanded "><a href="104.使用Python的ctypes调用Rust的动态库.html">104. 使用 Python 的 ctypes 调用 Rust 的动态库</a></li><li class="chapter-item expanded "><a href="105.用C写Python.html">105. 用 C 写 Python</a></li><li class="chapter-item expanded "><a href="106.Cython从入门到精通.html">106. Cython 从入门到精通</a></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky bordered">
+                    <div class="left-buttons">
+                        <button id="sidebar-toggle" class="icon-button" type="button" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </button>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light (default)</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">CPython3.8 源码探秘</h1>
+
+                    <div class="right-buttons">
+                        <a href="https://github.com/satori1995/cpython-internal" title="Git repository" aria-label="Git repository">
+                            <i id="git-repository-button" class="fa fa-github"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script type="text/javascript">
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h2 id="楔子"><a class="header" href="#楔子">楔子</a></h2>
+<p>本篇文章来探讨一下整数的加减法是怎么做的，因为整数在底层采用数组进行存储，所以它的加减法就不像浮点数那么简单。</p>
+<p>在介绍浮点数的时候说过，对于数值型对象，它的类型一定实现了 tp_as_number 字段，该字段指向了 PyNumberMethods 结构体实例。结构体里面的每个字段都是一个函数指针，对应数值型对象的一个操作。</p>
+<p><img src="./images/70.png" alt="" /></p>
+<p>比如 nb_add 负责加法操作，nb_substract 负责减法操作等等，本篇文章就来探讨一下。首先整数支持的操作非常多，这里我们只探讨加减法。</p>
+<h2 id="整数加减法的运算原理"><a class="header" href="#整数加减法的运算原理">整数加减法的运算原理</a></h2>
+<p>整数的加法和减法分别由 long_add 和 long_sub 实现，但运算的核心却不在这两个函数上，它们内部会调用另外两个函数。因为数组保存了整数的绝对值，所以 Python 将整数的运算转成了绝对值运算，而底层有两个函数专门用来做这件事情，分别是 x_add 和 x_sub。</p>
+<ul>
+<li>x_add(a, b)：计算 a 和 b 的绝对值之和；</li>
+<li>x_sub(a, b)：计算 a 和 b 的绝对值之差；</li>
+</ul>
+<p>所以整数相加就可以这么做，假设两个整数 a 和 b 相加：</p>
+<ul>
+<li>如果 a 和 b 均为正数，那么通过 x_add 计算 a 和 b 的绝对值之和即可；</li>
+<li>如果 a 和 b 均为负数，那么通过 x_add 计算两者的绝对值之和，然后再取相反数；</li>
+<li>如果 a 为负数，b 为正数，那么通过 x_sub 计算 b 和 a 的绝对值之差即可；</li>
+<li>如果 a 为正数，b 为负数，那么通过 x_sub 计算 a 和 b 的绝对值之差即可；</li>
+</ul>
+<p>而整数相减也是同理，还是整数 a 和 b，两者相减：</p>
+<ul>
+<li>如果 a 为正数，b 为负数，那么通过 x_add 计算两者的绝对值之和即可；</li>
+<li>如果 a 为负数，b 为正数，那么通过 x_add 计算两者的绝对值之和，然后再取相反数；</li>
+<li>如果 a 和 b 均为正数，那么通过 x_sub 计算 a 和 b 的绝对值之差即可；</li>
+<li>如果 a 和 b 均为负数，那么通过 x_sub 计算 b 和 a 的绝对值之差即可；</li>
+</ul>
+<blockquote>
+<p>相加时，符号相同会调用 x_add、符号不同会调用 x_sub。相减时，符号相同会调用 x_sub、符号不同会调用 x_add。</p>
+</blockquote>
+<p>所以这就是 Python 的设计，因为绝对值的加减法不用考虑符号的影响，实现更为简单，所以 Python 将整数运算转化成整数的绝对值运算。那么下面我们的重心就在 x_add 和 x_sub 上面了，看看它们是如何对大整数绝对值进行运算的。到这里你可能会有疑问，大整数运算这么复杂，效率会差吧。显然这是啃腚的，整数数值越大，整数对象的底层数组就越长，运算开销也就越大。</p>
+<p><strong>但 Python 底层有一个机制叫做快分支，因为通用逻辑能处理所有情况，那么它的效率必然不高。而快分支则是对那些可以简单运算的情况提前进行处理，比如在对 a 和 b 计算加减法的时候，底层会先判断数组的长度是否均小于等于 1，如果是则说明数组中最多只有一个元素。这样的话，就可以直接转成 C 的整数进行运算了，这样性能损耗就可以忽略不计。</strong></p>
+<blockquote>
+<p>关于快分支，需要再单独解释一下。我们举个生活中的例子：好比你去见女朋友，正常情况下，你需要买花，并且精心打扮。但如果女朋友不在生理期，那么这一切都不需要做，只需买杯奶茶就好了。所以先判断女朋友是否在生理期，如果不在，那么只需买杯奶茶就能牵手便属于快分支。快分支具有命中率高等特点，绝大部分都是这个情况，而一旦命中快分支，那么程序便可快速处理。</p>
+</blockquote>
+<p>回到上面的例子，只要整数不超过 2 ** 30 - 1，都可以走快分支，显然这可以满足绝大部分场景，因为这个数字已经很大了。至于 x_add 和 x_sub 则属于通用逻辑，而通用也意味着平庸，但如果快分支没有命中，那么就只能走通用逻辑了。</p>
+<p>而我们的重点就是要研究 x_add 和 x_sub 的实现，感受大整数运算的魅力。不过在介绍之前，不妨想象一下我们平时将两个整数相加的时候是怎么做的。</p>
+<p><img src="./images/71.png" alt="" /></p>
+<p>从最低位开始进行相加，逢十进一，ob_digit 也是同理。我们可以把数组中的每一个元素看成是一个整体，只不过它不再是逢十进一，而是逢 <font color="blue">2 ** 30</font> 进一。</p>
+<pre><code class="language-python"># 数组的每个元素最大能表示 2 ** 30 - 1
+# 把元素整体想象成我们生活中加法的个位、十位、百位...
+# 然后对应的位相加，逢 2 ** 30 进一
+a = [1024, 22]
+b = [342, 18]
+c = [1024 + 342, 22 + 18]  # [1366, 40]
+
+print(
+    a[0] + a[1] * 2 ** 30
+    +
+    b[0] + b[1] * 2 ** 30
+    ==
+    c[0] + c[1] * 2 ** 30
+)  # True
+</code></pre>
+<p>所以仍旧是对应的位进行相加，和我们生活中的加法并无本质上的区别。只不过生活中的加法，每一位能表示 <font color="blue">0~9</font>，逢十进一。而 Python 底层的加法，因为整数使用数组存储，那么每一个位能表示 <font color="blue">0 ~ 2 ** 30 - 1</font>，逢 <font color="blue">2 ** 30</font> 进一。</p>
+<p><img src="./images/72.png" alt="" /></p>
+<p>把 1024、342 想象成个位，把 22、18 想象成十位，并且此时不再是逢十进一，而是逢 2 ** 30 进一。</p>
+<pre><code class="language-python">a = [2 ** 30 - 1, 16]
+b = [2 ** 30 - 1, 21]
+# a[0] + b[0] 超过了 2 ** 30，要进个 1
+# 而逢十进一之后，该位要减去十
+# 那么逢 2 ** 30 进一之后，显然要减去 2 ** 30
+c = [
+    a[0] + b[0] - 2 ** 30,
+    a[1] + b[1] + 1
+]
+
+print(
+    a[0] + a[1] * 2 ** 30
+    +
+    b[0] + b[1] * 2 ** 30
+    ==
+    c[0] + c[1] * 2 ** 30
+)  # True
+</code></pre>
+<p>然后是绝对值减法，和绝对值加法一样，也可以类比生活中的减法，从低位到高位分别相减。如果某一位相减的时候发现不够了，那么要向高位借一位。比如 <font color="blue">27 减去 9</font>，由于 7 比 9 小，因此向 <font color="blue">2</font> 借一位变成 <font color="blue">17</font>，减去 9，得 8。但 2 被借了一位，所以剩下 1，因此结果为 <font color="blue">18</font>。</p>
+<pre><code class="language-python">a = [5, 3]
+b = [6, 1]
+result = []
+
+# 如果计算 a - b，整个过程是怎样的呢？
+# 首先是 a[0] - b[0]，由于 a[0] &lt; b[0]
+# 所以要借一位，而一个位是 2 ** 30
+result.append(a[0] + 2 ** 30 - b[0])
+# 然后是 a[1] - b[1]
+# 由于 a[1] 被借走了一个位，因此要减 1
+result.append(a[1] - 1 - b[1])
+print(result)  # [1073741823, 1]
+
+# 验证一下
+print(
+    (a[0] + a[1] * 2 ** 30)
+    -
+    (b[0] + b[1] * 2 ** 30)
+)  # 2147483647
+print(
+    result[0] + result[1] * 2 ** 30
+)  # 2147483647
+</code></pre>
+<p>结果没有问题，以上我们就从原理上介绍了大整数的加减法，下面再看一下源码实现。</p>
+<h2 id="整数加减法源码实现"><a class="header" href="#整数加减法源码实现">整数加减法源码实现</a></h2>
+<p>当整数相加时会执行 long_add 函数，看一下它的具体实现。</p>
+<pre><code class="language-c">// Objects/longobject.c
+static PyObject *
+long_add(PyLongObject *a, PyLongObject *b)
+{
+    PyLongObject *z;  // 指向运算后的整数
+    CHECK_BINOP(a, b);  // 确保 a 和 b 都指向整数
+    
+    // 如果两个整数的 ob_digit 数组最多只有一个元素
+    // 那么取出来判断正负之后，直接进行运算即可
+    // 由于 2 ** 30 - 1 已经很大了，所以绝大部分场景，都会执行此分支
+    if (Py_ABS(Py_SIZE(a)) &lt;= 1 &amp;&amp; Py_ABS(Py_SIZE(b)) &lt;= 1) {
+        // MEDIUM_VALUE 是一个宏，接收一个 abs(ob_size) &lt;= 1 的 PyLongObject *
+        // 如果 ob_size 等于 0, 那么返回 0
+        // 如果 ob_size 等于 1, 那么返回 ob_digit[0]
+        // 如果 ob_size 等于 -1, 那么返回 -ob_digit[0]        
+        // 所以计算出 MEDIUM_VALUE(a) + MEDIUM_VALUE(b) 之后
+        // 将结果转成 PyLongObject，然后返回其泛型指针即可
+        // 因此当数组中元素个数不超过 1 的时候，显然是可以直接相加的
+        return PyLong_FromLong(MEDIUM_VALUE(a) + MEDIUM_VALUE(b));
+    }
+    // 否则走通用分支
+    if (Py_SIZE(a) &lt; 0) {
+        // 如果 a 是负数、b 是负数，那么先计算 |a| + |b|
+        if (Py_SIZE(b) &lt; 0) {
+            z = x_add(a, b);
+            if (z != NULL) {
+                // 然后对 z 取相反数
+                assert(Py_REFCNT(z) == 1);
+                Py_SIZE(z) = -(Py_SIZE(z));
+            }
+        }
+        // 如果 a 是负数、b 是正数，那么计算 |b| - |a|      
+        else
+            z = x_sub(b, a);
+    }
+    else {
+        // 如果 a 是正数、b 是负数，那么计算 |a| - |b|
+        if (Py_SIZE(b) &lt; 0)
+            z = x_sub(a, b);
+        // 如果 a 是正数、b 是正数，那么计算 |a| + |b|      
+        else
+            z = x_add(a, b);
+    }
+    return (PyObject *)z;
+}
+</code></pre>
+<p>因此 long_add 函数并不长，但是调用了 x_add 和 x_sub，显然核心逻辑是在这两个函数里面。至于 long_add 函数，它的逻辑如下：</p>
+<ul>
+<li>判断两个整数底层对应的数组的长度是否均小于等于 1，如果是的话那么通过宏 MEDIUM_VALUE 直接将其转成 C 的一个 digit，当然符号也会考虑在内。然后直接相加、返回即可。显然这里走的是快分支，或者说快速通道。</li>
+<li>但如果其中一方的数组长度（ob_size）大于 1，那么判断两者的符号。如果都为负数，那么通过 x_add 计算两者的绝对值之和，然后取相反数。</li>
+<li>如果 a 为负数，b 为正数，那么通过 x_sub 计算 b 和 a 的绝对值之差即可；</li>
+<li>如果 a 为正数，b 为负数，那么通过 x_sub 计算 a 和 b 的绝对值之差即可；</li>
+<li>如果都为正数，那么通过 x_add 计算 a 和 b 的绝对值之和即可；</li>
+</ul>
+<p>所以 Python 整数设计的非常巧妙，ob_digit 虽然用来维护具体数值，但它并没有考虑正负，整数的正负是通过 ob_size 来表示的。通过将运算变成绝对值运算，实现起来会方便很多。</p>
+<p>说完了 long_add，再来看看 long_sub，这两者是类似的。</p>
+<pre><code class="language-C">// Objects/longobject.c
+static PyObject *
+long_sub(PyLongObject *a, PyLongObject *b)
+{
+    PyLongObject *z;  // 指向运算后的整数
+    CHECK_BINOP(a, b);  // 确保 a 和 b 都指向整数
+    
+    // 如果两个整数的 ob_digit 数组最多只有一个元素
+    // 那么取出来判断正负之后，直接进行运算即可
+    if (Py_ABS(Py_SIZE(a)) &lt;= 1 &amp;&amp; Py_ABS(Py_SIZE(b)) &lt;= 1) {
+        return PyLong_FromLong(MEDIUM_VALUE(a) - MEDIUM_VALUE(b));
+    }
+    // 否则走通用分支    
+    if (Py_SIZE(a) &lt; 0) {
+        // 如果 a 是负数、b 是负数，那么先计算 |a| - |b|
+        if (Py_SIZE(b) &lt; 0)
+            z = x_sub(a, b);
+        // 如果 a 是负数、b 是正数，那么先计算 |a| + |b|
+        else
+            z = x_add(a, b);
+        // 然后对 z 取相反数
+        if (z != NULL) {
+            assert(Py_SIZE(z) == 0 || Py_REFCNT(z) == 1);
+            Py_SIZE(z) = -(Py_SIZE(z));
+        }
+    }
+    else {
+        // 如果 a 是正数、b 是负数，那么计算 |a| + |b|
+        if (Py_SIZE(b) &lt; 0)
+            z = x_add(a, b);
+        // 如果 a 是正数、b 是正数，那么计算 |a| - |b|
+        else
+            z = x_sub(a, b);
+    }
+    return (PyObject *)z;
+}
+</code></pre>
+<p>所以 long_add 和 long_sub 的代码是类似的，它们将整数的运算转成了整数的绝对值运算，所以关键要理解什么时候用 x_add，什么时候用 x_sub。</p>
+<p><font color="#ac39ff"><strong>a + b</strong></font></p>
+<ul>
+<li>如果 a 是正数，b 是正数，调用 <font color="blue">x_add(a, b)</font>，计算 <font color="blue">|a| + |b|</font>；</li>
+<li>如果 a 是负数、b 是负数，调用 <font color="blue">x_add(a, b)</font>，计算 <font color="blue">|a| + |b|</font>，然后再取反；</li>
+<li>如果 a 是正数、b 是负数，调用 <font color="blue">x_sub(a, b)</font>，计算 <font color="blue">|a| - |b|</font>；</li>
+<li>如果 a 是负数、b 是正数，调用 <font color="blue">x_sub(b, a)</font>，计算 <font color="blue">|b| - |a|</font>；</li>
+</ul>
+<p>所以相加时，符号相同会调用 x_add、符号不同会调用 x_sub。</p>
+<p><font color="#ac39ff"><strong>a - b</strong></font></p>
+<ul>
+<li>如果 a 是正数、b 是负数，调用 <font color="blue">x_add(a, b)</font>，计算 <font color="blue">|a| + |b|</font>；</li>
+<li>如果 a 是负数、b 是正数，调用 <font color="blue">x_add(a, b)</font>，计算 <font color="blue">|a| + |b|</font>，然后再取反；</li>
+<li>如果 a 是正数，b 是正数，调用 <font color="blue">x_sub(a, b)</font>，计算 <font color="blue">|a| - |b|</font>；</li>
+<li>如果 a 是负数，b 是负数，调用 <font color="blue">x_sub(b, a)</font>，计算 <font color="blue">|b| - |a|</font>。当然在源码中调用的是 <font color="blue">x_sub(a, b)</font>，计算 <font color="blue">|a| - |b|</font>，然后再取相反数；</li>
+</ul>
+<p>所以相减时，符号相同会调用 x_sub、符号不同会调用 x_add。</p>
+<p>接下来我们的重点就是绝对值加法和绝对值减法的具体实现细节。</p>
+<h2 id="绝对值加法x_add"><a class="header" href="#绝对值加法x_add">绝对值加法：x_add</a></h2>
+<p>函数 x_add 负责绝对值加法，但是介绍之前，需要先了解几个宏，它们在 x_add 中会有体现。</p>
+<pre><code class="language-C">// Include/longintrepr.h
+#define PyLong_SHIFT    30
+#define PyLong_BASE     ((digit)1 &lt;&lt; PyLong_SHIFT)
+#define PyLong_MASK     ((digit)(PyLong_BASE - 1))
+</code></pre>
+<p>显然 PyLong_BASE 等于 2 ** 30，PyLong_MASK 等于 2 ** 30 - 1（说明 32 个位，前两个位是 0，后三十个位都是 1）。</p>
+<p>然后我们可以看 x_add 的具体实现了。</p>
+<pre><code class="language-C">// Objects/longobject.c
+
+static PyLongObject *
+x_add(PyLongObject *a, PyLongObject *b)
+{
+    // 参数 a 和 b 指向了两个要相加的整数对象
+    // 获取整数在底层的 ob_size
+    Py_ssize_t size_a = Py_ABS(Py_SIZE(a)), size_b = Py_ABS(Py_SIZE(b));
+    // 指向两个整数的相加结果
+    PyLongObject *z;
+    // 循环变量
+    Py_ssize_t i;
+    // 每个部分的运算结果
+    digit carry = 0;
+    
+    // 如果 size_a 小于 size_b，说明 |a| &lt; |b|
+    // 那么将两个整数交换位置，确保操作符左边的数大于右边的数
+    // 这么做也符合人类习惯，可以想象一下小学时候的加法计算
+    // 如果一个位数多，一个位数少，也会习惯将位数多的放在左边
+    if (size_a &lt; size_b) {
+        { PyLongObject *temp = a; a = b; b = temp; }
+        { Py_ssize_t size_temp = size_a;
+            size_a = size_b;
+            size_b = size_temp; }
+    }
+    // 申请一个 ob_digit 的长度为 size_a + 1 的 PyLongObject
+    // 但为什么是 size_a + 1 呢? 由于上面的 if 语句，使得 size_a 一定不小于 size_b
+    // 那么 a 和 b 相加之后的 z 的 ob_size 一定不小于 size_a
+    // 但是也可能比 size_a 多 1，比如: a = 2 ** 60 - 1, b = 1
+    // 那么相加之后结果为 2 ** 60，于是 ob_size 就变成了 3
+    // 因此在创建 z 的时候，ob_digit 的容量会等于 size_a + 1
+    z = _PyLong_New(size_a+1);
+    
+    // 正常情况下, z 是一个 PyLongObject *，但如果 z == NULL, 表示分配失败（程序崩溃）
+    // 但说实话, 除非你内存不够了, 否则这种情况不会发生
+    if (z == NULL)
+        return NULL;
+    
+    // 重点来了，因为 size_a &gt; size_b，所以会以 size_b 为准，两者从低位向高位依次对应相加
+    // 当 b 到头了，再单独算 a 的剩余部分
+    // 因此以 i &lt; size_b 作为条件
+    for (i = 0; i &lt; size_b; ++i) {
+        // 将 a-&gt;ob_digit[i] + b-&gt;ob_digit[i] + carry（初始为 0）作为 carry
+        // 如果 carry 没有超过 2 ** 30 - 1，那么它就是 z -&gt; ob_digit[i] 的值
+        carry += a-&gt;ob_digit[i] + b-&gt;ob_digit[i];
+        // 但 carry 是可能溢出的，当溢出时，应该要减去 2 ** 30，所以还要判断是否产生了进位
+        // 但解释器没有使用常规的判断，而是选择了效率更高的位运算（carry &amp; PyLong_MASK）
+        // 由于 PyLong_MASK 等于 (1 &lt;&lt; 30) - 1，所以它的前两个位是 0，后面三十个位全是 1
+        // 因此当 carry 不超过 2 ** 30 - 1 时，carry &amp; PyLong_MASK 就等于 carry
+        // 当 carry 超过 2 ** 30 - 1 时，carry &amp; PyLong_MASK 就等于 carry - 2 ** 30
+        z-&gt;ob_digit[i] = carry &amp; PyLong_MASK;
+        // 然后当 carry 产生进位时，显然不可以丢，它们要作用在数组中下一个元素相加的结果上
+        // 所以这里将 carry 右移 30 位，得到进位，然后重新赋值给 carry，并作用在下一轮循环中
+        // 如果没有产生进位，那么 carry 为 0，如果产生了进位，那么 carry 为 1
+        carry &gt;&gt;= PyLong_SHIFT;
+    }
+    
+    // 如果 b 到头了, 那么继续从当前的 i 开始遍历，直到 i == size_a, 逻辑还是和上面一样
+    for (; i &lt; size_a; ++i) {
+        // 此时只需要加上 a-&gt;ob_digit[i] 和 carry 即可，因为 b 到头了
+        carry += a-&gt;ob_digit[i];
+        // 这里也要按位与 PyLong_MASK, 因为也可能存在进位的情况
+        // 拿生活中的 99999 + 1 为例，此时 a = 99999, b = 1，显然第一次循环 b 就到头了
+        // 但后面单独循环 a 的时候, 依旧会产生进位，所以这里也是同理
+        z-&gt;ob_digit[i] = carry &amp; PyLong_MASK;
+        // carry 右移 30 位得到进位，然后重新赋值给 carry
+        carry &gt;&gt;= PyLong_SHIFT;
+    }
+    // 两个循环结束之后, 其实还差一步，还拿 99999 + 1 举例子
+    // 按照顺序相加得到的是 00000，因为最后还进了一个 1，这里的 carry 也是同理
+    // 因此 z 的 ob_size 要比 size_a 多 1，目的就在于此
+    // 所以要将 z-&gt;ob_digit 的最后一个元素设置成 carry
+    z-&gt;ob_digit[i] = carry;
+    // 但如果最后的 carry 没有进位的话，显然其结果就是 0
+    // 所以最后没有直接返回 z，而是返回了 long_normalize(z)
+    // 这个 long_normalize 函数的作用是从后往前依次检查 ob_digit 的元素
+    // 如果为 0，那么就将其 ob_size 减去 1, 直到出现一个不为 0 的元素
+    // 比如 ob_digit 为 [0, 3, 1, 0, 0, 0]，长度为 6，但规范化之后的 ob_size 显然是 3
+    // 不过对于当前来说，显然最多只会检查一次，因为它的 ob_size 只比 size_a 多 1
+    // 所以判断数组最后一个元素是否为 0 也可以，如果为 0 则说明没有产生进位
+    return long_normalize(z);
+}
+</code></pre>
+<p>整数在底层实现的很巧妙，不理解的话可以多看几遍，然后我们在 Python 的层面上再反推一下绝对值加法，进一步感受底层的运算过程。</p>
+<pre><code class="language-Python"># 假设有 a 和 b 两个整数
+# 当然这里是使用列表直接模拟底层数组 ob_digit
+a = [1073741744, 999, 765, 123341]
+b = [841, 1073741633, 2332]
+# 然后创建 z，表示 a 和 b 的相加结果
+z = []
+
+# 为了更直观，我们一步步手动相加
+# 首先是 a[0] + b[0]，得到 carry
+carry = a[0] + b[0]
+# 但 carry 可能大于 2 ** 30 - 1，所以要进行判断
+# 如果大于，那么要减去 2 ** 30，否则保持不变
+# 而这一步可以使用位运算来实现，将 carry 和 (2 ** 30 - 1) 按位与即可
+print(carry &amp; (2 ** 30 - 1))  # 761
+# 结果是 761，说明 carry 比 2 ** 30 - 1 大
+# 然后 z 的第一个元素就是 761
+z.append(761)
+
+# 接着计算 a[1] + b[1] 得到新的 carry
+# 但是之前的 carry 大于 2 ** 30 - 1，所以还要再加上 carry &gt;&gt; 30，即进位
+# 当然，如果没有产生进位，那么 carry &gt;&gt; 30 就是 0
+carry = (carry &gt;&gt; 30) + a[1] + b[1]
+# 然后 carry &amp; (2 ** 30 - 1) 得到 809，说明 carry 依旧大于 2 ** 30 - 1
+print(carry &amp; (2 ** 30 - 1))  # 809
+# 所以 z 的第二个元素就是 809
+z.append(809)
+
+# 计算 a[2] + b[2] 的时候也是同理
+carry = (carry &gt;&gt; 30) + a[2] + b[2]
+# 但显然此时的 carry 已经不大于 2 ** 30 - 1 了
+print(carry &amp; (2 ** 30 - 1))  # 3098
+# 说明 z 的第三个元素是 3098
+z.append(3098)
+
+# 此时 b 到头了，所以直接将 a[3] 作为 carry
+# 当然还要判断上一步的 carry 是否大于 2 ** 30 - 1
+# 所以还是右移 30 位，当不大于 2 ** 30 - 1 时，carry &gt;&gt; 30 就是 0
+carry = (carry &gt;&gt; 30) + a[3]
+print(carry &amp; (2 ** 30 - 1))  # 123341
+z.append(123341)
+
+# 此时 a 也遍历完毕，但是不要忘记再对 carry 进行判断
+# 如果大于 2 ** 30 - 1，那么会产生进位，所以 z 还要再 append 一个 1
+# 当然这里 carry 没有超过 2 ** 30 - 1
+
+# 此时 z 为 [761, 809, 3098, 123341]
+print(z)  # [761, 809, 3098, 123341]
+
+# a = [1073741744, 999, 765, 123341]
+# b = [841, 1073741633, 2332]
+# z = [761, 809, 3098, 123341]
+# 因此 ob_digit 为 [1073741744, 999, 765, 123341]
+# 和 ob_digit 为 [841, 1073741633, 2332] 的两个 PyLongObject 相加
+# 得到的新的 PyLongObject 的 ob_digit 为 [761, 809, 3098, 123341]
+print(
+    a[0] + a[1] * 2 ** 30 + a[2] * 2 ** 60 + a[3] * 2 ** 90
+    +
+    b[0] + b[1] * 2 ** 30 + b[2] * 2 ** 60
+    ==
+    z[0] + z[1] * 2 ** 30 + z[2] * 2 ** 60 + z[3] * 2 ** 90
+)  # True
+</code></pre>
+<p>以上就是绝对值加法，我们从源码的角度和 Python 代码的角度分别解释了一遍。看完了绝对值加法，再来看看绝对值减法。</p>
+<h2 id="绝对值减法x_sub"><a class="header" href="#绝对值减法x_sub">绝对值减法：x_sub</a></h2>
+<p>和绝对值加法一样，绝对值减法也可以类比生活中的减法，从低位到高位分别相减。如果某一位相减的时候发现不够了，那么要向高位借一位。比如 27 减去 9，7 比 9 小，因此向 2 借一位变成 17，减去 9，得 8。但 2 被借了一位，所以剩下 1，因此结果为 17。</p>
+<pre><code class="language-C">// Objects/longobject.c
+
+static PyLongObject *
+x_sub(PyLongObject *a, PyLongObject *b)
+{   
+    // 依旧是获取两者的 ob_size 的绝对值
+    Py_ssize_t size_a = Py_ABS(Py_SIZE(a)), size_b = Py_ABS(Py_SIZE(b));
+    // z 指向相加之后的 PyLongObject
+    PyLongObject *z;
+    // 循环变量
+    Py_ssize_t i;
+    // 如果 size_a 小于 size_b，那么 sign 就是 -1，否则就是 1
+    int sign = 1;
+    // 之前 carry 保存相加的结果，这里的 borrow 保存相减的结果
+    // 名字很形象，相加要进位叫 carry，相减要借位叫 borrow
+    digit borrow = 0;
+
+    // 接下来依旧要判断两个整数的大小，确保相减的时候，绝对值大的一方在左边
+    // 相加的时候，大的一方在左边还是在右边，其实没太大影响
+    // 而相减的时候如果大的一方在左边，显然会省事很多
+    // 所以如果 size_a 比 size_b 小，说明 a 的绝对值比 b 小
+    if (size_a &lt; size_b) {
+        // 那么令 sign = -1，因为 a 和 b 交换了位置，所以后续相减之后还要再乘上 sign
+        // 因为计算的是绝对值之差，符号是在绝对值之差计算完毕之后通过 sign 判断的
+        sign = -1;
+        // 交换 a 和 b 的位置
+        { PyLongObject *temp = a; a = b; b = temp; }
+        { Py_ssize_t size_temp = size_a;
+            size_a = size_b;
+            size_b = size_temp; }
+    }
+    // 如果 size_a == size_b，那么需要依次比较 ob_digit 里的元素，才能判断出大小
+    else if (size_a == size_b) {
+        // 所以从 ob_digit 的尾部开始遍历
+        i = size_a;
+        while (--i &gt;= 0 &amp;&amp; a-&gt;ob_digit[i] == b-&gt;ob_digit[i])
+            ;
+        // 如果所有元素都相等，那么 i 会等于 -1，相减的结果为 0，此时直接返回 0 即可
+        // 所以这一步也是为了能够快速返回结果，而额外做的一层判断
+        if (i &lt; 0)
+            return (PyLongObject *)PyLong_FromLong(0);
+        // 但如果某个对应的元素不相等，那么只需判断这两者谁大谁小即可
+        // 假设 a 的 ob_digit 是 [2, 3, 4, 5]，b 的 ob_digit 是 [1, 2, 4, 5]
+        // 那么上面的 while 循环结束之后，i 会等于 1，显然只需要判断索引为 1 时，对应的值谁大谁小即可
+        if (a-&gt;ob_digit[i] &lt; b-&gt;ob_digit[i]) {
+            // 如果 a-&gt;ob_digit[i] &lt; b-&gt;ob_digit[i]，同样说明 a 小于 b
+            // 那么将 sign 设置为 -1，并交换 a 和 b 的位置
+            sign = -1;
+            { PyLongObject *temp = a; a = b; b = temp; }
+        }
+        // 因为高位在减法的时候会被抵消掉，所以将 size_a 和 size_b 设置成 i + 1 即可
+        // 假设两个整数的 ob_digit 分别是 [2, 3, 4, 5] 和 [1, 2, 4, 5]
+        // 因为后两个元素是一样的，所以后续只需要对索引为 [0: i+1] 的部分做差即可
+        size_a = size_b = i+1;
+    }
+    // a 和 b 相减之后，结果一定不超过 a，因此 ob_digit 的长度一定小于等于 size_a
+    z = _PyLong_New(size_a);
+    if (z == NULL)
+        return NULL;
+    // 然后下面的逻辑和 x_add 是类似的
+    for (i = 0; i &lt; size_b; ++i) {
+        // 让 a 的 ob_digit[i] 减去 b 的 ob_digit[i] 
+        // 当然，由于上一个元素在相减的时候，可能会向当前元素借位，因此还要再减去 borrow
+        // 如果没借位，那么 borrow 是 0，如果借位了，那么 borrow 是 1
+        // 然后如果当前元素相减的结果也小于 0，那么继续向下一个元素借位
+        // 但我们似乎没有看到借位的逻辑，这是因为 digit 是无符号 32 位整型，负数会发生环绕
+        // 假设这里相减得到的是 -100，那么结果就是 2 ** 32 - 100
+        // 所以存储的负数会变成 &quot;2 ** 32 + 该负数&quot;，相当于自动向数组的下一个元素借了一位
+        // 但 digit 只用 30 个位，所以借一位之后应该加上 2 ** 30，而目前加的是 2 ** 32
+        borrow = a-&gt;ob_digit[i] - b-&gt;ob_digit[i] - borrow;
+        // 所以还要和 PyLong_MASK 按位与，只保留后 30 个位的值
+        // 当然如果没有产生借位，borrow &amp; PyLong_MASK 的结果还是 borrow
+        z-&gt;ob_digit[i] = borrow &amp; PyLong_MASK;
+        // 如果借位了，下一轮循环的时候，肯定要多减个 1，但问题是怎么判断有没有借位呢？
+        // 很简单，如果没有借位，borrow 一定小于 2 ** 30，第 31 个位一定是 0
+        // 如果借位了，那么 borrow 一定大于 2 ** 30，第 31 个位一定是 1
+        // 所以让 borrow 右移 30 个位
+        borrow &gt;&gt;= PyLong_SHIFT;
+        // 然后和 1 按位与，如果产生了借位，borrow 就是 1，否则就是 0
+        // 等到下一轮循环的时候，再减去 borrow
+        borrow &amp;= 1;
+        /*
+        所以 Python 底层的整数只用 30 个位真的非常巧妙，尤其是在减法的时候
+        由于 digit 是 32 位，借位时会加上 2 ** 32
+        但底层只用 30 个位，所以再和 PyLong_MASK 按位与，只保留后 30 个位
+
+        而当前元素如果借位了，那么数组下一个元素要减去 1，但怎么判断它有没有借位呢？
+        首先两个不超过 2 ** 30 - 1 的数，相减的结果如果为正（没产生借位）
+        那么一定也不会超过 2 ** 30 - 1，换句话说其结果对应的第 31 位一定是 0
+        但如果两个整数相减的结果为负，那么会自动加上 2 ** 32，因此第 31 位一定是 1
+        
+        所以再让 borrow 右移 30 位，并和 1 按位与
+        如果结果为 1，证明相减为负数，确实向下一个元素借了 1，因此下一次循环时会多减一个 1
+        如果结果为 0，那么说明没有借位，下一次循环时相当于多减了一个 0
+        */
+    }
+  
+    // 如果 size_a 和 size_b 不相等，那么还需要继续处理 a 的 ob_digit 剩余的元素
+    for (; i &lt; size_a; ++i) {
+        // 这里的逻辑和之前分析 x_add 是类似的
+        borrow = a-&gt;ob_digit[i] - borrow;
+        z-&gt;ob_digit[i] = borrow &amp; PyLong_MASK;
+        borrow &gt;&gt;= PyLong_SHIFT;
+        borrow &amp;= 1;
+    }  // 只不过由于不会产生进位，因此不需要再对 borrow 做额外判断
+       // 而 x_add 中最后还要判断 carry 有没有进位
+    assert(borrow == 0);
+    // 如果 sign &lt; 0，那么证明是负数，因此还要改变 z 的符号
+    if (sign &lt; 0) {
+        Py_SIZE(z) = -Py_SIZE(z);
+    }
+    // 最后同样要将 z 规范化，将高位的 0 忽略掉
+    // 比如 100000 - 99999，结果是 000001，显然只需要保留最低位的 1 即可
+    // 另外如果相减的结果是小整数，那么直接从池子里获取，否则返回新创建的
+    return long_normalize(z);
+}
+</code></pre>
+<p>同样的，关于绝对值减法，我们也用 Python 代码演示一遍，感受底层的运算过程。</p>
+<pre><code class="language-Python">a = [5, 3]
+b = [6, 1]
+result = []
+
+# 如果计算 a - b，整个过程是怎样的呢？
+# 首先是 a[0] - b[0]，由于 a[0] &lt; b[0]，所以要借一位，而一个位是 2 ** 30
+result.append(a[0] + 2 ** 30 - b[0])
+# 注：源码中加的是 2 ** 32，所以之后还要和 PyLong_MASK 按位与
+# 因此 a[0] + 2 ** 30 - b[0] 等价于 (a[0] + 2 ** 32 - b[0]) &amp; (2 ** 30 - 1)
+
+# 然后是 a[1] - b[1]，由于 a[1] 被借走了一个位，因此要减 1
+result.append(a[1] - 1 - b[1])
+print(result)  # [1073741823, 1]
+
+# 验证一下
+print(
+    (a[0] + a[1] * 2 ** 30)
+    -
+    (b[0] + b[1] * 2 ** 30)
+)  # 2147483647
+print(
+    result[0] + result[1] * 2 ** 30
+)  # 2147483647
+</code></pre>
+<p>以上就是绝对值减法，设计的非常巧妙，可以多看几遍，并用列表模拟 ob_digit 数组，然后实际测试一下。</p>
+<h2 id="小结"><a class="header" href="#小结">小结</a></h2>
+<p>关于整数的内容，我们就介绍完了。回顾一下，首先我们剖析了整数的底层实现，了解了它不会溢出的奥秘，然后又介绍了小整数对象池。但也正如之前所说，使用数组实现大整数并不是什么特别新颖的思路，它的难点在于数学运算，这是非常考验编程技巧的地方。</p>
+<p>而我们这里只是分析了加减法，至于乘除则更加复杂，这里就不再分析了。关于乘法，解释器采用的是效率更高的 karatsuba 算法，比较有意思，有兴趣可以自己查看一下。</p>
+<p>综上所述不难发现 Python 效率低的原因，毕竟一个简单的整数运算都要做这么多工作。当然了，解释器内部也定义了很多快分支，会提前检测能否使用快速通道进行处理，当无法使用快速通道时，再走通用逻辑。</p>
+<hr />
+<p> </p>
+<p><strong>欢迎大家关注我的公众号：古明地觉的编程教室。</strong></p>
+<p><img src="./images/qrcode_for_gh.jpg" alt="" /></p>
+<p><strong>如果觉得文章对你有所帮助，也可以请作者吃个馒头，Thanks♪(･ω･)ﾉ。</strong></p>
+<p><img src="./images/supports.png" alt="" /></p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="18.两个Python整数之间是如何进行大小比较的？过程并不像我们想的那样简单.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+                            <a rel="next" href="20.Python的布尔值是怎么实现的，你对它的了解有多深呢？.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="18.两个Python整数之间是如何进行大小比较的？过程并不像我们想的那样简单.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+                    <a rel="next" href="20.Python的布尔值是怎么实现的，你对它的了解有多深呢？.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+            </nav>
+
+        </div>
+
+        <script type="text/javascript">
+            window.playground_copyable = true;
+        </script>
+        <script src="elasticlunr.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="mark.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="searcher.js" type="text/javascript" charset="utf-8"></script>
+        <script src="clipboard.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="highlight.js" type="text/javascript" charset="utf-8"></script>
+        <script src="book.js" type="text/javascript" charset="utf-8"></script>
+
+        <!-- Custom JS scripts -->
+        <script type="text/javascript" src="theme/custom.js"></script>
+    </body>
+</html>

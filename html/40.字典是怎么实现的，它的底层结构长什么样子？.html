@@ -1,0 +1,453 @@
+<!DOCTYPE HTML>
+<html lang="zh-cn" class="sidebar-visible no-js light">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>40. 字典是怎么实现的，它的底层结构长什么样子？ - CPython3.8 源码探秘</title>
+        <!-- Custom HTML head -->
+        <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff" />
+
+        <link rel="icon" href="favicon.svg">
+        <link rel="shortcut icon" href="favicon.png">
+        <link rel="stylesheet" href="css/variables.css">
+        <link rel="stylesheet" href="css/general.css">
+        <link rel="stylesheet" href="css/chrome.css">
+        <!-- Fonts -->
+        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="fonts/fonts.css">
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="highlight.css">
+        <link rel="stylesheet" href="tomorrow-night.css">
+        <link rel="stylesheet" href="ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+        <link rel="stylesheet" href="theme/custom.css">
+        <!-- MathJax -->
+        <script async type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    </head>
+    <body>
+        <!-- Provide site root to javascript -->
+        <script type="text/javascript">
+            var path_to_root = "";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script type="text/javascript">
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script type="text/javascript">
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            var html = document.querySelector('html');
+            html.classList.remove('no-js')
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add('js');
+        </script>
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script type="text/javascript">
+            var html = document.querySelector('html');
+            var sidebar = 'hidden';
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            }
+            html.classList.remove('sidebar-visible');
+            html.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li class="chapter-item expanded "><a href="0.序言.html">0. 序言</a></li><li class="chapter-item expanded "><a href="1.CPython源码长什么样子？.html">1. CPython 源码长什么样子？</a></li><li class="chapter-item expanded "><a href="2.变量和对象，它们之间有什么区别和联系呢？.html">2. 变量和对象，它们之间有什么区别和联系呢？</a></li><li class="chapter-item expanded "><a href="3.Python对象有哪几种，我们可以从哪些角度进行分类呢？.html">3. Python 对象有哪几种，我们可以从哪些角度进行分类呢？</a></li><li class="chapter-item expanded "><a href="4.万丈高楼平地起，一切从PyObject开始.html">4. 万丈高楼平地起，一切从 PyObject 开始</a></li><li class="chapter-item expanded "><a href="5.详解PyTypeObject，Python类型对象的载体.html">5. 详解 PyTypeObject，Python 类型对象的载体</a></li><li class="chapter-item expanded "><a href="6.通过type和object之间的关联，进一步分析类型对象.html">6. 通过 type 和 object 之间的关联，进一步分析类型对象</a></li><li class="chapter-item expanded "><a href="7.当创建一个Python对象时，背后都经历了哪些过程？.html">7. 当创建一个 Python 对象时，背后都经历了哪些过程？</a></li><li class="chapter-item expanded "><a href="8.当调用一个Python对象时，背后都经历了哪些过程？.html">8. 当调用一个 Python 对象时，背后都经历了哪些过程？</a></li><li class="chapter-item expanded "><a href="9.再探泛型API，感受Python对象的设计哲学.html">9. 再探泛型 API，感受 Python 对象的设计哲学</a></li><li class="chapter-item expanded "><a href="10.Python对象的行为是怎么区分的？.html">10. Python 对象的行为是怎么区分的？</a></li><li class="chapter-item expanded "><a href="11.一个Python对象会在何时被销毁？.html">11. 一个 Python 对象会在何时被销毁？</a></li><li class="chapter-item expanded "><a href="12.深度解密Python的浮点数是怎么实现的？.html">12. 深度解密 Python 的浮点数是怎么实现的？</a></li><li class="chapter-item expanded "><a href="13.对象被销毁之后所占的内存一定会释放吗？解密浮点数的缓存池机制.html">13. 对象被销毁之后所占的内存一定会释放吗？解密浮点数的缓存池机制</a></li><li class="chapter-item expanded "><a href="14.浮点数支持的操作是怎么实现的？.html">14. 浮点数支持的操作是怎么实现的？</a></li><li class="chapter-item expanded "><a href="15.解密Python的复数是怎么实现的？它有什么用途呢？.html">15. 解密 Python 的复数是怎么实现的？它有什么用途呢？</a></li><li class="chapter-item expanded "><a href="16.Python的整数是怎么设计的，为什么它不会溢出？.html">16. Python 的整数是怎么设计的，为什么它不会溢出？</a></li><li class="chapter-item expanded "><a href="17.解密Python的小整数对象池.html">17. 解密 Python 的小整数对象池</a></li><li class="chapter-item expanded "><a href="18.两个Python整数之间是如何进行大小比较的？过程并不像我们想的那样简单.html">18. 两个 Python 整数之间是如何进行大小比较的？过程并不像我们想的那样简单</a></li><li class="chapter-item expanded "><a href="19.探究Python整数的加减法，感受大整数的运算哲学与魅力.html">19. 探究 Python 整数的加减法，感受大整数的运算哲学与魅力</a></li><li class="chapter-item expanded "><a href="20.Python的布尔值是怎么实现的，你对它的了解有多深呢？.html">20. Python 的布尔值是怎么实现的，你对它的了解有多深呢？</a></li><li class="chapter-item expanded "><a href="21.Python的None是怎么实现的？.html">21. Python 的 None 是怎么实现的？</a></li><li class="chapter-item expanded "><a href="22.深度解密Python切片的实现原理.html">22.深度解密 Python 切片的实现原理</a></li><li class="chapter-item expanded "><a href="23.bytes对象（字节串）是怎么实现的？解密它的内部原理.html">23. bytes 对象（字节串）是怎么实现的？解密它的内部原理</a></li><li class="chapter-item expanded "><a href="24.bytes对象都支持哪些操作，它们是怎么实现的？.html">24. bytes 对象都支持哪些操作，它们是怎么实现的？</a></li><li class="chapter-item expanded "><a href="25.通过bytes对象的合并，探究缓冲区的奥秘.html">25. 通过 bytes 对象的合并，探究缓冲区的奥秘</a></li><li class="chapter-item expanded "><a href="26.解密bytes对象的缓存池.html">26. 解密 bytes 对象的缓存池</a></li><li class="chapter-item expanded "><a href="27.详解bytearray对象的底层实现.html">27. 详解 bytearray 对象的底层实现</a></li><li class="chapter-item expanded "><a href="28.字符集和字符编码.html">28. 字符集和字符编码</a></li><li class="chapter-item expanded "><a href="29.Python是怎么存储字符串的？.html">29. Python 是怎么存储字符串的？</a></li><li class="chapter-item expanded "><a href="30.解密字符串的底层结构，它是怎么实现的？.html">30. 解密字符串的底层结构，它是怎么实现的？</a></li><li class="chapter-item expanded "><a href="31.字符串的intern机制是怎么一回事？.html">31. 字符串的 intern 机制是怎么一回事？</a></li><li class="chapter-item expanded "><a href="32.聊一聊字符串常见操作的源码实现.html">32. 聊一聊字符串常见操作的源码实现</a></li><li class="chapter-item expanded "><a href="33.列表是怎么实现的？解密列表的数据结构.html">33. 列表是怎么实现的？解密列表的数据结构</a></li><li class="chapter-item expanded "><a href="34.列表是怎么扩容的？.html">34. 列表是怎么扩容的？</a></li><li class="chapter-item expanded "><a href="35.解密列表的创建与销毁，以及缓存池长什么样子？.html">35. 解密列表的创建与销毁，以及缓存池长什么样子？</a></li><li class="chapter-item expanded "><a href="36.列表作为序列型对象都支持哪些操作，它们在底层是怎么实现的？.html">36. 列表作为序列型对象都支持哪些操作，它们在底层是怎么实现的？</a></li><li class="chapter-item expanded "><a href="37.列表都有哪些自定义方法，它们是怎么实现的？.html">37. 列表都有哪些自定义方法，它们是怎么实现的？</a></li><li class="chapter-item expanded "><a href="38.解密元组的实现原理.html">38. 解密元组的实现原理</a></li><li class="chapter-item expanded "><a href="39.聊一聊喜闻乐见的哈希表.html">39. 聊一聊喜闻乐见的哈希表</a></li><li class="chapter-item expanded "><a href="40.字典是怎么实现的，它的底层结构长什么样子？.html" class="active">40. 字典是怎么实现的，它的底层结构长什么样子？</a></li><li class="chapter-item expanded "><a href="41.什么是可哈希对象，它的哈希值是怎么计算的？.html">41. 什么是可哈希对象，它的哈希值是怎么计算的？</a></li><li class="chapter-item expanded "><a href="42.字典的key是怎么映射成索引的，索引冲突了又该怎么办？.html">42. 字典的 key 是怎么映射成索引的，索引冲突了又该怎么办？</a></li><li class="chapter-item expanded "><a href="43.哈希表是怎么删除元素的，能直接删除吗？.html">43. 哈希表是怎么删除元素的，能直接删除吗？</a></li><li class="chapter-item expanded "><a href="44.字典是怎么创建的，支持的操作又是如何实现的？.html">44. 字典是怎么创建的，支持的操作又是如何实现的？</a></li><li class="chapter-item expanded "><a href="45.字典的自定义方法是怎么实现的？.html">45. 字典的自定义方法是怎么实现的？</a></li><li class="chapter-item expanded "><a href="46.字典是怎么扩容的？它会经历哪些过程？.html">46. 字典是怎么扩容的？它会经历哪些过程？</a></li><li class="chapter-item expanded "><a href="47.身虽死，道未消，解密字典的缓存池.html">47. 身虽死，道未消，解密字典的缓存池</a></li><li class="chapter-item expanded "><a href="48.解密集合的实现原理.html">48. 解密集合的实现原理</a></li><li class="chapter-item expanded "><a href="49.集合支持的操作有哪些，它们是怎么实现的？.html">49. 集合支持的操作有哪些，它们是怎么实现的？</a></li><li class="chapter-item expanded "><a href="50.迭代器是怎么实现的？.html">50. 迭代器是怎么实现的？</a></li><li class="chapter-item expanded "><a href="51.Python源文件编译之后会得到什么，它的结构是怎样的？和字节码又有什么联系？.html">51. Python 源文件编译之后会得到什么，它的结构是怎样的？和字节码又有什么联系？</a></li><li class="chapter-item expanded "><a href="52.PyCodeObject拾遗.html">52. PyCodeObject 拾遗</a></li><li class="chapter-item expanded "><a href="53.一文让你搞懂pyc文件.html">53. 一文让你搞懂 pyc 文件</a></li><li class="chapter-item expanded "><a href="54.深度解密虚拟机的执行环境：栈帧对象.html">54. 深度解密虚拟机的执行环境：栈帧对象</a></li><li class="chapter-item expanded "><a href="55.名字空间：变量的容身之所.html">55. 名字空间：变量的容身之所</a></li><li class="chapter-item expanded "><a href="56.当查找一个变量时，虚拟机会进行哪些动作？.html">56. 当查找一个变量时，虚拟机会进行哪些动作？</a></li><li class="chapter-item expanded "><a href="57.虚拟机是怎么执行字节码的？背后都经历了哪些过程.html">57. 虚拟机是怎么执行字节码的？背后都经历了哪些过程</a></li><li class="chapter-item expanded "><a href="58.深入源码，进一步考察字节码的执行流程.html">58. 深入源码，进一步考察字节码的执行流程</a></li><li class="chapter-item expanded "><a href="59.局部变量是怎么实现静态查找的，它和local名字空间又有什么联系呢？.html">59. 局部变量是怎么实现静态查找的，它和 local 名字空间又有什么联系呢？</a></li><li class="chapter-item expanded "><a href="60.剖析字节码指令，以及Python赋值语句的原理.html">60. 剖析字节码指令，以及 Python 赋值语句的原理</a></li><li class="chapter-item expanded "><a href="61.流程控制语句if是怎么实现的？.html">61. 流程控制语句 if 是怎么实现的？</a></li><li class="chapter-item expanded "><a href="62.流程控制语句for、while是怎么实现的？.html">62. 流程控制语句 for、while 是怎么实现的？</a></li><li class="chapter-item expanded "><a href="63.异常是怎么实现的？虚拟机是如何将异常抛出去的？.html">63. 异常是怎么实现的？虚拟机是如何将异常抛出去的？</a></li><li class="chapter-item expanded "><a href="64.虚拟机是如何捕获异常的？.html">64. 虚拟机是如何捕获异常的？</a></li><li class="chapter-item expanded "><a href="65.函数在底层长什么样子？.html">65. 函数在底层长什么样子？</a></li><li class="chapter-item expanded "><a href="66.函数是怎么创建的，背后经历了哪些过程？.html">66. 函数是怎么创建的，背后经历了哪些过程？</a></li><li class="chapter-item expanded "><a href="67.函数在底层是如何调用的？.html">67. 函数在底层是如何调用的？</a></li><li class="chapter-item expanded "><a href="68.函数是如何解析位置参数的？.html">68. 函数是如何解析位置参数的？</a></li><li class="chapter-item expanded "><a href="69.函数是如何解析关键字参数的？.html">69. 函数是如何解析关键字参数的？</a></li><li class="chapter-item expanded "><a href="70.扩展位置参数和扩展关键字参数是如何解析的？.html">70. 扩展位置参数和扩展关键字参数是如何解析的？</a></li><li class="chapter-item expanded "><a href="71.闭包是怎么实现的？.html">71. 闭包是怎么实现的？</a></li><li class="chapter-item expanded "><a href="72.生成器是做什么的，为什么会有生成器？.html">72. 生成器是做什么的，为什么会有生成器？</a></li><li class="chapter-item expanded "><a href="73.源码解密生成器的实现原理.html">73. 源码解密生成器的实现原理</a></li><li class="chapter-item expanded "><a href="74.回顾Python的对象模型.html">74. 回顾 Python 的对象模型</a></li><li class="chapter-item expanded "><a href="75.class概念解析.html">75. class 概念解析</a></li><li class="chapter-item expanded "><a href="76.类型对象的初始化.html">76. 类型对象的初始化</a></li><li class="chapter-item expanded "><a href="77.自定义类对象的底层实现与metaclass.html">77. 自定义类对象的底层实现与 metaclass</a></li><li class="chapter-item expanded "><a href="78.彻底搞懂描述符.html">78. 彻底搞懂描述符</a></li><li class="chapter-item expanded "><a href="79.实例对象是如何创建的？.html">79. 实例对象是如何创建的？</a></li><li class="chapter-item expanded "><a href="80.实例对象的属性访问.html">80. 实例对象的属性访问</a></li><li class="chapter-item expanded "><a href="81.为什么实例在调用方法时会将自身传给self参数.html">81. 为什么实例在调用方法时会将自身传给 self 参数</a></li><li class="chapter-item expanded "><a href="82.模块是如何导入的？.html">82. 模块是如何导入的？</a></li><li class="chapter-item expanded "><a href="83.import机制的黑盒探测.html">83. import 机制的黑盒探测</a></li><li class="chapter-item expanded "><a href="84.import机制是怎么实现的？.html">84. import 机制是怎么实现的？</a></li><li class="chapter-item expanded "><a href="85.Python运行时环境的初始化，解释器在启动时都做了什么？.html">85. Python 运行时环境的初始化，解释器在启动时都做了什么？</a></li><li class="chapter-item expanded "><a href="86.激活Python虚拟机.html">86. 激活 Python 虚拟机</a></li><li class="chapter-item expanded "><a href="87.初识GIL、以及多个线程之间的调度机制.html">87. 初识 GIL、以及多个线程之间的调度机制</a></li><li class="chapter-item expanded "><a href="88.线程的创建、销毁、调度，以及GIL的实现原理.html">88. 线程的创建、销毁、调度，以及 GIL 的实现原理</a></li><li class="chapter-item expanded "><a href="89.解密map、filter、zip底层实现，对比列表解析式.html">89. 解密 map、filter、zip 底层实现，对比列表解析式</a></li><li class="chapter-item expanded "><a href="90.为什么要有协程，协程是如何实现的？.html">90. 为什么要有协程，协程是如何实现的？</a></li><li class="chapter-item expanded "><a href="91.什么是asyncio？如何基于单线程实现并发？事件循环又是怎么工作的？.html">91. 什么是 asyncio？如何基于单线程实现并发？事件循环又是怎么工作的？</a></li><li class="chapter-item expanded "><a href="92.协程、任务、future，以及事件循环.html">92. 协程、任务、future，以及事件循环</a></li><li class="chapter-item expanded "><a href="93.在asyncio中使用Socket.html">93. 在 asyncio 中使用 Socket</a></li><li class="chapter-item expanded "><a href="94.解密asyncio的Future和Task.html">94. 解密 asyncio 的 Future 和 Task</a></li><li class="chapter-item expanded "><a href="95.如何精确控制asyncio中并发运行的多个任务.html">95. 如何精确控制 asyncio 中并发运行的多个任务</a></li><li class="chapter-item expanded "><a href="96.详解asyncio的同步原语.html">96. 详解 asyncio 的同步原语</a></li><li class="chapter-item expanded "><a href="97.在asyncio中引入多进程.html">97. 在 asyncio 中引入多进程</a></li><li class="chapter-item expanded "><a href="98.可执行文件的内存模型，变量的值是放在栈上还是放在堆上.html">98. 可执行文件的内存模型，变量的值是放在栈上还是放在堆上</a></li><li class="chapter-item expanded "><a href="99.Python是如何管理内存的？.html">99. Python 是如何管理内存的？</a></li><li class="chapter-item expanded "><a href="100.Python的垃圾回收机制是怎么实现的？.html">100. Python 的垃圾回收机制是怎么实现的？</a></li><li class="chapter-item expanded "><a href="101.深入源码，探究垃圾回收的秘密.html">101. 深入源码，探究垃圾回收的秘密</a></li><li class="chapter-item expanded "><a href="102.侵入Python虚拟机，动态修改底层数据结构和运行时.html">102. 侵入 Python 虚拟机，动态修改底层数据结构和运行时</a></li><li class="chapter-item expanded "><a href="103.使用Python的ctypes调用C的动态库.html">103. 使用 Python 的 ctypes 调用 C 的动态库</a></li><li class="chapter-item expanded "><a href="104.使用Python的ctypes调用Rust的动态库.html">104. 使用 Python 的 ctypes 调用 Rust 的动态库</a></li><li class="chapter-item expanded "><a href="105.用C写Python.html">105. 用 C 写 Python</a></li><li class="chapter-item expanded "><a href="106.Cython从入门到精通.html">106. Cython 从入门到精通</a></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky bordered">
+                    <div class="left-buttons">
+                        <button id="sidebar-toggle" class="icon-button" type="button" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </button>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light (default)</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">CPython3.8 源码探秘</h1>
+
+                    <div class="right-buttons">
+                        <a href="https://github.com/satori1995/cpython-internal" title="Git repository" aria-label="Git repository">
+                            <i id="git-repository-button" class="fa fa-github"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script type="text/javascript">
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h2 id="楔子"><a class="header" href="#楔子">楔子</a></h2>
+<p>本篇文章来剖析一下字典的底层结构，看看它是怎么设计的，以及在设计的过程中都需要做哪些考量。另外字典是基于哈希表实现的，而传统的哈希表存在内存浪费的问题，那么字典又是如何优化的呢？带着这些问题，开始今天的内容。</p>
+<h2 id="字典的底层结构"><a class="header" href="#字典的底层结构">字典的底层结构</a></h2>
+<p>Python 一切皆对象，字典也不例外，它在底层也由某个结构体表示。</p>
+<pre><code class="language-C">// Include/cpython/dictobject.h
+typedef struct {
+    PyObject_HEAD
+    Py_ssize_t ma_used;
+    uint64_t ma_version_tag;
+    PyDictKeysObject *ma_keys;
+    PyObject **ma_values;
+} PyDictObject;
+</code></pre>
+<p>解释一下里面的字段的含义：</p>
+<ul>
+<li>PyObject_HEAD：对象的头部信息，里面包含了对象的引用计数和类型。</li>
+<li>ma_used：字典的长度，它充当了 ob_size。</li>
+<li>ma_version_tag：字典的版本号，对字典的每一次修改都会导致其改变。该字段主要用于字典的迭代器，以检测字典在迭代过程中是否被修改。</li>
+<li>ma_keys：从定义上来看它是一个指针，指向了 PyDictKeysObject。而 Python 里面的哈希表分为两种，分别是 <font color="blue">combined table</font> 和 <font color="blue">split table</font>，即结合表和分离表。如果是结合表，那么键值对全部由 ma_keys 维护，此时 ma_values 为 NULL。</li>
+<li>ma_values：如果是分离表，那么键由 ma_keys 维护，值由 ma_values 维护。而 ma_values 是一个二级指针，指向 PyObject * 类型的指针数组的首元素。</li>
+</ul>
+<p>这里先解释一下结合表和分离表的由来。结合表的话，键和值会存在一起；分离表的话，键和值会存在不同的地方。那么问题来了，为什么要将哈希表分为两种呢？事实上，早期的哈希表只有结合表这一种，并且现在创建一个字典使用的也是结合表。</p>
+<pre><code class="language-Python">from ctypes import *
+
+class PyObject(Structure):
+    _fields_ = [(&quot;ob_refcnt&quot;, c_ssize_t),
+                (&quot;ob_type&quot;, c_void_p)]
+
+class PyDictObject(PyObject):
+    _fields_ = [(&quot;ma_used&quot;, c_ssize_t),
+                (&quot;ma_version_tag&quot;, c_uint64),
+                (&quot;ma_keys&quot;, c_void_p),
+                (&quot;ma_values&quot;, c_void_p)]
+
+
+d = {&quot;a&quot;: 1, &quot;b&quot;: 2}
+print(
+    PyDictObject.from_address(id(d)).ma_values
+)  # None
+</code></pre>
+<p>我们看到 ma_values 打印的结果是一个 None，证明是结合表，值不是由 ma_values 维护，而是和键一起，都由 ma_keys 负责维护。</p>
+<p>而分离表是在 PEP-0412 中被引入的，主要是为了提高内存使用率，也就是让不同的字典共享相同的一组 key。比如自定义类的实例对象，它们默认都有自己的属性字典，如果对某个类多次实例化，那么改成分离表会更有效率。因为它们的属性名称是相同的，完全可以共享同一组 key；如果是结合表，那么每个实例的属性字典都要将相同的 key 单独保存一次，这显然是一种浪费。</p>
+<pre><code class="language-Python">from ctypes import *
+
+class PyObject(Structure):
+    _fields_ = [(&quot;ob_refcnt&quot;, c_ssize_t),
+                (&quot;ob_type&quot;, c_void_p)]
+
+class PyDictObject(PyObject):
+    _fields_ = [(&quot;ma_used&quot;, c_ssize_t),
+                (&quot;ma_version_tag&quot;, c_uint64),
+                (&quot;ma_keys&quot;, c_void_p),
+                (&quot;ma_values&quot;, c_void_p)]
+
+class A:
+    pass
+
+a1 = A()
+a2 = A()
+
+# 因为类型指定的是 void *，所以打印的结果是一串地址
+# 但我们看到输出不为 None，说明采用的确实是分离表
+print(
+    PyDictObject.from_address(id(a1.__dict__)).ma_values,
+    PyDictObject.from_address(id(a2.__dict__)).ma_values
+)  # 139672411587664 139672411587280
+
+# 然后再查看 ma_keys，既然是共享同一组 key
+# 那么打印的地址应该是一样的
+print(
+    PyDictObject.from_address(id(a1.__dict__)).ma_keys,
+    PyDictObject.from_address(id(a2.__dict__)).ma_keys
+)  # 139672411702528 139672411702528
+
+# 结果确实是一样的，不同实例对象的属性字典里面的 key 是共享的
+# 因为是同一个类的实例对象，属性字典的 key 是相同的，所以没必要将同一组 key 保存多次
+</code></pre>
+<p>以上就是结合表和分离表之间的区别，只需要知道分离表是 Python 为了提高内存使用率而专门引入的即可。我们平时自己创建的字典，使用的都是结合表，因此我们的重点也将会放在结合表身上。</p>
+<p>而结合表的话，键值都由 ma_keys 维护，它是一个指向 PyDictKeysObject 的指针，因此玄机就隐藏在这个结构体里面。</p>
+<pre><code class="language-C">// Include/cpython/dictobject.h
+typedef struct _dictkeysobject PyDictKeysObject;
+
+// Objects/dict-common.h
+struct _dictkeysobject {
+    // key 的引用计数，也就是 key 被多少个字典所使用
+    // 如果是结合表，那么该字段始终是 1，因为结合表独占一组 key
+    // 如果是分离表，那么该字段大于等于 1，因为分离表可以共享一组 key
+    Py_ssize_t dk_refcnt;
+
+    // 哈希表的大小、或者说长度，注意：dk_size 满足 2 的 n 次方
+    // 这样可将取模运算优化成按位与运算，也就是将 num % dk_size 优化成 num &amp; (dk_size - 1)
+    Py_ssize_t dk_size;
+
+    // 哈希函数，用于计算 key 的哈希值，然后映射成索引
+    // 一个好的哈希函数应该尽可能少的产生冲突，并且哈希函数对哈希表的性能起着至关重要的作用
+    // 所以底层的哈希函数有很多种，会根据对象的种类选择最合适的一个
+    dict_lookup_func dk_lookup;
+
+    // 键值对数组还可以添加多少个 entry（键值对）
+    // 关于什么是键值对数组，以及它和哈希索引数组之间有什么区别，稍后会解释
+    Py_ssize_t dk_usable;
+
+    // 键值对数组里面已经添加了多少个键值对
+    Py_ssize_t dk_nentries;
+
+    // 哈希索引数组
+    char dk_indices[];
+    
+    // 注：dk_indices 后面其实还有一个字段 dk_entries，只不过没有写在结构体里面
+    // 从字段名也可以看出，它表示键值对数组，因此它的类型就是个数组
+    // 然后数组里面存储的是键值对（entry），而键值对在底层由 PyDictKeyEntry 结构体实现
+    // 所以你可以认为 char dk_indices[] 的下面还有一个 PyDictKeyEntry dk_entries[]
+};
+</code></pre>
+<p>字典的定义还是稍微有点复杂的，如果目前感到困惑，没有关系，稍后我们会一点点解释清楚。这里再来看看键值对长什么样子。</p>
+<pre><code class="language-C">// Objects/dict-common.h
+typedef struct {
+    Py_hash_t me_hash;
+    PyObject *me_key;
+    PyObject *me_value;
+} PyDictKeyEntry;
+</code></pre>
+<p>显然 me_key 和 me_value 指向了键和值，我们之前说 Python 的变量、以及容器内部的元素都是泛型指针 PyObject *，这里也得到了证明。但是我们看到 entry 除了有键和值之外，还有一个 me_hash，它表示键对应的哈希值，这样可以避免重复计算。</p>
+<p>至此，字典的整个底层结构就非常清晰了，我们画一张图，然后再来从头解释一下，并解答之前留下的疑问。</p>
+<p><img src="./images/111.png" alt="" /></p>
+<p>字典的真正实现藏在 PyDictKeysObject 中，它的内部包含两个关键数组：一个是哈希索引数组 dk_indices，另一个是键值对数组 dk_entries。</p>
+<p>字典维护的键值对（entry）会按照先来后到的顺序保存在键值对数组中，而哈希索引数组则保存<font color="blue">键值对</font>在<font color="blue">键值对数组</font>中的索引。另外，哈希索引数组中的一个位置我们称之为一个<font color="blue">槽</font>，比如图中的哈希索引数组便有 8 个槽，其数量由 dk_size 字段维护。</p>
+<p>假设我们创建一个空字典，注意：虽然字典是空的，但是容量已经有了，然后往里面插入键值对 <font color="blue">&quot;komeiji&quot;: 99</font> 的时候，Python 会执行以下步骤：</p>
+<ul>
+<li>将键值对保存在 dk_entries 中，由于初始字典是空的，所以会保存在 dk_entries 数组中索引为 0 的位置。</li>
+<li>通过哈希函数计算出 &quot;komeiji&quot; 的哈希值，然后将哈希值映射成索引，假设是 6。</li>
+<li>将 &quot;键值对&quot; 在 &quot;键值对数组&quot; 中的索引 0，保存在哈希索引数组中索引为 6 的槽里面。</li>
+</ul>
+<p>然后当我们在查找键 &quot;komeiji&quot; 对应的值的时候，便可瞬间定位。过程如下：</p>
+<ul>
+<li>通过哈希函数计算出 &quot;komeiji&quot; 的哈希值，然后映射成索引。因为在设置的时候索引是 6，所以在获取时，映射出来的索引肯定也是 6。</li>
+<li>找到哈希索引数组中索引为 6 的槽，得到其保存的 0，这里的 0 对应键值对数组的索引。</li>
+<li>找到键值对数组中索引为 0 的位置存储的 entry，然后判断 <code>entry-&gt;me_key</code> 和查找的 key 是否一致，不一致则重新映射。如果一致，则取出 me_value，然后返回。</li>
+</ul>
+<p>由于<font color="blue">哈希值计算</font>以及<font color="blue">数组索引查找</font>均是 O(1) 的时间复杂度，所以字典的查询速度才会这么快。</p>
+<p>另外前面介绍哈希表的时候，为了避免牵扯太多，说得相对简化了。比如 <font color="blue">&quot;xxx&quot;: 80</font>，假设 &quot;xxx&quot; 映射出来的索引是 2，那么键值对就直接存在索引为 2 的地方。这实际上是简化了，因为这相当于把<font color="blue">哈希索引数组</font>和<font color="blue">键值对数组</font>组合在一块了，而早期的 Python 也确实是这么做的。</p>
+<p>但是从上面字典的结构图中我们看到，实际上是先将键值对按照先来后到的顺序存在一个数组（<font color="blue">键值对数组</font>）中，然后再将它在键值对数组中的索引存放在另一个数组（<font color="blue">哈希索引数组</font>）的某个槽里面，因为 &quot;xxx&quot; 映射出来的是 2，所以就存在索引为 2 的槽里面。</p>
+<p>而在查找的时候，映射出来的索引其实是哈希索引数组的索引。然后索引为 <font color="blue">2</font> 的槽又存储了一个<font color="red">索引</font>，这个索引是键值对数组的<font color="red">索引</font>，会再根据该索引从键值对数组里面获取指定的 entry。最后比较 key 是否相同、如果相同则返回指定的 value。</p>
+<p>所以能看出两者整体思想是基本类似的，理解起来区别不大，甚至第一种方式实现起来还更简单一些。但为什么要采用后者这种实现方式，以及这两者之间的区别，我们下面来专门分析，之所以采用后者主要是基于内存的考量。</p>
+<h2 id="哈希表的内存优化"><a class="header" href="#哈希表的内存优化">哈希表的内存优化</a></h2>
+<p>在早期，哈希表并没有分成两个数组实现，而是只由一个键值对数组实现，这个数组也承担哈希索引数组的角色。</p>
+<p><img src="./images/112.png" alt="" /></p>
+<p>我们看到这种结构不正是我们在介绍哈希表时说的吗？键值对数组不仅负责存储 entry，同时也负责承载映射后的索引，而无需分成两个数组，这种方式似乎更简单、更直观。没错，Python 在早期确实是通过这种方式实现的哈希表，只是这种实现方式有一个弊端，就是太耗费内存了。</p>
+<p>前面说了，基于 key 映射出的索引是随机的，所以肯定会存在索引冲突的情况，即不同的 key 映射到了同一个槽。并且随着存储的 entry 增多，冲突也会越频繁，性能也就越差。因此哈希表必须要预留一定的空间，而经过实践表明，预留的空间至少要占总容量的 1/3。换句话说，哈希表存储的 entry 的数量不能超过总容量的 2/3。</p>
+<pre><code class="language-C">// Objects/dictobject.c
+#define USABLE_FRACTION(n) (((n) &lt;&lt; 1)/3)
+</code></pre>
+<p>宏 USABLE_FRACTION 会根据哈希表的长度，或者说容量，计算出哈希表可存储的元素个数。以长度为 8 的哈希表为例，最多可以保存 5 个键值对，超出则需要扩容，显然这存在严重的内存浪费。</p>
+<p>所以 Python 为了节省内存，想出了一个妙招。既然只能用 2/3，那就将键值对数组的空间变为原来的 2/3，只用来存储键值对（entry），而对 key 进行映射得到的索引则由另一个数组（哈希索引数组）来承载。假设映射出的索引是 4，那么就去找哈希索引数组中索引为 4 的槽，该槽存储的便是键值对在键值对数组中的索引。</p>
+<p>之所以这么设计，是因为键值对数组里面一个元素要占用 24 字节，而哈希索引数组在容量不超过 255 的时候，里面一个元素只占一个字节，容量不超过 65535 的时候，里面一个元素只占两个字节，其它以此类推。所以哈希索引数组里面的元素大小比键值对数组要小很多，将哈希表分成两个数组（<font color="blue">避免键值对数组的浪费</font>）来实现会更加节省内存。我们可以举个例子计算一下，假设有一个容量为 65535 的哈希表。</p>
+<p>如果是通过第一种方式，只用一个数组来存储的话：</p>
+<pre><code class="language-python"># 总共需要 1572840 字节
+&gt;&gt;&gt; 65535 * 24
+1572840  
+# 除以 3, 会浪费 524280 字节
+&gt;&gt;&gt; 65535  * 24 // 3
+524280
+&gt;&gt;&gt;
+</code></pre>
+<p>如果是通过第二种方式，使用两个数组来存储的话：</p>
+<pre><code class="language-Python"># 容量虽然是 65535
+# 但键值对数组是容量的 2 / 3
+# 然后加上哈希索引数组的大小
+&gt;&gt;&gt; 65535 * 24 * 2 // 3 + 65535 * 2
+1179630
+&gt;&gt;&gt;
+</code></pre>
+<p>所以一个数组存储比两个数组存储要多用 393210 字节的内存，因此 Python 选择使用两个数组来存储。</p>
+<p>我们再以长度为 8 的哈希表为例，画一张图对比一下，由于哈希表长度为 8，那么它最多存储 5 个键值对。</p>
+<p><img src="./images/113.png" alt="" /></p>
+<p>如果哈希表只使用一个键值对数组，那么基于 key 映射出的索引就是键值对数组的索引，这种方式简单直观，但内存浪费严重，因为要浪费掉 1/3 的空间。于是为了解决这个问题，哈希表选择使用两个数组实现，分别是<font color="blue">哈希索引数组</font>和<font color="blue">键值对数组</font>。</p>
+<p>哈希索引数组的长度就是哈希表的长度，key 映射之后的索引也是哈希索引数组的索引，只不过它存储的不再是键值对，而是<font color="blue">键值对</font>在<font color="blue">键值对数组</font>中的索引。那么问题来了，明明多了一个数组，为啥内存占用反而变少了呢？很明显，由于引入了哈希索引数组，键值对数组的长度可以减少到原来的 2/3。</p>
+<p>因为相比键值对数组，哈希索引数组的内存占用非常低，<font color="blue">引入它需要的成本</font>远小于<font color="blue">避免键值对数组浪费 1/3 所带来的收益</font>，所以使用两个数组来实现哈希表是更加合理的。</p>
+<p>总结：</p>
+<ul>
+<li>哈希表本质上就是个数组，只不过 Python 选择使用两个数组实现，其中哈希索引数组的长度便是哈希表的容量，而该长度由 dk_size 字段维护。</li>
+<li>由于哈希表最多使用 2/3，那么就只为键值对数组申请 2/3 容量的空间。对于容量为 8 的哈希表，那么哈希索引数组的长度就是 8，键值对数组的长度就是 5。</li>
+<li>dk_usable 字段表示键值对数组还可以容纳的 entry 的个数，所以它的初始值也是 5。</li>
+<li>dk_nentries 字段表示当前已存在的 entry 的数量，假设哈希表，或者说键值对数组存储了 3 个键值对，那么 dk_nentries 就是 3。而 dk_usable 则会变成 5 - 3 等于 2，因为它表示键值对数组还可以容纳多少 entry。</li>
+</ul>
+<p>咦，前面介绍 PyDictObject 的时候，看到里面有一个 ma_used 字段，表示字典的长度。那么 dk_nentries 和 ma_used 有啥区别呢，从字面意思上看，两者的含义貌似是等价的，关于这一点后续再解释。</p>
+<p>最后就是 dk_indices 和 dk_entries，它们表示哈希索引数组和键值对数组。到此我们就把每个字段的含义又重新回顾了一遍，现在再来看是不是就清晰多了呢。</p>
+<h2 id="字典遍历的有序性"><a class="header" href="#字典遍历的有序性">字典遍历的有序性</a></h2>
+<p>我们知道 Python 从 3.6 开始，字典的遍历是有序的，那么这是怎么实现的呢？</p>
+<p>其实很简单，在存储时，虽然映射之后的索引是随机的，但键值对本身始终是按照先来后到的顺序被添加进键值对数组中。而字典在 for 循环时，会直接遍历键值对数组，所以遍历的结果是有序的。但即便如此，我们也不应该依赖此特性。</p>
+<p>还是以之前的图为例，我们顺序写入三个键值对，key 分别是 &quot;a&quot;、&quot;b&quot;、&quot;c&quot;：</p>
+<p><img src="./images/113.png" alt="" /></p>
+<p>早期的哈希表只有一个键值对数组，而键值对在存储时本身就是无序的，那么遍历的结果自然也是无序的。对于当前来说，遍历的结果就是 &quot;b&quot;、&quot;a&quot;、&quot;c&quot;。</p>
+<p>但从 3.6 开始，键值对数组中的键值对，和添加顺序是一致的。而遍历时，会直接遍历键值对数组，因此遍历的结果是有序的。对于当前来说，遍历的结果就是 &quot;a&quot;、&quot;b&quot;、&quot;c&quot;。</p>
+<p>当然，如果你是 Python 的设计者，希望遍历依旧不保持有序的话，那么该怎么做呢？很简单，可以先遍历哈希索引数组，将存储的有效索引依次取出，对于当前来说就是 1、0、2。然后基于这些索引，从键值对数组中获取键值对，那么遍历的结果也是 &quot;b&quot;、&quot;a&quot;、&quot;c&quot;。</p>
+<h2 id="字典的内存大小"><a class="header" href="#字典的内存大小">字典的内存大小</a></h2>
+<p>下面来分析一下字典占用的内存大小，首先字典和列表一样都有容量的概念，由于空间已经申请了，不管有没有使用，大小都必须算进去。而字典的容量策略相比列表要简单很多，因为大小要满足 2 的 n 次方，所以容量一定按照 8、16、32、64、······ 进行变化。</p>
+<p>注意：字典的容量（或者说哈希表的容量）指的是内部哈希索引数组的长度，它要满足 2 的 n 次方，从而将取模运算优化成按位与运算。当哈希索引数组存储的元素（键值对数组的索引）个数达到了总长度的 2/3，同时也意味着键值对数组已经满了，那么说明字典（哈希表）该扩容了。</p>
+<p>知道了容量规则，我们来看一下字典的内存大小怎么计算。</p>
+<pre><code class="language-C">typedef struct {
+    PyObject_HEAD               // 16 字节
+    Py_ssize_t ma_used;         // 8 字节
+    uint64_t ma_version_tag;    // 8 字节
+    PyDictKeysObject *ma_keys;  // 8 字节
+    PyObject **ma_values;       // 8 字节
+} PyDictObject;
+// 所以 PyDictObject 实例占 48 字节
+
+struct _dictkeysobject {
+    Py_ssize_t dk_refcnt;        // 8 字节
+    Py_ssize_t dk_size;          // 8 字节
+    dict_lookup_func dk_lookup;  // 8 字节
+    Py_ssize_t dk_usable;        // 8 字节
+    Py_ssize_t dk_nentries;      // 8 字节
+    char dk_indices[];
+    // 隐藏字段 dk_entries
+};
+
+// 如果不算哈希索引数组 dk_indices 和键值对数组 dk_entries
+// 那么 PyDictKeysObject 实例占 40 个字节
+</code></pre>
+<p>然后是剩余的两个数组，一个是哈希索引数组 dk_indices，里面 1 个元素可能占 1 字节、2 字节、或 4 字节；还有一个键值对数组 dk_entries，里面一个元素占 24 字节。所以对于容量为 n 的字典来说：</p>
+<ul>
+<li>如果 n &lt; 256，字典大小等于 48 + 40 + n + n * 2 // 3 * 24</li>
+<li>如果 256 &lt;= n &lt; 65536，字典大小等于 48 + 40 + n * 2 + n * 2 // 3 * 24</li>
+<li>如果 n &gt;= 65536，字典大小等于 48 + 40 + n * 4 + n * 2 // 3 * 24</li>
+</ul>
+<p>所以对于一个容量为 8 的字典，它的大小就是 48 + 40 + 8 + 120 = 216。</p>
+<pre><code class="language-Python"># 字典的初始容量为 8，所以大小为 216
+&gt;&gt;&gt; dict().__sizeof__()
+216
+
+# 注：如果你是通过字面量的方式创建空字典，那么容量是 0
+# 显然大小就是 48 字节，因为此时 ma_keys 为 NULL
+&gt;&gt;&gt; {}.__sizeof__()
+48
+</code></pre>
+<p>那么问题来了，如果一个字典包含 78 个键值对，那么这个字典占多大内存呢？既然有 78 个键值对，那么键值对数组 dk_entries 的长度至少为 78，而它又等于哈希表容量的 2/3，所以哈希表的长度至少为 117。由于哈希表的长度满足 2 的 n 次幂，所以我们只需找到大于等于 117 的最小 2 的幂次方数即可，显然这个数是 128。</p>
+<p>所以大小有了，包含 78 个键值对的字典所占的内存大小等于 48 + 40 + 128 + 128 * 2 // 3 * 24。</p>
+<pre><code class="language-Python">&gt;&gt;&gt; 48 + 40 + 128 + 128 * 2 // 3 * 24
+2256
+&gt;&gt;&gt; dict.fromkeys(range(78)).__sizeof__()
+2256
+</code></pre>
+<p>结果没有问题，再来个复杂点的，对于包含 12345 个键值对的字典，占用多大内存呢？</p>
+<pre><code class="language-Python">&gt;&gt;&gt; import math
+&gt;&gt;&gt; math.log2(12345 * 3 / 2)
+14.1766017167513
+&gt;&gt;&gt; 2 ** 15
+32768
+</code></pre>
+<p>计算结果表明，对于包含 12345 个键值对的字典，哈希表的长度至少为 2 的 14.17... 次方，而实际的长度显然是 2 的 15 次方，那么大小就出来了。另外注意：因为长度超过了 255，所以哈希索引数组中的一个元素占两字节。</p>
+<pre><code class="language-Python">&gt;&gt;&gt; 48 + 40 + 32768 * 2 + 32768 * 2 // 3 * 24
+589904
+&gt;&gt;&gt; dict.fromkeys(range(12345)).__sizeof__()
+589904
+</code></pre>
+<p>结果和我们分析的一样，以上我们就计算出了字典的内存大小，你也可以自己创建个字典测试一下。</p>
+<h2 id="小结"><a class="header" href="#小结">小结</a></h2>
+<p>通过研究字典的具体实现，我们可以得出以下结论：</p>
+<ul>
+<li>字典是一种高效的映射型容器，能够以 O(1) 的时间复杂度执行查询和写入操作；</li>
+<li>字典之所以这么快，是因为它由哈希表实现。但快是要付出代价的，哈希表必须保证一定的稀疏性，否则会频繁出现索引冲突，导致哈希表性能下降，因为索引映射是随机的；</li>
+<li>既然哈希表要保证稀疏性，就意味着内存开销大，因为存在内存浪费。</li>
+<li>但 Python 为优化内存使用，选择基于两个数组来实现哈希表，通过避免键值对数组的浪费，来减少内存占用；</li>
+<li>键值对数组里的 entry 除了保存 key 和 value 之外，还保存了 key 的哈希值。</li>
+</ul>
+<p>以上就是字典的底层实现，但是还没有结束，哈希表的背后还隐藏了很多细节，我们就下一篇文章再聊吧。</p>
+<hr />
+<p> </p>
+<p><strong>欢迎大家关注我的公众号：古明地觉的编程教室。</strong></p>
+<p><img src="./images/qrcode_for_gh.jpg" alt="" /></p>
+<p><strong>如果觉得文章对你有所帮助，也可以请作者吃个馒头，Thanks♪(･ω･)ﾉ。</strong></p>
+<p><img src="./images/supports.png" alt="" /></p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="39.聊一聊喜闻乐见的哈希表.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+                            <a rel="next" href="41.什么是可哈希对象，它的哈希值是怎么计算的？.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="39.聊一聊喜闻乐见的哈希表.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+                    <a rel="next" href="41.什么是可哈希对象，它的哈希值是怎么计算的？.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+            </nav>
+
+        </div>
+
+        <script type="text/javascript">
+            window.playground_copyable = true;
+        </script>
+        <script src="elasticlunr.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="mark.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="searcher.js" type="text/javascript" charset="utf-8"></script>
+        <script src="clipboard.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="highlight.js" type="text/javascript" charset="utf-8"></script>
+        <script src="book.js" type="text/javascript" charset="utf-8"></script>
+
+        <!-- Custom JS scripts -->
+        <script type="text/javascript" src="theme/custom.js"></script>
+    </body>
+</html>

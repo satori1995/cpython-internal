@@ -1,0 +1,438 @@
+<!DOCTYPE HTML>
+<html lang="zh-cn" class="sidebar-visible no-js light">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>25. 通过 bytes 对象的合并，探究缓冲区的奥秘 - CPython3.8 源码探秘</title>
+        <!-- Custom HTML head -->
+        <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff" />
+
+        <link rel="icon" href="favicon.svg">
+        <link rel="shortcut icon" href="favicon.png">
+        <link rel="stylesheet" href="css/variables.css">
+        <link rel="stylesheet" href="css/general.css">
+        <link rel="stylesheet" href="css/chrome.css">
+        <!-- Fonts -->
+        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="fonts/fonts.css">
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="highlight.css">
+        <link rel="stylesheet" href="tomorrow-night.css">
+        <link rel="stylesheet" href="ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+        <link rel="stylesheet" href="theme/custom.css">
+        <!-- MathJax -->
+        <script async type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    </head>
+    <body>
+        <!-- Provide site root to javascript -->
+        <script type="text/javascript">
+            var path_to_root = "";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script type="text/javascript">
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script type="text/javascript">
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            var html = document.querySelector('html');
+            html.classList.remove('no-js')
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add('js');
+        </script>
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script type="text/javascript">
+            var html = document.querySelector('html');
+            var sidebar = 'hidden';
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            }
+            html.classList.remove('sidebar-visible');
+            html.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li class="chapter-item expanded "><a href="0.序言.html">0. 序言</a></li><li class="chapter-item expanded "><a href="1.CPython源码长什么样子？.html">1. CPython 源码长什么样子？</a></li><li class="chapter-item expanded "><a href="2.变量和对象，它们之间有什么区别和联系呢？.html">2. 变量和对象，它们之间有什么区别和联系呢？</a></li><li class="chapter-item expanded "><a href="3.Python对象有哪几种，我们可以从哪些角度进行分类呢？.html">3. Python 对象有哪几种，我们可以从哪些角度进行分类呢？</a></li><li class="chapter-item expanded "><a href="4.万丈高楼平地起，一切从PyObject开始.html">4. 万丈高楼平地起，一切从 PyObject 开始</a></li><li class="chapter-item expanded "><a href="5.详解PyTypeObject，Python类型对象的载体.html">5. 详解 PyTypeObject，Python 类型对象的载体</a></li><li class="chapter-item expanded "><a href="6.通过type和object之间的关联，进一步分析类型对象.html">6. 通过 type 和 object 之间的关联，进一步分析类型对象</a></li><li class="chapter-item expanded "><a href="7.当创建一个Python对象时，背后都经历了哪些过程？.html">7. 当创建一个 Python 对象时，背后都经历了哪些过程？</a></li><li class="chapter-item expanded "><a href="8.当调用一个Python对象时，背后都经历了哪些过程？.html">8. 当调用一个 Python 对象时，背后都经历了哪些过程？</a></li><li class="chapter-item expanded "><a href="9.再探泛型API，感受Python对象的设计哲学.html">9. 再探泛型 API，感受 Python 对象的设计哲学</a></li><li class="chapter-item expanded "><a href="10.Python对象的行为是怎么区分的？.html">10. Python 对象的行为是怎么区分的？</a></li><li class="chapter-item expanded "><a href="11.一个Python对象会在何时被销毁？.html">11. 一个 Python 对象会在何时被销毁？</a></li><li class="chapter-item expanded "><a href="12.深度解密Python的浮点数是怎么实现的？.html">12. 深度解密 Python 的浮点数是怎么实现的？</a></li><li class="chapter-item expanded "><a href="13.对象被销毁之后所占的内存一定会释放吗？解密浮点数的缓存池机制.html">13. 对象被销毁之后所占的内存一定会释放吗？解密浮点数的缓存池机制</a></li><li class="chapter-item expanded "><a href="14.浮点数支持的操作是怎么实现的？.html">14. 浮点数支持的操作是怎么实现的？</a></li><li class="chapter-item expanded "><a href="15.解密Python的复数是怎么实现的？它有什么用途呢？.html">15. 解密 Python 的复数是怎么实现的？它有什么用途呢？</a></li><li class="chapter-item expanded "><a href="16.Python的整数是怎么设计的，为什么它不会溢出？.html">16. Python 的整数是怎么设计的，为什么它不会溢出？</a></li><li class="chapter-item expanded "><a href="17.解密Python的小整数对象池.html">17. 解密 Python 的小整数对象池</a></li><li class="chapter-item expanded "><a href="18.两个Python整数之间是如何进行大小比较的？过程并不像我们想的那样简单.html">18. 两个 Python 整数之间是如何进行大小比较的？过程并不像我们想的那样简单</a></li><li class="chapter-item expanded "><a href="19.探究Python整数的加减法，感受大整数的运算哲学与魅力.html">19. 探究 Python 整数的加减法，感受大整数的运算哲学与魅力</a></li><li class="chapter-item expanded "><a href="20.Python的布尔值是怎么实现的，你对它的了解有多深呢？.html">20. Python 的布尔值是怎么实现的，你对它的了解有多深呢？</a></li><li class="chapter-item expanded "><a href="21.Python的None是怎么实现的？.html">21. Python 的 None 是怎么实现的？</a></li><li class="chapter-item expanded "><a href="22.深度解密Python切片的实现原理.html">22.深度解密 Python 切片的实现原理</a></li><li class="chapter-item expanded "><a href="23.bytes对象（字节串）是怎么实现的？解密它的内部原理.html">23. bytes 对象（字节串）是怎么实现的？解密它的内部原理</a></li><li class="chapter-item expanded "><a href="24.bytes对象都支持哪些操作，它们是怎么实现的？.html">24. bytes 对象都支持哪些操作，它们是怎么实现的？</a></li><li class="chapter-item expanded "><a href="25.通过bytes对象的合并，探究缓冲区的奥秘.html" class="active">25. 通过 bytes 对象的合并，探究缓冲区的奥秘</a></li><li class="chapter-item expanded "><a href="26.解密bytes对象的缓存池.html">26. 解密 bytes 对象的缓存池</a></li><li class="chapter-item expanded "><a href="27.详解bytearray对象的底层实现.html">27. 详解 bytearray 对象的底层实现</a></li><li class="chapter-item expanded "><a href="28.字符集和字符编码.html">28. 字符集和字符编码</a></li><li class="chapter-item expanded "><a href="29.Python是怎么存储字符串的？.html">29. Python 是怎么存储字符串的？</a></li><li class="chapter-item expanded "><a href="30.解密字符串的底层结构，它是怎么实现的？.html">30. 解密字符串的底层结构，它是怎么实现的？</a></li><li class="chapter-item expanded "><a href="31.字符串的intern机制是怎么一回事？.html">31. 字符串的 intern 机制是怎么一回事？</a></li><li class="chapter-item expanded "><a href="32.聊一聊字符串常见操作的源码实现.html">32. 聊一聊字符串常见操作的源码实现</a></li><li class="chapter-item expanded "><a href="33.列表是怎么实现的？解密列表的数据结构.html">33. 列表是怎么实现的？解密列表的数据结构</a></li><li class="chapter-item expanded "><a href="34.列表是怎么扩容的？.html">34. 列表是怎么扩容的？</a></li><li class="chapter-item expanded "><a href="35.解密列表的创建与销毁，以及缓存池长什么样子？.html">35. 解密列表的创建与销毁，以及缓存池长什么样子？</a></li><li class="chapter-item expanded "><a href="36.列表作为序列型对象都支持哪些操作，它们在底层是怎么实现的？.html">36. 列表作为序列型对象都支持哪些操作，它们在底层是怎么实现的？</a></li><li class="chapter-item expanded "><a href="37.列表都有哪些自定义方法，它们是怎么实现的？.html">37. 列表都有哪些自定义方法，它们是怎么实现的？</a></li><li class="chapter-item expanded "><a href="38.解密元组的实现原理.html">38. 解密元组的实现原理</a></li><li class="chapter-item expanded "><a href="39.聊一聊喜闻乐见的哈希表.html">39. 聊一聊喜闻乐见的哈希表</a></li><li class="chapter-item expanded "><a href="40.字典是怎么实现的，它的底层结构长什么样子？.html">40. 字典是怎么实现的，它的底层结构长什么样子？</a></li><li class="chapter-item expanded "><a href="41.什么是可哈希对象，它的哈希值是怎么计算的？.html">41. 什么是可哈希对象，它的哈希值是怎么计算的？</a></li><li class="chapter-item expanded "><a href="42.字典的key是怎么映射成索引的，索引冲突了又该怎么办？.html">42. 字典的 key 是怎么映射成索引的，索引冲突了又该怎么办？</a></li><li class="chapter-item expanded "><a href="43.哈希表是怎么删除元素的，能直接删除吗？.html">43. 哈希表是怎么删除元素的，能直接删除吗？</a></li><li class="chapter-item expanded "><a href="44.字典是怎么创建的，支持的操作又是如何实现的？.html">44. 字典是怎么创建的，支持的操作又是如何实现的？</a></li><li class="chapter-item expanded "><a href="45.字典的自定义方法是怎么实现的？.html">45. 字典的自定义方法是怎么实现的？</a></li><li class="chapter-item expanded "><a href="46.字典是怎么扩容的？它会经历哪些过程？.html">46. 字典是怎么扩容的？它会经历哪些过程？</a></li><li class="chapter-item expanded "><a href="47.身虽死，道未消，解密字典的缓存池.html">47. 身虽死，道未消，解密字典的缓存池</a></li><li class="chapter-item expanded "><a href="48.解密集合的实现原理.html">48. 解密集合的实现原理</a></li><li class="chapter-item expanded "><a href="49.集合支持的操作有哪些，它们是怎么实现的？.html">49. 集合支持的操作有哪些，它们是怎么实现的？</a></li><li class="chapter-item expanded "><a href="50.迭代器是怎么实现的？.html">50. 迭代器是怎么实现的？</a></li><li class="chapter-item expanded "><a href="51.Python源文件编译之后会得到什么，它的结构是怎样的？和字节码又有什么联系？.html">51. Python 源文件编译之后会得到什么，它的结构是怎样的？和字节码又有什么联系？</a></li><li class="chapter-item expanded "><a href="52.PyCodeObject拾遗.html">52. PyCodeObject 拾遗</a></li><li class="chapter-item expanded "><a href="53.一文让你搞懂pyc文件.html">53. 一文让你搞懂 pyc 文件</a></li><li class="chapter-item expanded "><a href="54.深度解密虚拟机的执行环境：栈帧对象.html">54. 深度解密虚拟机的执行环境：栈帧对象</a></li><li class="chapter-item expanded "><a href="55.名字空间：变量的容身之所.html">55. 名字空间：变量的容身之所</a></li><li class="chapter-item expanded "><a href="56.当查找一个变量时，虚拟机会进行哪些动作？.html">56. 当查找一个变量时，虚拟机会进行哪些动作？</a></li><li class="chapter-item expanded "><a href="57.虚拟机是怎么执行字节码的？背后都经历了哪些过程.html">57. 虚拟机是怎么执行字节码的？背后都经历了哪些过程</a></li><li class="chapter-item expanded "><a href="58.深入源码，进一步考察字节码的执行流程.html">58. 深入源码，进一步考察字节码的执行流程</a></li><li class="chapter-item expanded "><a href="59.局部变量是怎么实现静态查找的，它和local名字空间又有什么联系呢？.html">59. 局部变量是怎么实现静态查找的，它和 local 名字空间又有什么联系呢？</a></li><li class="chapter-item expanded "><a href="60.剖析字节码指令，以及Python赋值语句的原理.html">60. 剖析字节码指令，以及 Python 赋值语句的原理</a></li><li class="chapter-item expanded "><a href="61.流程控制语句if是怎么实现的？.html">61. 流程控制语句 if 是怎么实现的？</a></li><li class="chapter-item expanded "><a href="62.流程控制语句for、while是怎么实现的？.html">62. 流程控制语句 for、while 是怎么实现的？</a></li><li class="chapter-item expanded "><a href="63.异常是怎么实现的？虚拟机是如何将异常抛出去的？.html">63. 异常是怎么实现的？虚拟机是如何将异常抛出去的？</a></li><li class="chapter-item expanded "><a href="64.虚拟机是如何捕获异常的？.html">64. 虚拟机是如何捕获异常的？</a></li><li class="chapter-item expanded "><a href="65.函数在底层长什么样子？.html">65. 函数在底层长什么样子？</a></li><li class="chapter-item expanded "><a href="66.函数是怎么创建的，背后经历了哪些过程？.html">66. 函数是怎么创建的，背后经历了哪些过程？</a></li><li class="chapter-item expanded "><a href="67.函数在底层是如何调用的？.html">67. 函数在底层是如何调用的？</a></li><li class="chapter-item expanded "><a href="68.函数是如何解析位置参数的？.html">68. 函数是如何解析位置参数的？</a></li><li class="chapter-item expanded "><a href="69.函数是如何解析关键字参数的？.html">69. 函数是如何解析关键字参数的？</a></li><li class="chapter-item expanded "><a href="70.扩展位置参数和扩展关键字参数是如何解析的？.html">70. 扩展位置参数和扩展关键字参数是如何解析的？</a></li><li class="chapter-item expanded "><a href="71.闭包是怎么实现的？.html">71. 闭包是怎么实现的？</a></li><li class="chapter-item expanded "><a href="72.生成器是做什么的，为什么会有生成器？.html">72. 生成器是做什么的，为什么会有生成器？</a></li><li class="chapter-item expanded "><a href="73.源码解密生成器的实现原理.html">73. 源码解密生成器的实现原理</a></li><li class="chapter-item expanded "><a href="74.回顾Python的对象模型.html">74. 回顾 Python 的对象模型</a></li><li class="chapter-item expanded "><a href="75.class概念解析.html">75. class 概念解析</a></li><li class="chapter-item expanded "><a href="76.类型对象的初始化.html">76. 类型对象的初始化</a></li><li class="chapter-item expanded "><a href="77.自定义类对象的底层实现与metaclass.html">77. 自定义类对象的底层实现与 metaclass</a></li><li class="chapter-item expanded "><a href="78.彻底搞懂描述符.html">78. 彻底搞懂描述符</a></li><li class="chapter-item expanded "><a href="79.实例对象是如何创建的？.html">79. 实例对象是如何创建的？</a></li><li class="chapter-item expanded "><a href="80.实例对象的属性访问.html">80. 实例对象的属性访问</a></li><li class="chapter-item expanded "><a href="81.为什么实例在调用方法时会将自身传给self参数.html">81. 为什么实例在调用方法时会将自身传给 self 参数</a></li><li class="chapter-item expanded "><a href="82.模块是如何导入的？.html">82. 模块是如何导入的？</a></li><li class="chapter-item expanded "><a href="83.import机制的黑盒探测.html">83. import 机制的黑盒探测</a></li><li class="chapter-item expanded "><a href="84.import机制是怎么实现的？.html">84. import 机制是怎么实现的？</a></li><li class="chapter-item expanded "><a href="85.Python运行时环境的初始化，解释器在启动时都做了什么？.html">85. Python 运行时环境的初始化，解释器在启动时都做了什么？</a></li><li class="chapter-item expanded "><a href="86.激活Python虚拟机.html">86. 激活 Python 虚拟机</a></li><li class="chapter-item expanded "><a href="87.初识GIL、以及多个线程之间的调度机制.html">87. 初识 GIL、以及多个线程之间的调度机制</a></li><li class="chapter-item expanded "><a href="88.线程的创建、销毁、调度，以及GIL的实现原理.html">88. 线程的创建、销毁、调度，以及 GIL 的实现原理</a></li><li class="chapter-item expanded "><a href="89.解密map、filter、zip底层实现，对比列表解析式.html">89. 解密 map、filter、zip 底层实现，对比列表解析式</a></li><li class="chapter-item expanded "><a href="90.为什么要有协程，协程是如何实现的？.html">90. 为什么要有协程，协程是如何实现的？</a></li><li class="chapter-item expanded "><a href="91.什么是asyncio？如何基于单线程实现并发？事件循环又是怎么工作的？.html">91. 什么是 asyncio？如何基于单线程实现并发？事件循环又是怎么工作的？</a></li><li class="chapter-item expanded "><a href="92.协程、任务、future，以及事件循环.html">92. 协程、任务、future，以及事件循环</a></li><li class="chapter-item expanded "><a href="93.在asyncio中使用Socket.html">93. 在 asyncio 中使用 Socket</a></li><li class="chapter-item expanded "><a href="94.解密asyncio的Future和Task.html">94. 解密 asyncio 的 Future 和 Task</a></li><li class="chapter-item expanded "><a href="95.如何精确控制asyncio中并发运行的多个任务.html">95. 如何精确控制 asyncio 中并发运行的多个任务</a></li><li class="chapter-item expanded "><a href="96.详解asyncio的同步原语.html">96. 详解 asyncio 的同步原语</a></li><li class="chapter-item expanded "><a href="97.在asyncio中引入多进程.html">97. 在 asyncio 中引入多进程</a></li><li class="chapter-item expanded "><a href="98.可执行文件的内存模型，变量的值是放在栈上还是放在堆上.html">98. 可执行文件的内存模型，变量的值是放在栈上还是放在堆上</a></li><li class="chapter-item expanded "><a href="99.Python是如何管理内存的？.html">99. Python 是如何管理内存的？</a></li><li class="chapter-item expanded "><a href="100.Python的垃圾回收机制是怎么实现的？.html">100. Python 的垃圾回收机制是怎么实现的？</a></li><li class="chapter-item expanded "><a href="101.深入源码，探究垃圾回收的秘密.html">101. 深入源码，探究垃圾回收的秘密</a></li><li class="chapter-item expanded "><a href="102.侵入Python虚拟机，动态修改底层数据结构和运行时.html">102. 侵入 Python 虚拟机，动态修改底层数据结构和运行时</a></li><li class="chapter-item expanded "><a href="103.使用Python的ctypes调用C的动态库.html">103. 使用 Python 的 ctypes 调用 C 的动态库</a></li><li class="chapter-item expanded "><a href="104.使用Python的ctypes调用Rust的动态库.html">104. 使用 Python 的 ctypes 调用 Rust 的动态库</a></li><li class="chapter-item expanded "><a href="105.用C写Python.html">105. 用 C 写 Python</a></li><li class="chapter-item expanded "><a href="106.Cython从入门到精通.html">106. Cython 从入门到精通</a></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky bordered">
+                    <div class="left-buttons">
+                        <button id="sidebar-toggle" class="icon-button" type="button" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </button>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light (default)</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">CPython3.8 源码探秘</h1>
+
+                    <div class="right-buttons">
+                        <a href="https://github.com/satori1995/cpython-internal" title="Git repository" aria-label="Git repository">
+                            <i id="git-repository-button" class="fa fa-github"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script type="text/javascript">
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h2 id="楔子"><a class="header" href="#楔子">楔子</a></h2>
+<p>bytes 对象支持加法运算，将两个 bytes 对象合并为一个，举个例子。</p>
+<pre><code class="language-Python">b1 = b&quot;abc&quot;
+b2 = b&quot;def&quot;
+print(b1 + b2)  # b'abcdef'
+</code></pre>
+<p>这背后是怎么实现的呢？我们通过源码分析一下，并通过 bytes 对象的相加，介绍一下缓冲区的知识。</p>
+<h2 id="bytes-对象的加法运算"><a class="header" href="#bytes-对象的加法运算">bytes 对象的加法运算</a></h2>
+<p>提到加法，很容易联想到 PyNumberMethods 的 nb_add，比如：PyLongObject 的 long_add 和 PyFloatObject 的 float_add。</p>
+<p>但对于 bytes 对象而言却不是这样，加法操作对应的是 PySequenceMethods 的 sq_concat。所以我们将加法运算改成合并，会更合适一些，只是它在 Python 层面对应的也是 <font color="blue">+</font> 操作符。对于 bytes 对象而言，sq_concat 字段会被赋值为 bytes_concat。</p>
+<pre><code class="language-C">static PyObject *
+bytes_concat(PyObject *a, PyObject *b)
+{
+    // 两个 Py_buffer 结构体类型的变量，用于维护缓冲区
+    // 关于缓冲区，我们一会儿说
+    Py_buffer va, vb;
+    // 相加结果
+    PyObject *result = NULL;
+    // 此时缓冲区啥也没有，默认将缓冲区的长度初始化为 -1
+    va.len = -1;
+    vb.len = -1;
+    // 每个 bytes 对象底层都对应一个缓冲区，可以通过 PyObject_GetBuffer 获取
+    // 这里获取两个 bytes 对象的缓冲区，然后交给变量 va 和 vb
+    // 获取成功返回 0，获取失败返回非 0
+    // 如果下面的条件不成功，就意味着获取失败了，说明至少有一个老铁不是 bytes 类型
+    if (PyObject_GetBuffer(a, &amp;va, PyBUF_SIMPLE) != 0 ||
+        PyObject_GetBuffer(b, &amp;vb, PyBUF_SIMPLE) != 0) {
+        // 然后设置异常，PyExc_TypeError 表示 TypeError（类型错误）
+        // 专门用来表示对一个对象执行了它所不支持的操作
+        PyErr_Format(PyExc_TypeError, &quot;can't concat %.100s to %.100s&quot;,
+                     Py_TYPE(b)-&gt;tp_name, Py_TYPE(a)-&gt;tp_name);
+        // 比如 b&quot;123&quot; + 123 就会得到 TypeError: can't concat int to bytes
+        // 和这里设置的异常信息是一样的，然后当出现异常之后，直接跳转到 done 标签
+        goto done;
+    }
+
+    // 这里判断是否有一方长度为 0
+    // 如果 a 的长度为 0，那么相加之后的结果就是 b
+    if (va.len == 0 &amp;&amp; PyBytes_CheckExact(b)) {
+        result = b;
+        Py_INCREF(result);
+        goto done;
+    }
+    // 逻辑和上面类似，如果 b 的长度为 0，那么相加之后的结果就是 a
+    if (vb.len == 0 &amp;&amp; PyBytes_CheckExact(a)) {
+        result = a;
+        Py_INCREF(result);
+        goto done;
+    }
+    // 判断两个 bytes 对象合并之后，长度是否超过 PY_SSIZE_T_MAX
+    // 所以 bytes 对象是有长度限制的，因为维护长度的 ob_size 有最大范围
+    // 但还是之前说的，这个条件基本不可能满足，除非你写恶意代码
+    // 补充一句，这个 if 条件看起来会有些别扭，更直观的写法应该像下面这样
+    // if (va.len + vb.len &gt; PY_SSIZE_T_MAX)，但 va.len + vb.len 可能会溢出
+    if (va.len &gt; PY_SSIZE_T_MAX - vb.len) {
+        PyErr_NoMemory();
+        goto done;
+    }
+    // 否则的话，创建指定容量的 PyBytesObject
+    result = PyBytes_FromStringAndSize(NULL, va.len + vb.len);
+    if (result != NULL) {
+        // PyBytes_AS_STRING 会获取 PyBytesObject 的 ob_sval 字段
+        // 将缓冲区 va 里面的内容拷贝到 result-&gt;ob_sval 中，拷贝的长度为 va.len
+        memcpy(PyBytes_AS_STRING(result), va.buf, va.len);
+        // 将缓冲区 vb 里面的内容拷贝到 result-&gt;ob_sval 中，拷贝的长度为 vb.len
+        // 但是要从 va.len 的位置开始拷贝，不然会把之前的内容覆盖掉
+        memcpy(PyBytes_AS_STRING(result) + va.len, vb.buf, vb.len);
+    }
+
+  done:
+    // 拷贝完之后，将 va 和 vb 里的内容释放掉，否则可能会导致内存泄漏
+    if (va.len != -1)
+        PyBuffer_Release(&amp;va);
+    if (vb.len != -1)
+        PyBuffer_Release(&amp;vb);
+    return result;
+}
+</code></pre>
+<p>代码虽然有点长，但是不难理解，重点是里面的 Py_buffer。我们以 <font color="blue">a = b&quot;ab&quot;</font>，<font color="blue">b = b&quot;cde&quot;</font> 为例，看一下 a + b 是怎么做的？</p>
+<p><img src="./images/84.png" alt="" /></p>
+<p>说白了整个过程就是将 <code>a-&gt;ob_sval</code> 和 <code>b-&gt;ob_sval</code> 拷贝到 <code>result-&gt;ob_sval</code> 中。但问题是为啥不直接拷贝，而是要搞出来一个 Py_buffer 呢？这就要说一说 Python 的缓冲区了。</p>
+<h2 id="详解缓冲区"><a class="header" href="#详解缓冲区">详解缓冲区</a></h2>
+<p>为了更好地理解缓冲区，我们需要解释一下什么是缓冲区协议。缓冲区协议是一个 C 级协议，它定义了一个具有数据缓冲区和元数据的 C 级结构体，这个结构体就是上面的 Py_buffer。通过 Py_buffer 来描述缓冲区的布局、数据类型和读写权限，并且还定义了支持协议的对象所必须实现的 API。</p>
+<p>实现缓冲区协议的对象有 bytes对象、array.array 对象、以及最知名的 numpy.ndarray 对象。</p>
+<p>至于缓冲区本身，它就是一个单纯的一维数组，负责存储具体的数据。我们以 numpy 数组为例，不管数组是多少维的，底层的缓冲区永远是一个一维数组。那么问题来了，我们在定义数组时设置的维度信息要如何体现呢？答案是通过 Py_buffer，来看一下它的底层结构。</p>
+<pre><code class="language-C">// Include/cpython/object.h
+
+typedef struct bufferinfo {
+    // 指针，指向具体的缓冲区，注意：缓冲区就是个一维数组
+    void *buf;
+    // 指向实现缓冲区协议的对象本身   
+    PyObject *obj;
+    // 缓冲区的长度
+    Py_ssize_t len;
+    // 缓冲区中每个元素的大小
+    Py_ssize_t itemsize;
+    // 缓冲区是否只读，0 表示可读写、1 表示只读
+    int readonly;
+    // 维度，比如数组的 shape 为 (3, 4, 5)，那么它的 ndim 就是 3
+    int ndim;
+    // 格式化字符串，用于描述缓冲区的元素类型
+    char *format;
+    // 等价于 numpy 数组的 shape
+    // 因此缓冲区永远是个一维数组，由 buf 字段指向
+    // 而其它字段则负责描述这个一维数组应该怎么使用
+    Py_ssize_t *shape;
+    // 在某个维度下，从一个元素到下一个元素所需要跳跃的字节数
+    Py_ssize_t *strides;
+    Py_ssize_t *suboffsets;
+    void *internal;
+} Py_buffer;
+</code></pre>
+<p>以上就是 Py_buffer，它的 buf 字段指向了具体的缓冲区，对于 bytes 对象而言就是内部的 ob_sval 字段。再比如 numpy 数组的拷贝，默认情况下在拷贝数组时只会将 Py_buffer 拷贝一份，而 Py_buffer 内部的 buf 字段指向的缓冲区则不会拷贝。</p>
+<pre><code class="language-python">import numpy as np
+
+# Py_buffer.buf 指向了缓冲区
+# Py_buffer.shape 为 (6,)
+arr1 = np.array([3, 9, 5, 7, 6, 8])
+# 将 Py_buffer 拷贝一份，并且 Py_buffer.shape 变成了 (2, 3)
+# 但 Py_buffer.buf 指向的缓冲区没有拷贝
+arr2 = arr1.reshape((2, 3))
+
+# 然后在通过索引访问的时候，可以认为 numpy 为其创建了虚拟的索引轴
+# 由于 arr1 只有一个维度，那么 numpy 会为其创建一个虚拟的索引轴
+&quot;&quot;&quot;
+arr1 = [3 9 5 7 6 8]
+
+    index1: 0 1 2 3 4 5
+       buf: 3 9 5 7 6 8    
+&quot;&quot;&quot;
+# arr2 有两个维度，shape 是 (2, 3)
+# 那么 numpy 会为其创建两个虚拟的索引轴
+&quot;&quot;&quot;
+arr2 = [[3, 9, 5]
+        [7, 6, 8]]
+
+    index1: 0 0 0 1 1 1
+    index2: 0 1 2 0 1 2
+       buf: 3 9 5 7 6 8                
+&quot;&quot;&quot;
+# 缓冲区中索引为 4 的元素被修改
+arr2[1, 1] = 666
+# 由于 arr1 和 arr2 共享一个缓冲区
+# 所以 print(arr1[4]) 也会打印 666
+print(arr1[4])  # 666
+</code></pre>
+<p>以上就是缓冲区的内容，关于缓冲区在后续还会详细介绍，到时候我们也会让自定义的实例对象支持缓冲区。</p>
+<p>回到 bytes 对象，它也实现了缓冲区协议，内部的 ob_sval（一个一维数组）就是对应的缓冲区，Py_buffer 里面的 buf 字段同样指向了这个缓冲区，而其它的字段则负责描述该如何使用这个缓冲区，可以理解为元信息。正如 numpy 的数组，虽然多个数组底层共用一个缓冲区，数据也只有一份，但在 numpy 的层面却可以表现出不同的维度，究其原因就是元信息不同。</p>
+<p>相信你现在肯定明白 Py_buffer 存在的意义了，就是共享内存。不管什么对象，只要实现了缓冲区协议，那么就可以直接向彼此暴露自身的缓冲区。并且在操作的时候，统一使用 Py_buffer，保证不同类型的对象的操作是一致的。</p>
+<pre><code class="language-Python">import numpy as np
+
+# bytes 对象实现了缓冲区协议，后续操作时会创建 Py_buffer 实例
+# Py_buffer.buf 指向的缓冲区便是 bytes 对象的 ob_sval
+# 对于当前来说就是 {'a', 'b', 'c', 'd', '\0'}
+b = b&quot;abcd&quot;
+
+# np.frombuffer 表示基于已有的缓冲区创建数组，因此会共享 bytes 对象的缓冲区
+# 但问题是缓冲区只是一个普通的一维数组，numpy 该怎么解析这个缓冲区呢
+# 所以我们必须显式地指定 dtype，而 &quot;S1&quot; 表示按照单个字节来进行解析
+arr1 = np.frombuffer(b, dtype=&quot;S1&quot;)
+print(arr1)  # [b'a' b'b' b'c' b'd']
+
+# &quot;S2&quot; 表示按照两个字节来进行解析
+arr2 = np.frombuffer(b, dtype=&quot;S2&quot;)
+print(arr2)  # [b'ab' b'cd']
+
+# 那么问题来了，按照三个字节解析是否可行呢？
+# 答案是不可行，因为缓冲区的大小不是 3 的整数倍
+# 而 &quot;S4&quot; 显然是可以的
+arr3 = np.frombuffer(b, dtype=&quot;S4&quot;)
+print(arr3)  # [b'abcd']
+
+# 按照 int8 进行解析
+arr4 = np.frombuffer(b, dtype=&quot;int8&quot;)
+print(arr4)  # [ 97  98  99 100]
+
+# 按照 int16 进行解析
+# 显然 97 98 整体会被解析成一个整数，99 100 整体会被解析成一个整数
+# 你想到了什么，这不就类似于 Python 整数的底层实现嘛
+&quot;&quot;&quot;
+97 -&gt; 01100001
+98 -&gt; 01100010
+那么 97 98 组合起来就是 01100010_01100001
+
+99 -&gt; 01100011
+100 -&gt; 01100100
+那么 99 100 组合起来就是 01100100_01100011
+&quot;&quot;&quot;
+print(0b01100010_01100001)  # 25185
+print(0b01100100_01100011)  # 25699
+print(np.frombuffer(b, dtype=&quot;int16&quot;))  # [25185 25699]
+
+# 按照 int32 来解析，显然这 4 个字节整体表示一个 int32
+print(0b01100100_01100011_01100010_01100001)  # 1684234849
+print(np.frombuffer(b, dtype=&quot;int32&quot;))  # [1684234849]
+</code></pre>
+<p>怎么样，是不是有点神奇呢？相信你在使用 numpy 的时候应该会有更加深刻的认识了，这就是缓冲区协议的威力。哪怕是不同的对象，只要都实现了缓冲区协议，那么彼此之间就可以暴露底层的缓冲区，从而实现共享内存。</p>
+<p>所以 np.frombuffer 就是直接根据对象的缓冲区来创建数组，然后它底层的 buf 字段也指向这个缓冲区。但它不知道该如何解析这个缓冲区，所以我们需要显式地指定 dtype 来告诉它，相当于告诉它一些元信息。</p>
+<p>那么问题来了，我们能不能修改缓冲区呢？</p>
+<pre><code class="language-Python">import numpy as np
+
+b = b&quot;abcd&quot;
+arr = np.frombuffer(b, dtype=&quot;S1&quot;)
+
+try:
+    arr[0] = b&quot;A&quot;
+except ValueError as e:
+    print(e)  # assignment destination is read-only
+
+# 答案是不可以的，因为原始的 bytes 对象不可修改，所以缓冲区只读
+# 但我们真的就没办法了吗？还记得之前介绍的骚操作吗？
+from ctypes import *
+
+class PyBytesObject(Structure):
+
+    _fields_ = [
+        (&quot;ob_refcnt&quot;, c_ssize_t),
+        (&quot;ob_type&quot;, c_void_p),
+        (&quot;ob_size&quot;, c_ssize_t),
+        (&quot;ob_shash&quot;, c_ssize_t),
+        (&quot;ob_sval&quot;, 5 * c_byte),
+    ]
+obj = PyBytesObject.from_address(id(b))
+# 修改缓冲区之前，打印 arr
+print(arr)  # [b'a' b'b' b'c' b'd']
+# 修改缓冲区之后，打印 arr
+obj.ob_sval[0] = ord(&quot;A&quot;)
+print(arr)  # [b'A' b'b' b'c' b'd']
+</code></pre>
+<p>我们看到由于共享缓冲区，所以修改 bytes 对象也会影响数组 arr，只是由于 bytes 对象不可变，我们只能出此下策。但其实还有一个办法，就是使用 bytearray 对象。</p>
+<pre><code class="language-Python">import numpy as np
+
+# 可以理解为可变的 bytes 对象
+b = bytearray(b&quot;abcd&quot;)
+arr = np.frombuffer(b, dtype=&quot;S1&quot;)
+
+print(b)  # bytearray(b'abcd')
+# 此时缓冲区是可修改的，并且修改任何一个对象都会影响另一个，因为它们共享同一个缓冲区
+arr[0] = b&quot;A&quot;
+# 再次打印
+print(b)  # bytearray(b'Abcd')
+</code></pre>
+<p>Py_buffer 的实现，也是 numpy 诞生的一个重要原因。</p>
+<h2 id="小结"><a class="header" href="#小结">小结</a></h2>
+<p>通过两个 bytes 对象相加，我们了解了什么是缓冲区、缓冲区协议，以及存在的作用，并且通过 numpy 进行了解释。了解缓冲区，可以让你更加深刻地理解 numpy。</p>
+<p>下面再来总结一下：</p>
+<ul>
+<li>如果一个类型对象实现了 tp_as_buffer，那么它的实例对象便支持缓冲区协议；</li>
+<li>tp_as_buffer 是一个函数指针，指向的函数负责初始化 Py_buffer；</li>
+<li>在共享缓冲区的时候，比如 np.frombuffer(obj)，会直接调用 obj 的类型对象的 tp_as_buffer 字段指向的函数，拿到 Py_buffer 实例的 buf 字段指向的缓冲区。但 numpy 不知道该怎么解析这个缓冲区，所以还需要我们指定 dtype 参数。</li>
+<li>缓冲区存在的最大意义就是共享内存，numpy 的数组在拷贝的时候，默认只拷贝 Py_buffer 实例，至于 Py_buffer 的 buf 字段指向的缓冲区默认是不会拷贝的。比如数组有 100 万个元素，这些元素都存储在缓冲区中，被 Py_buffer 的 buf 字段指向，拷贝的时候这 100 万个元素是不会拷贝的。</li>
+<li>numpy 数组的维度、shape，是借助于 Py_buffer 中的元信息体现的，维度和 shape 不同，访问缓冲区元素的方式也不同。但存储元素的缓冲区，永远是一个一维数组，由 buf 字段指向。</li>
+</ul>
+<hr />
+<p> </p>
+<p><strong>欢迎大家关注我的公众号：古明地觉的编程教室。</strong></p>
+<p><img src="./images/qrcode_for_gh.jpg" alt="" /></p>
+<p><strong>如果觉得文章对你有所帮助，也可以请作者吃个馒头，Thanks♪(･ω･)ﾉ。</strong></p>
+<p><img src="./images/supports.png" alt="" /></p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="24.bytes对象都支持哪些操作，它们是怎么实现的？.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+                            <a rel="next" href="26.解密bytes对象的缓存池.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="24.bytes对象都支持哪些操作，它们是怎么实现的？.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+                    <a rel="next" href="26.解密bytes对象的缓存池.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+            </nav>
+
+        </div>
+
+        <script type="text/javascript">
+            window.playground_copyable = true;
+        </script>
+        <script src="elasticlunr.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="mark.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="searcher.js" type="text/javascript" charset="utf-8"></script>
+        <script src="clipboard.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="highlight.js" type="text/javascript" charset="utf-8"></script>
+        <script src="book.js" type="text/javascript" charset="utf-8"></script>
+
+        <!-- Custom JS scripts -->
+        <script type="text/javascript" src="theme/custom.js"></script>
+    </body>
+</html>
