@@ -19,3 +19,4 @@ additional-js = ["theme/custom.js"]
 
 [output.latex]
 latex = true
+pdf = false
